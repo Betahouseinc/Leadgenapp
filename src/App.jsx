@@ -68,7 +68,7 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   const [submitting, setSubmitting] = useState(false);
   const [utrError, setUtrError] = useState("");
 
-  const upiId = "rentoksupport@oksbi";
+  const upiId = tenant?.units?.properties?.upi_id || payment?.upi_id || "";
   const amount = payment.amount;
   const name = encodeURIComponent("RentAI");
   const note = encodeURIComponent(`${payment.type} - ${tenant.name}`);
@@ -208,6 +208,369 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+// LANDING PAGE
+// ══════════════════════════════════════════════════════════════
+const LANDING_CSS = `
+  @keyframes floatA { 0%,100%{transform:translateY(0px) rotate(-3deg)} 50%{transform:translateY(-12px) rotate(-3deg)} }
+  @keyframes floatB { 0%,100%{transform:translateY(0px) rotate(2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+  @keyframes floatC { 0%,100%{transform:translateY(0px) rotate(-1deg)} 50%{transform:translateY(-14px) rotate(-1deg)} }
+  @keyframes slideIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes badgePop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .land-hero { animation: slideIn .6s ease both; }
+  .land-h2   { animation: slideIn .6s .1s ease both; }
+  .land-sub  { animation: slideIn .6s .2s ease both; }
+  .land-cta  { animation: slideIn .6s .3s ease both; }
+  .land-cards{ animation: slideIn .6s .4s ease both; }
+  .float-a   { animation: floatA 4s ease-in-out infinite; }
+  .float-b   { animation: floatB 5s ease-in-out infinite; }
+  .float-c   { animation: floatC 3.5s ease-in-out infinite; }
+  .badge-pop { animation: badgePop .5s .8s ease both; }
+  .grad-btn  { background-size:200% 200%; animation: gradShift 4s ease infinite; }
+  .feat-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.10); }
+  .feat-card { transition: transform .25s ease, box-shadow .25s ease; }
+  .step-dot:hover { transform:scale(1.1); }
+  .step-dot { transition: transform .2s ease; }
+  .cta-btn:hover { opacity:.92; transform:translateY(-1px); box-shadow:0 12px 36px ${T.saffron}55; }
+  .cta-btn { transition: all .2s ease; }
+  .ghost-btn:hover { background:${T.saffronL}; border-color:${T.saffron}; color:${T.saffron}; }
+  .ghost-btn { transition: all .2s ease; }
+`;
+
+function LandingPage({ onGetStarted }) {
+  const [pricingYearly, setPricingYearly] = useState(true);
+  const features = [
+    { icon:"🏠", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance — no spreadsheets.", color:T.saffron, bg:T.saffronL },
+    { icon:"💸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
+    { icon:"📲", title:"WhatsApp OTP Login", desc:"No passwords. Landlords and tenants login with a quick WhatsApp verification.", color:T.sky, bg:T.skyL },
+    { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
+    { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
+    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants via WhatsApp before due date.", color:T.rose, bg:T.roseL },
+  ];
+
+  const steps = [
+    { n:"1", title:"Sign up with WhatsApp", desc:"Enter your number, get an OTP — you're in within 30 seconds." },
+    { n:"2", title:"Add your properties & units", desc:"Set rent amounts, due dates, and invite your tenants." },
+    { n:"3", title:"Collect rent effortlessly", desc:"Tenants pay via UPI. You see it confirmed in real time." },
+  ];
+
+  const stats = [
+    { value:"₹0", label:"Setup cost" },
+    { value:"30s", label:"To get started" },
+    { value:"100%", label:"UPI compatible" },
+    { value:"24/7", label:"Access anywhere" },
+  ];
+
+  return (
+    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
+      <style>{CSS}{LANDING_CSS}</style>
+
+      {/* ── NAV ── */}
+      <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
+        backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
+        padding:"0 20px", height:58, display:"flex", alignItems:"center",
+        justifyContent:"space-between", maxWidth:960, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+          <div style={{ width:34, height:34, borderRadius:10,
+            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:18, boxShadow:`0 4px 12px ${T.saffron}40` }}>🏡</div>
+          <span style={{ fontSize:18, fontWeight:900, color:T.ink, letterSpacing:-.3 }}>RentAI</span>
+          <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
+            background:T.saffronL, padding:"2px 8px", borderRadius:20,
+            border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
+        </div>
+        <button onClick={onGetStarted} className="ghost-btn"
+          style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
+            border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
+          Login →
+        </button>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"56px 20px 40px", textAlign:"center" }}>
+
+        {/* Badge */}
+        <div className="badge-pop" style={{ display:"inline-flex", alignItems:"center", gap:7,
+          background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:30,
+          padding:"6px 16px", marginBottom:24, fontSize:12, fontWeight:800, color:T.teal }}>
+          <span>✨</span> Built for Indian landlords
+        </div>
+
+        {/* Headline */}
+        <h1 className="land-hero" style={{ fontSize:"clamp(28px,7vw,52px)", fontWeight:900,
+          color:T.ink, lineHeight:1.15, letterSpacing:-.5, marginBottom:18 }}>
+          Manage rent.{" "}
+          <span style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            Effortlessly.
+          </span>
+        </h1>
+
+        {/* Sub */}
+        <p className="land-sub" style={{ fontSize:"clamp(14px,3.5vw,18px)", color:T.ink2,
+          maxWidth:520, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
+          RentAI is your AI powered rental manager — collect rent, track expenses, manage tenants,
+          and handle maintenance — all in one place. No Excel. No chasing.
+        </p>
+
+        {/* CTAs */}
+        <div className="land-cta" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+          <button onClick={onGetStarted} className="cta-btn grad-btn"
+            style={{ padding:"14px 32px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB},${T.amber})` }}>
+            Get Started Free →
+          </button>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"14px 28px", borderRadius:14, fontSize:15, fontWeight:800,
+              border:`2px solid ${T.border2}`, background:T.surface, color:T.ink2, cursor:"pointer" }}>
+            I'm a Tenant
+          </button>
+        </div>
+
+        {/* Social proof */}
+        <div style={{ marginTop:28, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}>
+          {["🔒 Secure OTP login", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+            <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
+              background:T.panel, border:`1px solid ${T.border}`,
+              padding:"4px 12px", borderRadius:20 }}>{t}</span>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FLOATING CARDS (visual) ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"8px 20px 48px" }}>
+        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { cls:"float-a", emoji:"🏠", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
+            { cls:"float-b", emoji:"✅", label:"Payment received!", sub:"₹18,500 via GPay · UTR confirmed", color:T.teal, bg:T.tealL },
+            { cls:"float-c", emoji:"🔧", label:"Maintenance request", sub:"Water leakage – Unit 4B", color:T.sky, bg:T.skyL },
+          ].map(c => (
+            <div key={c.label} className={c.cls}
+              style={{ background:T.card, border:`2px solid ${c.color}25`,
+                borderRadius:18, padding:"16px 20px", minWidth:200, maxWidth:260,
+                boxShadow:`0 8px 24px ${c.color}18`, flex:"1 1 200px" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>{c.emoji}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:3 }}>{c.label}</div>
+              <div style={{ fontSize:11, color:T.muted, fontWeight:600 }}>{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STATS STRIP ── */}
+      <section style={{ background:T.ink, padding:"28px 20px" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", display:"flex",
+          justifyContent:"space-around", flexWrap:"wrap", gap:20 }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ textAlign:"center" }}>
+              <div style={{ fontSize:28, fontWeight:900, color:T.saffron }}>{s.value}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#9C8E7A", marginTop:2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+          <h2 className="land-h2" style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900,
+            color:T.ink, letterSpacing:-.3, marginBottom:10 }}>
+            Everything a landlord needs
+          </h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            No complexity. Just tools that work.
+          </p>
+        </div>
+        <div className="land-cards" style={{ display:"grid",
+          gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
+          {features.map(f => (
+            <div key={f.title} className="feat-card"
+              style={{ background:T.card, border:`1.5px solid ${T.border}`,
+                borderRadius:18, padding:"22px 20px", cursor:"default" }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:f.bg,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, marginBottom:14, border:`1px solid ${f.color}20` }}>
+                {f.icon}
+              </div>
+              <div style={{ fontSize:14, fontWeight:900, color:T.ink, marginBottom:7 }}>{f.title}</div>
+              <div style={{ fontSize:12, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`,
+        borderBottom:`1px solid ${T.border}`, padding:"56px 20px" }}>
+        <div style={{ maxWidth:680, margin:"0 auto", textAlign:"center" }}>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Up and running in minutes</h2>
+          <p style={{ fontSize:14, color:T.muted, fontWeight:600, marginBottom:40 }}>
+            No installs. No training. Just open your browser.
+          </p>
+          <div style={{ display:"flex", flexDirection:"column", gap:20, textAlign:"left" }}>
+            {steps.map((s,i) => (
+              <div key={s.n} style={{ display:"flex", gap:18, alignItems:"flex-start" }}>
+                <div className="step-dot" style={{ width:44, height:44, borderRadius:14, flexShrink:0,
+                  background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, fontWeight:900, color:"#fff",
+                  boxShadow:`0 4px 16px ${T.saffron}35` }}>{s.n}</div>
+                <div style={{ paddingTop:3 }}>
+                  <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:5 }}>{s.title}</div>
+                  <div style={{ fontSize:13, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:38 }}>
+          <h2 style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Simple, Transparent Pricing</h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            Manage, track, and grow your rental income with RentAI
+          </p>
+          {/* Monthly / Yearly toggle */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center",
+            gap:12, marginTop:20 }}>
+            <span style={{ fontSize:13, fontWeight:700,
+              color:T.ink2 }}>Monthly</span>
+            <div onClick={()=>setPricingYearly(y=>!y)}
+              style={{ width:48, height:26, borderRadius:13, cursor:"pointer",
+                background:pricingYearly?T.saffron:T.border2, position:"relative",
+                transition:"background .2s" }}>
+              <div style={{ width:20, height:20, borderRadius:"50%", background:"#fff",
+                position:"absolute", top:3,
+                left:pricingYearly?24:4,
+                transition:"left .2s",
+                boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
+            </div>
+            <span style={{ fontSize:13, fontWeight:700, color:T.ink2 }}>Yearly</span>
+            <span style={{ fontSize:11, fontWeight:800, color:T.teal,
+              background:T.tealL, padding:"3px 10px", borderRadius:20,
+              border:`1px solid ${T.teal}30` }}>2 months free</span>
+          </div>
+        </div>
+
+        {/* Pricing cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:16 }}>
+          {[
+            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
+              features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
+              cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
+            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
+              features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
+            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+              highlight:true,
+              features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
+            { name:"Pro", monthly:"Custom", yearly:"Custom", desc:"For 10+ properties",
+              features:["10+ Properties","Dedicated support","Custom automation","Advanced AI analytics","Custom integrations"],
+              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.teal, bg:T.tealL },
+          ].map((plan,i) => (
+            <div key={plan.name} style={{
+              background:plan.highlight?T.ink:T.card,
+              border:plan.highlight?`2px solid ${T.saffron}`:`1.5px solid ${T.border}`,
+              borderRadius:20, padding:"24px 20px",
+              transform:plan.highlight?"scale(1.04)":"none",
+              boxShadow:plan.highlight?`0 16px 48px ${T.saffron}25`:"none",
+              transition:"transform .2s, box-shadow .2s",
+              display:"flex", flexDirection:"column"
+            }}>
+              {plan.highlight && (
+                <div style={{ fontSize:10, fontWeight:800, color:T.saffron,
+                  background:`${T.saffron}22`, border:`1px solid ${T.saffron}40`,
+                  borderRadius:20, padding:"3px 12px", alignSelf:"flex-start",
+                  marginBottom:10 }}>⭐ MOST POPULAR</div>
+              )}
+              <div style={{ fontSize:17, fontWeight:900,
+                color:plan.highlight?"#fff":T.ink, marginBottom:4 }}>{plan.name}</div>
+              <div style={{ fontSize:12, fontWeight:600,
+                color:plan.highlight?T.subtle:T.muted, marginBottom:16 }}>{plan.desc}</div>
+              <div style={{ fontSize:26, fontWeight:900,
+                color:plan.highlight?T.saffron:plan.color, marginBottom:20 }}>
+                {pricingYearly ? plan.yearly : plan.monthly}
+              </div>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, color:plan.highlight?T.teal:T.teal,
+                      fontWeight:800 }}>✓</span>
+                    <span style={{ fontSize:12, fontWeight:600,
+                      color:plan.highlight?"#E8E4DC":T.ink2 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button style={{
+                width:"100%", padding:"11px", borderRadius:12, fontSize:13,
+                fontWeight:900, border:"none", cursor:"pointer",
+                background:plan.highlight?`linear-gradient(135deg,${T.saffron},${T.saffronB})`
+                  :plan.name==="Free"?T.panel:`${plan.color}18`,
+                color:plan.highlight?"#fff":plan.name==="Free"?T.ink2:plan.color,
+                border:plan.highlight?"none":`1.5px solid ${plan.color}30`,
+              }}>{plan.cta}</button>
+              <div style={{ fontSize:11, color:plan.highlight?T.subtle:T.muted,
+                fontWeight:600, textAlign:"center", marginTop:8 }}>{plan.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enterprise callout */}
+        <div style={{ textAlign:"center", marginTop:40, padding:"24px",
+          background:T.panel, borderRadius:16, border:`1.5px solid ${T.border}` }}>
+          <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:6 }}>
+            🏢 Managing a large portfolio?
+          </div>
+          <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
+            Tech parks, commercial complexes, PG networks — we'll build a plan around you.
+          </div>
+          <button style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
+            fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
+            Contact Sales →
+          </button>
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"64px 20px", textAlign:"center" }}>
+        <div style={{ background:`linear-gradient(135deg,${T.saffronL},${T.tealL})`,
+          border:`2px solid ${T.saffron}20`, borderRadius:24, padding:"48px 28px" }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>🏡</div>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:12 }}>
+            Start managing smarter today
+          </h2>
+          <p style={{ fontSize:14, color:T.ink2, fontWeight:600,
+            maxWidth:400, margin:"0 auto 28px", lineHeight:1.7 }}>
+            Join landlords across India who've switched from WhatsApp chaos to RentAI's clean dashboard.
+          </p>
+          <button onClick={onGetStarted} className="cta-btn"
+            style={{ padding:"15px 36px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              boxShadow:`0 8px 28px ${T.saffron}40` }}>
+            Get Started — It's Free →
+          </button>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"20px",
+        textAlign:"center", color:T.muted, fontSize:11, fontWeight:700 }}>
+        © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+      </footer>
     </div>
   );
 }
@@ -3430,6 +3793,7 @@ function AdminDashboard({ admin, onLogout }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
 
   const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -3444,16 +3808,16 @@ export default function App() {
           setChecking(false);
           return;
         }
-        // Admin — no DB lookup needed, phone is the identity
         if(parsed.type === "admin") {
           setUser(parsed);
+          setShowLanding(false);
           setChecking(false);
           return;
         }
         const table = parsed.type === "tenant" ? "tenants" : "owners";
         supabase.from(table).select("*").eq("id", parsed.id).single()
           .then(({ data }) => {
-            if(data) setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data });
+            if(data) { setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data }); setShowLanding(false); }
             setChecking(false);
           });
       } catch { localStorage.removeItem("rentai_user"); setChecking(false); }
@@ -3482,5 +3846,6 @@ export default function App() {
   if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout}/>;
   if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout}/>;
   if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout}/>;
+  if(showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)}/>;
   return <LoginScreen onLogin={handleLogin}/>;
 }
