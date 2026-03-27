@@ -661,6 +661,7 @@ function LoginScreen({ onLogin }) {
 
   // ── Step 2: Verify OTP via Supabase ─────────────────────────
   const verifyOtp = async (otpValue = otp) => {
+    if (loading) return;
     if (otpValue.length !== 6)        { setError("Enter the 6-digit OTP"); return; }
     if (!/^\d{6}$/.test(otpValue))    { setError("OTP must be 6 digits");  return; }
     setLoading(true);
@@ -712,6 +713,7 @@ function LoginScreen({ onLogin }) {
 
   // ── Step 3: Create profile ───────────────────────────────────
   const createProfile = async () => {
+    if (loading) return;
     if (!name.trim()) { setError("Please enter your name"); return; }
     setLoading(true);
     setError("");
