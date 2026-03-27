@@ -526,9 +526,9 @@ function LoginScreen({ onLogin }) {
 
         <div style={{ textAlign:"center", marginTop:16, fontSize:11, color:T.muted }}>
           By logging in you agree to our{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Terms</span>
+          <a href="/legal/terms" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Terms</a>
           {" "}and{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Privacy Policy</span>
+          <a href="/legal/privacy" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Privacy Policy</a>
         </div>
       </div>
     </div>
@@ -654,9 +654,19 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // OWNER DASHBOARD
 // ══════════════════════════════════════════════════════════════
+const downloadCSV = (filename, headers, rows) => {
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+};
+
 function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [units, setUnits] = useState([]);
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -981,6 +991,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
     { id:"payments",  icon:"💰", label:"Payments" },
     { id:"expenses",  icon:"🧾", label:"Expenses" },
     { id:"requests",  icon:"🔧", label:"Requests" },
+    { id:"reports",   icon:"📈", label:"Reports" },
   ];
 
   if(loading) return (
@@ -1524,6 +1535,49 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 )}
               </div>
             )}
+
+            {/* ── REFER & EARN ── */}
+            {(() => {
+              const refCode = (owner.name || "").replace(/\s+/g,"").toUpperCase().slice(0,6) + (owner.id||"").toString().slice(-4).toUpperCase();
+              const refLink = `https://rentai.co.in?ref=${refCode}`;
+              const refMsg  = `Hey! I use RentAI to manage my rental properties. Try it free → ${refLink}`;
+              return (
+                <div style={{ background:`linear-gradient(135deg,${T.plum}15,${T.plum}08)`,
+                  border:`1.5px solid ${T.plum}30`, borderRadius:16, padding:16, marginTop:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                    <span style={{ fontSize:22 }}>🎁</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.plum }}>Refer & Earn</div>
+                      <div style={{ fontSize:11, color:T.ink2 }}>Get 1 month free for every 2 owners you refer</div>
+                    </div>
+                  </div>
+                  <div style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:8,
+                    padding:"8px 12px", fontSize:12, fontWeight:700, color:T.ink2,
+                    marginBottom:12, letterSpacing:.3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ color:T.plum }}>{refCode}</span>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ background:"none", border:"none", fontSize:11, color:T.muted,
+                        fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      📋 Copy link
+                    </button>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(refMsg)}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ flex:1, padding:"8px 0", background:"#25D366", borderRadius:9,
+                        fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none",
+                        textAlign:"center" }}>
+                      💬 Share on WhatsApp
+                    </a>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ flex:1, padding:"8px 0", background:T.plumL, border:`1px solid ${T.plum}30`,
+                        borderRadius:9, fontSize:11, fontWeight:800, color:T.plum, cursor:"pointer" }}>
+                      🔗 Copy referral link
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -2124,6 +2178,135 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             })}
           </div>
         )}
+
+        {/* REPORTS TAB */}
+        {tab === "reports" && (() => {
+          const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const years = [...new Set([
+            new Date().getFullYear(),
+            ...payments.map(p => new Date(p.due_date||p.created_at).getFullYear()),
+            ...expenses.map(e => new Date(e.date||e.created_at).getFullYear()),
+          ])].sort((a,b)=>b-a);
+
+          const isPaid = p => p.status==="paid"||p.status==="verified";
+
+          const monthly = MONTHS.map((label, i) => {
+            const mp = payments.filter(p => { const d=new Date(p.due_date||p.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const me = expenses.filter(e => { const d=new Date(e.date||e.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const collected = mp.filter(isPaid).reduce((s,p)=>s+Number(p.amount||0),0);
+            const expected  = mp.reduce((s,p)=>s+Number(p.amount||0),0);
+            const expTotal  = me.reduce((s,e)=>s+Number(e.amount||0),0);
+            return { label, collected, expected, expTotal, net: collected-expTotal, hasData: mp.length>0||me.length>0 };
+          });
+
+          const totCollected = monthly.reduce((s,m)=>s+m.collected,0);
+          const totExpected  = monthly.reduce((s,m)=>s+m.expected,0);
+          const totExpenses  = monthly.reduce((s,m)=>s+m.expTotal,0);
+          const totNet       = totCollected - totExpenses;
+
+          const exportPaymentsCSV = () => downloadCSV(
+            `RentAI_Payments_${selectedYear}.csv`,
+            ["Date","Unit","Tenant","Type","Amount","Status"],
+            payments
+              .filter(p=>new Date(p.due_date||p.created_at).getFullYear()===selectedYear)
+              .map(p=>[fmt(p.due_date||p.created_at), p.units?.unit_number||"", p.tenants?.name||"", p.type||"rent", p.amount, p.status])
+          );
+
+          const exportExpensesCSV = () => downloadCSV(
+            `RentAI_Expenses_${selectedYear}.csv`,
+            ["Date","Category","Description","Unit","Amount"],
+            expenses
+              .filter(e=>new Date(e.date||e.created_at).getFullYear()===selectedYear)
+              .map(e=>[fmt(e.date||e.created_at), e.category||"", e.title||"", e.units?.unit_number||"", e.amount])
+          );
+
+          const exportSummaryCSV = () => downloadCSV(
+            `RentAI_YearlySummary_${selectedYear}.csv`,
+            ["Month","Expected (₹)","Collected (₹)","Expenses (₹)","Net (₹)"],
+            monthly.map(m=>[m.label, m.expected, m.collected, m.expTotal, m.net])
+          );
+
+          return (
+            <div style={{ padding:"18px 16px" }} className="fu">
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:T.ink }}>Rental Reports</div>
+                <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))}
+                  style={{ background:T.panel, border:`1.5px solid ${T.border2}`, borderRadius:8,
+                    padding:"5px 10px", fontSize:12, fontWeight:700, color:T.ink, cursor:"pointer" }}>
+                  {years.map(y=><option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+
+              {/* Summary cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                {[
+                  { label:"Collected", value:fd(totCollected), color:T.green,  bg:T.greenL  },
+                  { label:"Expected",  value:fd(totExpected),  color:T.amber,  bg:T.amberL  },
+                  { label:"Expenses",  value:fd(totExpenses),  color:T.rose,   bg:T.roseL   },
+                  { label:"Net Income",value:fd(totNet),       color:totNet>=0?T.teal:T.rose, bg:totNet>=0?T.tealL:T.roseL },
+                ].map(c=>(
+                  <div key={c.label} style={{ background:c.bg, border:`1.5px solid ${c.color}25`, borderRadius:13, padding:"12px 14px" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:c.color, letterSpacing:.5, marginBottom:4 }}>{c.label.toUpperCase()}</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:c.color }}>{c.value}</div>
+                    <div style={{ fontSize:9, color:T.muted, marginTop:2 }}>{selectedYear} total</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly breakdown */}
+              <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, overflow:"hidden", marginBottom:16 }}>
+                <div style={{ padding:"10px 14px", borderBottom:`1px solid ${T.border}`, fontSize:11, fontWeight:800, color:T.ink }}>
+                  Monthly Breakdown
+                </div>
+                {monthly.map((m,i)=>(
+                  <div key={m.label} style={{ display:"grid", gridTemplateColumns:"40px 1fr 1fr 1fr", gap:4,
+                    padding:"9px 14px", borderBottom:i<11?`1px solid ${T.border}`:"none",
+                    background: i%2===0 ? T.card : T.panel, opacity: m.hasData ? 1 : 0.45 }}>
+                    <div style={{ fontSize:11, fontWeight:800, color:T.ink2 }}>{m.label}</div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Collected</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.green }}>{m.collected>0?fd(m.collected):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Expenses</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:m.expTotal>0?T.rose:T.muted }}>{m.expTotal>0?fd(m.expTotal):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Net</div>
+                      <div style={{ fontSize:11, fontWeight:800, color:m.net>=0?T.teal:T.rose }}>{m.hasData?fd(m.net):"—"}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Export buttons */}
+              <div style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:.5, marginBottom:8 }}>EXPORT AS CSV (EXCEL)</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { label:"📥 Yearly Summary", fn: exportSummaryCSV },
+                  { label:"📥 All Payments",   fn: exportPaymentsCSV },
+                  { label:"📥 All Expenses",   fn: exportExpensesCSV },
+                ].map(b=>(
+                  <button key={b.label} onClick={b.fn}
+                    style={{ width:"100%", padding:"11px 16px", background:T.surface,
+                      border:`1.5px solid ${T.border2}`, borderRadius:11,
+                      fontSize:13, fontWeight:700, color:T.ink, textAlign:"left", cursor:"pointer" }}>
+                    {b.label}
+                    <span style={{ float:"right", fontSize:10, color:T.muted }}>→ .csv</span>
+                  </button>
+                ))}
+                <button onClick={()=>window.print()}
+                  style={{ width:"100%", padding:"11px 16px", background:T.saffronL,
+                    border:`1.5px solid ${T.saffron}30`, borderRadius:11,
+                    fontSize:13, fontWeight:700, color:T.saffron, textAlign:"left", cursor:"pointer" }}>
+                  🖨️ Print / Save as PDF
+                  <span style={{ float:"right", fontSize:10, color:T.saffron, opacity:.7 }}>→ .pdf</span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* REQUESTS TAB */}
         {tab === "requests" && (
@@ -3477,11 +3660,14 @@ function LandingPage({ onGetStarted }) {
             background:T.saffronL, padding:"2px 8px", borderRadius:20,
             border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
         </div>
-        <button onClick={onGetStarted} className="ghost-btn"
-          style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
-            border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
-          Get Started →
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
+              border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
+            Login / Get Started →
+          </button>
+        </div>
       </nav>
 
       {/* ── HERO ── */}
@@ -3758,10 +3944,50 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* ── SHARE SECTION ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`, padding:"28px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI 🏡</div>
+        <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>Help fellow property owners manage rent effortlessly</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { label:"WhatsApp", icon:"💬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI — AI-powered rent management for Indian landlords 🏡 https://rentai.co.in")}` },
+            { label:"Twitter / X", icon:"𝕏", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India — built for Indian landlords 🇮🇳 https://rentai.co.in")}` },
+            { label:"LinkedIn", icon:"in", color:"#0A66C2", url:`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://rentai.co.in")}` },
+          ].map(s => (
+            <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+                background:s.color, color:"#fff", borderRadius:10, fontSize:12, fontWeight:800,
+                textDecoration:"none", letterSpacing:.2 }}>
+              <span style={{ fontWeight:900 }}>{s.icon}</span> {s.label}
+            </a>
+          ))}
+          <button onClick={()=>{ navigator.clipboard.writeText("https://rentai.co.in"); }}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+              background:T.surface, border:`1.5px solid ${T.border2}`, color:T.ink2,
+              borderRadius:10, fontSize:12, fontWeight:800, cursor:"pointer" }}>
+            🔗 Copy Link
+          </button>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"20px",
-        textAlign:"center", color:T.muted, fontSize:11, fontWeight:700 }}>
-        © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"24px 20px", textAlign:"center" }}>
+        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:12 }}>
+          {[
+            { label:"Privacy Policy", href:"/legal/privacy" },
+            { label:"Terms of Use", href:"/legal/terms" },
+            { label:"Security", href:"/legal/security" },
+            { label:"Data Protection", href:"/legal/data-protection" },
+          ].map(l => (
+            <a key={l.href} href={l.href}
+              style={{ fontSize:11, fontWeight:700, color:T.muted, textDecoration:"none" }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ color:T.muted, fontSize:11, fontWeight:700 }}>
+          © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+        </div>
       </footer>
     </div>
   );
@@ -3782,7 +4008,7 @@ export default function App() {
     return !d;
   });
 
-  const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
   useEffect(() => {
     const saved = localStorage.getItem("rentai_user");
