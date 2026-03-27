@@ -713,10 +713,13 @@ function LoginScreen({ onLogin }) {
     setLoading(true);
     setError("");
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if(!user) throw new Error("Not authenticated. Please sign in again.");
       if (role === "owner") {
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
           .insert({
+            user_id:   user.id,
             email:     email,
             phone:     phone.trim() ? `+91${phone.trim().replace(/\D/g, "").slice(0, 10)}` : null,
             name:      name.trim(),
@@ -730,6 +733,7 @@ function LoginScreen({ onLogin }) {
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
           .insert({
+            user_id:   user.id,
             email:     email,
             phone:     phone.trim() ? `+91${phone.trim().replace(/\D/g, "").slice(0, 10)}` : null,
             name:      name.trim(),
