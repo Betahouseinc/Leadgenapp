@@ -654,9 +654,19 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // OWNER DASHBOARD
 // ══════════════════════════════════════════════════════════════
+const downloadCSV = (filename, headers, rows) => {
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+};
+
 function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [units, setUnits] = useState([]);
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -981,6 +991,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
     { id:"payments",  icon:"💰", label:"Payments" },
     { id:"expenses",  icon:"🧾", label:"Expenses" },
     { id:"requests",  icon:"🔧", label:"Requests" },
+    { id:"reports",   icon:"📈", label:"Reports" },
   ];
 
   if(loading) return (
@@ -2124,6 +2135,135 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             })}
           </div>
         )}
+
+        {/* REPORTS TAB */}
+        {tab === "reports" && (() => {
+          const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const years = [...new Set([
+            new Date().getFullYear(),
+            ...payments.map(p => new Date(p.due_date||p.created_at).getFullYear()),
+            ...expenses.map(e => new Date(e.date||e.created_at).getFullYear()),
+          ])].sort((a,b)=>b-a);
+
+          const isPaid = p => p.status==="paid"||p.status==="verified";
+
+          const monthly = MONTHS.map((label, i) => {
+            const mp = payments.filter(p => { const d=new Date(p.due_date||p.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const me = expenses.filter(e => { const d=new Date(e.date||e.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const collected = mp.filter(isPaid).reduce((s,p)=>s+Number(p.amount||0),0);
+            const expected  = mp.reduce((s,p)=>s+Number(p.amount||0),0);
+            const expTotal  = me.reduce((s,e)=>s+Number(e.amount||0),0);
+            return { label, collected, expected, expTotal, net: collected-expTotal, hasData: mp.length>0||me.length>0 };
+          });
+
+          const totCollected = monthly.reduce((s,m)=>s+m.collected,0);
+          const totExpected  = monthly.reduce((s,m)=>s+m.expected,0);
+          const totExpenses  = monthly.reduce((s,m)=>s+m.expTotal,0);
+          const totNet       = totCollected - totExpenses;
+
+          const exportPaymentsCSV = () => downloadCSV(
+            `RentAI_Payments_${selectedYear}.csv`,
+            ["Date","Unit","Tenant","Type","Amount","Status"],
+            payments
+              .filter(p=>new Date(p.due_date||p.created_at).getFullYear()===selectedYear)
+              .map(p=>[fmt(p.due_date||p.created_at), p.units?.unit_number||"", p.tenants?.name||"", p.type||"rent", p.amount, p.status])
+          );
+
+          const exportExpensesCSV = () => downloadCSV(
+            `RentAI_Expenses_${selectedYear}.csv`,
+            ["Date","Category","Description","Unit","Amount"],
+            expenses
+              .filter(e=>new Date(e.date||e.created_at).getFullYear()===selectedYear)
+              .map(e=>[fmt(e.date||e.created_at), e.category||"", e.title||"", e.units?.unit_number||"", e.amount])
+          );
+
+          const exportSummaryCSV = () => downloadCSV(
+            `RentAI_YearlySummary_${selectedYear}.csv`,
+            ["Month","Expected (₹)","Collected (₹)","Expenses (₹)","Net (₹)"],
+            monthly.map(m=>[m.label, m.expected, m.collected, m.expTotal, m.net])
+          );
+
+          return (
+            <div style={{ padding:"18px 16px" }} className="fu">
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:T.ink }}>Rental Reports</div>
+                <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))}
+                  style={{ background:T.panel, border:`1.5px solid ${T.border2}`, borderRadius:8,
+                    padding:"5px 10px", fontSize:12, fontWeight:700, color:T.ink, cursor:"pointer" }}>
+                  {years.map(y=><option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+
+              {/* Summary cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                {[
+                  { label:"Collected", value:fd(totCollected), color:T.green,  bg:T.greenL  },
+                  { label:"Expected",  value:fd(totExpected),  color:T.amber,  bg:T.amberL  },
+                  { label:"Expenses",  value:fd(totExpenses),  color:T.rose,   bg:T.roseL   },
+                  { label:"Net Income",value:fd(totNet),       color:totNet>=0?T.teal:T.rose, bg:totNet>=0?T.tealL:T.roseL },
+                ].map(c=>(
+                  <div key={c.label} style={{ background:c.bg, border:`1.5px solid ${c.color}25`, borderRadius:13, padding:"12px 14px" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:c.color, letterSpacing:.5, marginBottom:4 }}>{c.label.toUpperCase()}</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:c.color }}>{c.value}</div>
+                    <div style={{ fontSize:9, color:T.muted, marginTop:2 }}>{selectedYear} total</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly breakdown */}
+              <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, overflow:"hidden", marginBottom:16 }}>
+                <div style={{ padding:"10px 14px", borderBottom:`1px solid ${T.border}`, fontSize:11, fontWeight:800, color:T.ink }}>
+                  Monthly Breakdown
+                </div>
+                {monthly.map((m,i)=>(
+                  <div key={m.label} style={{ display:"grid", gridTemplateColumns:"40px 1fr 1fr 1fr", gap:4,
+                    padding:"9px 14px", borderBottom:i<11?`1px solid ${T.border}`:"none",
+                    background: i%2===0 ? T.card : T.panel, opacity: m.hasData ? 1 : 0.45 }}>
+                    <div style={{ fontSize:11, fontWeight:800, color:T.ink2 }}>{m.label}</div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Collected</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.green }}>{m.collected>0?fd(m.collected):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Expenses</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:m.expTotal>0?T.rose:T.muted }}>{m.expTotal>0?fd(m.expTotal):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Net</div>
+                      <div style={{ fontSize:11, fontWeight:800, color:m.net>=0?T.teal:T.rose }}>{m.hasData?fd(m.net):"—"}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Export buttons */}
+              <div style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:.5, marginBottom:8 }}>EXPORT AS CSV (EXCEL)</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { label:"📥 Yearly Summary", fn: exportSummaryCSV },
+                  { label:"📥 All Payments",   fn: exportPaymentsCSV },
+                  { label:"📥 All Expenses",   fn: exportExpensesCSV },
+                ].map(b=>(
+                  <button key={b.label} onClick={b.fn}
+                    style={{ width:"100%", padding:"11px 16px", background:T.surface,
+                      border:`1.5px solid ${T.border2}`, borderRadius:11,
+                      fontSize:13, fontWeight:700, color:T.ink, textAlign:"left", cursor:"pointer" }}>
+                    {b.label}
+                    <span style={{ float:"right", fontSize:10, color:T.muted }}>→ .csv</span>
+                  </button>
+                ))}
+                <button onClick={()=>window.print()}
+                  style={{ width:"100%", padding:"11px 16px", background:T.saffronL,
+                    border:`1.5px solid ${T.saffron}30`, borderRadius:11,
+                    fontSize:13, fontWeight:700, color:T.saffron, textAlign:"left", cursor:"pointer" }}>
+                  🖨️ Print / Save as PDF
+                  <span style={{ float:"right", fontSize:10, color:T.saffron, opacity:.7 }}>→ .pdf</span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* REQUESTS TAB */}
         {tab === "requests" && (
