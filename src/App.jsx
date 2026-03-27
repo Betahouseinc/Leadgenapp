@@ -638,7 +638,7 @@ function LoginScreen({ onLogin }) {
   // ── Step 1: Send OTP via Supabase Email ─────────────────────
   const sendOtp = async () => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes("@") || !trimmed.includes(".")) {
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setError("Enter a valid email address");
       return;
     }
@@ -660,49 +660,52 @@ function LoginScreen({ onLogin }) {
   };
 
   // ── Step 2: Verify OTP via Supabase ─────────────────────────
-  const verifyOtp = async () => {
-    if (otp.length !== 6)        { setError("Enter the 6-digit OTP"); return; }
-    if (!/^\d{6}$/.test(otp))    { setError("OTP must be 6 digits");  return; }
+  const verifyOtp = async (otpValue = otp) => {
+    if (otpValue.length !== 6)        { setError("Enter the 6-digit OTP"); return; }
+    if (!/^\d{6}$/.test(otpValue))    { setError("OTP must be 6 digits");  return; }
     setLoading(true);
     setError("");
     try {
       const { error: verifyErr } = await supabase.auth.verifyOtp({
         email,
-        token: otp,
+        token: otpValue,
         type:  "email",
       });
       if (verifyErr) throw verifyErr;
 
       // ── Check admin ──────────────────────────────────────────
       try {
-        const { data: adminRow } = await supabase
+        const { data: adminRow, error: adminErr } = await supabase
           .from("admin_phones").select("*")
           .eq("email", email).eq("is_active", true).maybeSingle();
+        if (adminErr) console.warn("Admin check failed:", adminErr.message);
         if (adminRow) {
+          setLoading(false);
           onLogin({ type: "admin", email, name: adminRow.name, role: adminRow.role });
           return;
         }
-      } catch (_) {}
+      } catch (adminEx) { console.warn("Admin check exception:", adminEx); }
 
       // ── Check existing owner ─────────────────────────────────
       const { data: existingOwner, error: ownerErr } = await supabase
         .from("owners").select("*").eq("email", email).maybeSingle();
       if (ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
-      if (existingOwner) { onLogin({ type: "owner", ...existingOwner }); return; }
+      if (existingOwner) { setLoading(false); onLogin({ type: "owner", ...existingOwner }); return; }
 
       // ── Check existing tenant ────────────────────────────────
-      const { data: existingTenant } = await supabase
+      const { data: existingTenant, error: tenantErr } = await supabase
         .from("tenants")
         .select("*, units(*, properties(*))")
         .eq("email", email)
         .eq("is_active", true)
         .maybeSingle();
-      if (existingTenant) { onLogin({ type: "tenant", ...existingTenant }); return; }
+      if (tenantErr) { setError("Tenant lookup error: " + tenantErr.message); setLoading(false); return; }
+      if (existingTenant) { setLoading(false); onLogin({ type: "tenant", ...existingTenant }); return; }
 
       // ── New user — pick role ─────────────────────────────────
       setStep("role");
     } catch (e) {
-      setError("Incorrect or expired OTP. Please try again.");
+      setError(e?.message || "Incorrect or expired OTP. Please try again.");
     }
     setLoading(false);
   };
@@ -873,7 +876,11 @@ function LoginScreen({ onLogin }) {
                 >Change</button>
               </div>
 
-              <OtpInput value={otp} onChange={v => { setOtp(v); setError(""); }} />
+              <OtpInput value={otp} onChange={v => {
+                setOtp(v);
+                setError("");
+                if (v.length === 6 && /^\d{6}$/.test(v)) verifyOtp(v);
+              }} />
 
               <div style={{
                 textAlign: "center", marginTop: 10, padding: "9px 14px",
