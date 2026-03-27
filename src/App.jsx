@@ -3957,6 +3957,8 @@ export default function App() {
     return null;
   };
 
+  // NOTE: loadProfile is intentionally excluded from useEffect deps —
+  // it is only called once on mount. Wrap in useCallback if deps ever change.
   useEffect(() => {
     // 1. Restore Supabase session on mount
     supabase.auth.getSession().then(async ({ data: { session } }) => {
