@@ -740,8 +740,8 @@ function LoginScreen({ onLogin }) {
         if (insertErr) throw insertErr;
         onLogin({ type: "tenant", ...tenant });
       }
-    } catch (e) {
-      setError("Could not create profile. Please try again.");
+    } catch(e) {
+      setError(e?.message || "Could not create profile. Please try again.");
     }
     setLoading(false);
   };
