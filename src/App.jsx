@@ -635,11 +635,24 @@ function LoginScreen({ onLogin }) {
     }
   }, [resendTimer]);
 
+  // ── Error classifier ────────────────────────────────────────
+  const classifyOtpError = (e) => {
+    const msg = e?.message?.toLowerCase() || "";
+    if (msg.includes("expired") || msg.includes("invalid") || msg.includes("not found"))
+      return "OTP expired — please request a new one.";
+    if (msg.includes("rate") || msg.includes("limit"))
+      return "Too many attempts. Please wait a moment and try again.";
+    if (msg.includes("network") || msg.includes("fetch"))
+      return "Something went wrong. Check your connection and try again.";
+    return "Something went wrong. Please try again.";
+  };
+
   // ── Step 1: Send OTP via Supabase Email ─────────────────────
   const sendOtp = async () => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setError("Enter a valid email address");
+    if (!trimmed) { setError("Enter your email."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError("Enter a valid email address.");
       return;
     }
     setLoading(true);
@@ -654,7 +667,11 @@ function LoginScreen({ onLogin }) {
       setStep("otp");
       setResendTimer(30);
     } catch (e) {
-      setError("Could not send OTP: " + (e?.message || "unknown error"));
+      const msg = e?.message?.toLowerCase() || "";
+      if (msg.includes("rate") || msg.includes("limit"))
+        setError("Too many attempts. Please wait a moment and try again.");
+      else
+        setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   };
@@ -662,8 +679,8 @@ function LoginScreen({ onLogin }) {
   // ── Step 2: Verify OTP via Supabase ─────────────────────────
   const verifyOtp = async (otpValue = otp) => {
     if (loading) return;
-    if (otpValue.length !== 6)        { setError("Enter the 6-digit OTP"); return; }
-    if (!/^\d{6}$/.test(otpValue))    { setError("OTP must be 6 digits");  return; }
+    if (otpValue.length !== 6) { setError("Enter the 6-digit code from your email."); return; }
+    if (!/^\d{6}$/.test(otpValue)) { setError("Invalid OTP. Please check and try again."); return; }
     setLoading(true);
     setError("");
     try {
@@ -690,7 +707,7 @@ function LoginScreen({ onLogin }) {
       // ── Check existing owner ─────────────────────────────────
       const { data: existingOwner, error: ownerErr } = await supabase
         .from("owners").select("*").eq("email", email).maybeSingle();
-      if (ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
+      if (ownerErr) { setError("Something went wrong. Please try again."); setLoading(false); return; }
       if (existingOwner) { setLoading(false); onLogin({ type: "owner", ...existingOwner }); return; }
 
       // ── Check existing tenant ────────────────────────────────
@@ -700,13 +717,13 @@ function LoginScreen({ onLogin }) {
         .eq("email", email)
         .eq("is_active", true)
         .maybeSingle();
-      if (tenantErr) { setError("Tenant lookup error: " + tenantErr.message); setLoading(false); return; }
+      if (tenantErr) { setError("Something went wrong. Please try again."); setLoading(false); return; }
       if (existingTenant) { setLoading(false); onLogin({ type: "tenant", ...existingTenant }); return; }
 
       // ── New user — pick role ─────────────────────────────────
       setStep("role");
     } catch (e) {
-      setError(e?.message || "Incorrect or expired OTP. Please try again.");
+      setError(classifyOtpError(e));
     }
     setLoading(false);
   };
