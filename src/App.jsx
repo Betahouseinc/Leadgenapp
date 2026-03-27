@@ -663,7 +663,7 @@ const downloadCSV = (filename, headers, rows) => {
   URL.revokeObjectURL(url);
 };
 
-function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole }) {
+function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole, onAddRole = () => {} }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -682,8 +682,45 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [newExp, setNewExp] = useState({ title:"", amount:"", category:"repair", unit_id:"", date:"", notes:"" });
   const [savingExp, setSavingExp] = useState(false);
+  const [selfTenantModal, setSelfTenantModal] = useState(false);
+  const [selfTenantForm, setSelfTenantForm] = useState({ property_address:"", monthly_rent:"", rent_due_day:"1", landlord_name:"", landlord_phone:"" });
+  const [selfTenantLoading, setSelfTenantLoading] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
+
+  const createSelfTenant = async () => {
+    if(!selfTenantForm.property_address.trim()) { showToast("Enter your property address"); return; }
+    if(!selfTenantForm.monthly_rent || isNaN(selfTenantForm.monthly_rent)) { showToast("Enter a valid rent amount"); return; }
+    setSelfTenantLoading(true);
+    try {
+      const { data: existing } = await supabase.from("tenants")
+        .select("*").eq("email", owner.email).eq("self_managed", true).maybeSingle();
+      if(existing) {
+        onAddRole("tenant", { type:"tenant", ...existing });
+        setSelfTenantModal(false);
+        showToast("Switched to your tenant profile");
+        setSelfTenantLoading(false);
+        return;
+      }
+      const { data: tenant, error } = await supabase.from("tenants").insert({
+        email: owner.email,
+        name: owner.name,
+        is_active: true,
+        self_managed: true,
+        landlord_name: selfTenantForm.landlord_name.trim() || null,
+        landlord_phone: selfTenantForm.landlord_phone.trim() || null,
+        property_address: selfTenantForm.property_address.trim(),
+        monthly_rent: Number(selfTenantForm.monthly_rent),
+        rent_due_day: Number(selfTenantForm.rent_due_day) || 1,
+      }).select("*").single();
+      if(error) throw error;
+      onAddRole("tenant", { type:"tenant", ...tenant });
+      setSelfTenantModal(false);
+    } catch(e) {
+      showToast("Could not create profile. Try again.");
+    }
+    setSelfTenantLoading(false);
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -1578,6 +1615,37 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 </div>
               );
             })()}
+
+            {/* ── TRACK MY OWN RENT ── */}
+            {!availableRoles.includes("tenant") ? (
+              <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:16, marginTop:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                  <span style={{ fontSize:22 }}>🏠</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:800, color:T.teal }}>Also Renting Somewhere?</div>
+                    <div style={{ fontSize:11, color:T.ink2 }}>Track your own rent — even if your landlord isn't on RentAI</div>
+                  </div>
+                </div>
+                <button onClick={() => setSelfTenantModal(true)}
+                  style={{ width:"100%", padding:"9px 0", background:T.teal, borderRadius:9,
+                    fontSize:12, fontWeight:800, color:"#fff", border:"none", cursor:"pointer" }}>
+                  + Add Tenant Profile
+                </button>
+              </div>
+            ) : (
+              <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:"12px 16px", marginTop:8,
+                display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:18 }}>🏠</span>
+                  <div style={{ fontSize:12, fontWeight:700, color:T.teal }}>You have a tenant profile</div>
+                </div>
+                <button onClick={() => onSwitchRole("tenant")}
+                  style={{ padding:"6px 14px", background:T.teal, borderRadius:8,
+                    fontSize:11, fontWeight:800, color:"#fff", border:"none", cursor:"pointer" }}>
+                  Switch →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -2379,6 +2447,52 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
         </div>
       </div>
 
+      {/* Self-managed tenant modal */}
+      {selfTenantModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000060", zIndex:200,
+          display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target === e.currentTarget) setSelfTenantModal(false); }}>
+          <div style={{ background:T.surface, borderRadius:"20px 20px 0 0", padding:24,
+            width:"100%", maxWidth:520, margin:"0 auto" }}>
+            <div style={{ fontWeight:900, fontSize:15, color:T.ink, marginBottom:4 }}>
+              Track Your Own Rent
+            </div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
+              Your landlord doesn't need to be on RentAI. Fill in your details and manage it yourself.
+            </div>
+            {[
+              { key:"property_address", label:"Property Address *", placeholder:"e.g. Flat 4B, Green Heights, Mumbai" },
+              { key:"monthly_rent",     label:"Monthly Rent (₹) *", placeholder:"e.g. 18000",  type:"number" },
+              { key:"rent_due_day",     label:"Rent Due Day (1–31)", placeholder:"e.g. 1",      type:"number" },
+              { key:"landlord_name",    label:"Landlord Name",       placeholder:"e.g. Rajesh Sharma" },
+              { key:"landlord_phone",   label:"Landlord Phone",      placeholder:"e.g. 9876543210" },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:T.ink2, marginBottom:4 }}>{f.label}</div>
+                <input value={selfTenantForm[f.key]}
+                  onChange={e => setSelfTenantForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  type={f.type || "text"} placeholder={f.placeholder}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10,
+                    border:`1.5px solid ${T.border}`, background:T.bg,
+                    color:T.ink, fontSize:13, fontFamily:"inherit", outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ display:"flex", gap:8, marginTop:4 }}>
+              <button onClick={() => setSelfTenantModal(false)}
+                style={{ flex:1, padding:"11px 0", background:T.panel, border:`1.5px solid ${T.border}`,
+                  borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={createSelfTenant} disabled={selfTenantLoading}
+                style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
+                  borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                {selfTenantLoading ? "Creating…" : "Create & Switch →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast msg={toast}/>
     </div>
   );
@@ -2389,6 +2503,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
 // ══════════════════════════════════════════════════════════════
 function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "tenant", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
+  const isSelfManaged = !!tenant.self_managed;
   const [tab, setTab] = useState("home");
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -2397,10 +2512,36 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
   const [toast, setToast] = useState(null);
   const [newReq, setNewReq] = useState({ title:"", description:"", priority:"medium" });
   const [submitting, setSubmitting] = useState(false);
-  const [upiModal, setUpiModal] = useState(null); // payment object or null
+  const [upiModal, setUpiModal] = useState(null);
+  const [logPayModal, setLogPayModal] = useState(false);
+  const [logPayForm, setLogPayForm] = useState({ amount: tenant.monthly_rent ? String(tenant.monthly_rent) : "", paid_date: new Date().toISOString().split("T")[0], notes:"" });
+  const [logPayLoading, setLogPayLoading] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
   const firstName = (tenant.name||"").split(" ")[0] || "there";
+
+  const logPayment = async () => {
+    if(!logPayForm.amount || isNaN(logPayForm.amount)) { showToast("Enter a valid amount"); return; }
+    setLogPayLoading(true);
+    try {
+      await supabase.from("payments").insert({
+        tenant_id: tenant.id,
+        type: "rent",
+        amount: Number(logPayForm.amount),
+        status: "paid",
+        paid_date: logPayForm.paid_date,
+        due_date: logPayForm.paid_date,
+        notes: logPayForm.notes.trim() || "Self-logged",
+      });
+      const { data: p } = await supabase.from("payments").select("*")
+        .eq("tenant_id", tenant.id).order("created_at", { ascending:false });
+      setPayments(p || []);
+      setLogPayModal(false);
+      setLogPayForm({ amount: tenant.monthly_rent ? String(tenant.monthly_rent) : "", paid_date: new Date().toISOString().split("T")[0], notes:"" });
+      showToast("Payment logged ✓");
+    } catch(e) { showToast("Failed to log payment. Try again."); }
+    setLogPayLoading(false);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -2410,7 +2551,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
           supabase.from("payments").select("*")
             .eq("tenant_id", tenant.id)
             .order("created_at", { ascending:false }),
-          supabase.from("maintenance_requests").select("*, units(unit_number)")
+          isSelfManaged ? { data:[] } : supabase.from("maintenance_requests").select("*, units(unit_number)")
             .eq("tenant_id", tenant.id)
             .order("created_at", { ascending:false }),
           tenant.unit_id ? supabase.from("units").select("*, properties(name, address)").eq("id", tenant.unit_id).single() : { data:null },
@@ -2422,7 +2563,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
       setLoading(false);
     };
     load();
-  }, [tenant.id, tenant.unit_id]);
+  }, [tenant.id, tenant.unit_id, isSelfManaged]);
 
   const submitRequest = async () => {
     if(!newReq.title.trim()) { showToast("Please describe the issue"); return; }
@@ -2547,8 +2688,43 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
               Hi {firstName}! 👋
             </div>
 
-            {/* Unit info */}
-            {unit ? (
+            {/* Unit / property info */}
+            {isSelfManaged ? (
+              <div style={{ background:`linear-gradient(135deg,${T.teal},${T.tealB})`,
+                borderRadius:18, padding:20, marginBottom:18, color:"#fff" }}>
+                <div style={{ fontSize:10, fontWeight:700, opacity:.8, letterSpacing:.5, marginBottom:3 }}>
+                  YOUR RENTAL
+                </div>
+                <div style={{ fontSize:15, fontWeight:900, letterSpacing:-.3, marginBottom:4, lineHeight:1.3 }}>
+                  {tenant.property_address || "Property"}
+                </div>
+                {tenant.landlord_name && (
+                  <div style={{ fontSize:12, opacity:.85, marginBottom:8 }}>Landlord: {tenant.landlord_name}</div>
+                )}
+                <div style={{ display:"flex", gap:16, marginTop:4 }}>
+                  {[["Rent", fd(tenant.monthly_rent||0)+"/mo"], ["Due Day", `${tenant.rent_due_day || 1}${["st","nd","rd"][((tenant.rent_due_day||1)%10)-1]||"th"} of month`]].map(([l,v])=>(
+                    <div key={l}><div style={{ fontSize:9, opacity:.75 }}>{l}</div><div style={{ fontSize:12, fontWeight:800 }}>{v}</div></div>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                  <button onClick={() => setLogPayModal(true)}
+                    style={{ flex:1, padding:"8px 0", background:"rgba(255,255,255,.2)",
+                      border:"1.5px solid rgba(255,255,255,.4)", borderRadius:9,
+                      fontSize:11, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                    + Log Payment
+                  </button>
+                  {tenant.landlord_phone && (
+                    <a href={`https://wa.me/91${tenant.landlord_phone.replace(/\D/g,"")}?text=${encodeURIComponent("Hi "+tenant.landlord_name+", I'm tracking our rent on RentAI. You can join here to manage it together: https://rentai.co.in")}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ flex:1, padding:"8px 0", background:"rgba(255,255,255,.2)",
+                        border:"1.5px solid rgba(255,255,255,.4)", borderRadius:9,
+                        fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none", textAlign:"center" }}>
+                      💬 Invite Landlord
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : unit ? (
               <div style={{ background:`linear-gradient(135deg,${T.teal},${T.tealB})`,
                 borderRadius:18, padding:20, marginBottom:18, color:"#fff" }}>
                 <div style={{ fontSize:10, fontWeight:700, opacity:.8, letterSpacing:.5, marginBottom:3 }}>
@@ -2807,6 +2983,46 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
             reloadPayments();
           }}
         />
+      )}
+
+      {/* Log Payment Modal (self-managed) */}
+      {logPayModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000060", zIndex:200,
+          display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target === e.currentTarget) setLogPayModal(false); }}>
+          <div style={{ background:T.surface, borderRadius:"20px 20px 0 0", padding:24,
+            width:"100%", maxWidth:520, margin:"0 auto" }}>
+            <div style={{ fontWeight:900, fontSize:15, color:T.ink, marginBottom:4 }}>Log Rent Payment</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>Record a payment you've already made.</div>
+            {[
+              { key:"amount",    label:"Amount (₹) *",  placeholder:"e.g. 18000", type:"number" },
+              { key:"paid_date", label:"Date Paid *",    type:"date" },
+              { key:"notes",     label:"Notes",          placeholder:"e.g. Paid via GPay" },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:T.ink2, marginBottom:4 }}>{f.label}</div>
+                <input value={logPayForm[f.key]}
+                  onChange={e => setLogPayForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  type={f.type || "text"} placeholder={f.placeholder || ""}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10,
+                    border:`1.5px solid ${T.border}`, background:T.bg,
+                    color:T.ink, fontSize:13, fontFamily:"inherit", outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ display:"flex", gap:8, marginTop:4 }}>
+              <button onClick={() => setLogPayModal(false)}
+                style={{ flex:1, padding:"11px 0", background:T.panel, border:`1.5px solid ${T.border}`,
+                  borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={logPayment} disabled={logPayLoading}
+                style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
+                  borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                {logPayLoading ? "Saving…" : "Save Payment ✓"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -4073,7 +4289,12 @@ export default function App() {
       localStorage.setItem("rentai_user", JSON.stringify(updated));
       setUser(updated);
     };
-    const common = { onLogout: handleLogout, isDark, onToggleTheme: toggleTheme, availableRoles, activeRole: user.activeRole, onSwitchRole: switchRole };
+    const addRole = (roleKey, roleData) => {
+      const updated = { ...user, roles: { ...user.roles, [roleKey]: roleData }, activeRole: roleKey };
+      localStorage.setItem("rentai_user", JSON.stringify(updated));
+      setUser(updated);
+    };
+    const common = { onLogout: handleLogout, isDark, onToggleTheme: toggleTheme, availableRoles, activeRole: user.activeRole, onSwitchRole: switchRole, onAddRole: addRole };
     if(user.activeRole === "admin")  return <AdminDashboard  admin={roleData}   {...common}/>;
     if(user.activeRole === "tenant") return <TenantDashboard tenant={roleData}  {...common}/>;
     if(user.activeRole === "owner")  return <OwnerDashboard  owner={roleData}   {...common}/>;
