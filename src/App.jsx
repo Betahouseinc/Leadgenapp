@@ -1427,7 +1427,7 @@ function OwnerDashboard({ owner, onLogout }) {
   const resolveRequest = async (id) => {
     await supabase.from("maintenance_requests").update({ status:"resolved", resolved_at:new Date().toISOString() }).eq("id", id);
     showToast("Marked as resolved ✓");
-    loadData();
+    await loadData();
   };
 
   const occupied = units.filter(u => u.is_occupied);
@@ -1622,7 +1622,7 @@ function OwnerDashboard({ owner, onLogout }) {
               {[
                 { id:"occupied", icon:"🏡", label:"Occupied", value:`${occupied.length}/${units.length}`, sub:`${units.length-occupied.length} vacant`, color:T.teal, light:T.tealL },
                 { id:"pending", icon:"⚠️", label:"Rent Pending", value:pendingPayments.length, sub:fd(totalPending)+" due", color:T.rose, light:T.roseL },
-                { id:"requests", icon:"🔧", label:"Open Requests", value:openReqs, sub:"maintenance", color:T.sky, light:T.skyL },
+                { id:"requests", icon:"🔧", label:"Open Requests", value:openReqs, sub: openReqs === 0 ? "all clear ✓" : "maintenance", color: openReqs === 0 ? T.teal : T.sky, light: openReqs === 0 ? T.tealL : T.skyL },
                 { id:"units", icon:"📋", label:"Total Units", value:units.length, sub:"in portfolio", color:T.amber, light:T.amberL },
               ].map(s => (
                 <div key={s.id} onClick={()=>setExpandedTile(expandedTile===s.id?null:s.id)}
