@@ -3660,11 +3660,14 @@ function LandingPage({ onGetStarted }) {
             background:T.saffronL, padding:"2px 8px", borderRadius:20,
             border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
         </div>
-        <button onClick={onGetStarted} className="ghost-btn"
-          style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
-            border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
-          Login / Get Started →
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
+              border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
+            Login / Get Started →
+          </button>
+        </div>
       </nav>
 
       {/* ── HERO ── */}
