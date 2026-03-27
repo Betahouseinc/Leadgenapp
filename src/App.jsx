@@ -254,7 +254,7 @@ const OtpInput = ({ value, onChange }) => (
 // ══════════════════════════════════════════════════════════════
 function LoginScreen({ onLogin }) {
   const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("Bengaluru");
@@ -262,8 +262,6 @@ function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [sessionId, setSessionId] = useState(null);
-  const [otpSentAt, setOtpSentAt] = useState(null); // timestamp when OTP was sent
 
   useEffect(() => {
     if(resendTimer > 0) {
@@ -273,40 +271,14 @@ function LoginScreen({ onLogin }) {
   }, [resendTimer]);
 
   const sendOtp = async () => {
-    if(phone.length !== 10) { setError("Enter a valid 10-digit WhatsApp number"); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Enter a valid email address"); return; }
     setLoading(true); setError("");
     try {
-      const arr = new Uint32Array(1);
-      crypto.getRandomValues(arr);
-      const code    = String(arr[0] % 1000000).padStart(6, "0");
-      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      // Invalidate old OTPs
-      await supabase.from("otp_sessions")
-        .update({ used: true })
-        .eq("phone", `+91${phone}`)
-        .eq("used", false);
-
-      // Save OTP to DB
-      const sentAt = new Date().toISOString();
-      const { error: insertErr } = await supabase.from("otp_sessions")
-        .insert({ phone: `+91${phone}`, otp_code: code, expires_at: expires });
-
-      if(insertErr) {
-        setError("DB error: " + insertErr.message);
-        setLoading(false);
-        return;
-      }
-
-      setOtpSentAt(sentAt);
-
-      // Send WhatsApp via Edge Function (fire and forget)
-      fetch(`${SUPABASE_URL}/functions/v1/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phone}`, code }),
-      }).catch(() => {});
-
+      const { error: authErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
+      if(authErr) { setError(authErr.message); setLoading(false); return; }
       setStep("otp");
       setResendTimer(30);
     } catch(e) {
@@ -316,64 +288,29 @@ function LoginScreen({ onLogin }) {
   };
 
   const verifyOtp = async () => {
-    if(otp.length !== 6) { setError("Enter the 6-digit OTP"); return; }
-    if(!/^\d{6}$/.test(otp)) { setError("OTP must be 6 digits"); return; }
+    if(otp.length !== 6) { setError("Enter the 6-digit code"); return; }
+    if(!/^\d{6}$/.test(otp)) { setError("Code must be 6 digits"); return; }
     setLoading(true); setError("");
     try {
-
-      // ── Demo account bypass ──────────────────────────────────
-      // Only works for phones marked is_demo=true in demo_accounts table
-      if(otp === "123456") {
-        const { data: demoRow } = await supabase
-          .from("demo_accounts")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("is_active", true)
-          .maybeSingle();
-
-        if(!demoRow) {
-          setError("Incorrect OTP. Please try again.");
-          setLoading(false);
-          return;
-        }
-        // Demo account verified — fall through to role check below
-      } else {
-        // Normal OTP verification
-        const { data: sessions, error: readErr } = await supabase
-          .from("otp_sessions")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("used", false)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if(readErr) { setError("DB read error: " + readErr.message); setLoading(false); return; }
-
-        const session = sessions?.[0];
-        if(!session) { setError("OTP not found. Please request a new one."); setLoading(false); return; }
-        if(new Date(session.expires_at) < new Date()) { setError("OTP expired. Please request a new one."); setLoading(false); return; }
-        if(String(session.otp_code).trim() !== String(otp).trim()) { setError("Incorrect OTP. Please try again."); setLoading(false); return; }
-
-        await supabase.from("otp_sessions").update({ used: true }).eq("id", session.id);
-      }
+      const { error: authErr } = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
+      if(authErr) { setError("Incorrect code. Please try again."); setLoading(false); return; }
 
       // Check if admin
       try {
         const { data: adminRow } = await supabase
           .from("admin_phones").select("*")
-          .eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
-        if(adminRow) { onLogin({ type:"admin", phone:`+91${phone}`, name:adminRow.name, role:adminRow.role }); return; }
+          .eq("email", email).eq("is_active", true).maybeSingle();
+        if(adminRow) { onLogin({ type:"admin", email, name:adminRow.name, role:adminRow.role }); return; }
       } catch(_) {}
 
       // Check if owner
-      const { data: existingOwner, error: ownerErr } = await supabase
-        .from("owners").select("*").eq("phone", `+91${phone}`).maybeSingle();
-      if(ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
+      const { data: existingOwner } = await supabase
+        .from("owners").select("*").eq("email", email).maybeSingle();
       if(existingOwner) { onLogin({ type:"owner", ...existingOwner }); return; }
 
       // Check if tenant
       const { data: existingTenant } = await supabase
-        .from("tenants").select("*, units(*, properties(*))").eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
+        .from("tenants").select("*, units(*, properties(*))").eq("email", email).eq("is_active", true).maybeSingle();
       if(existingTenant) { onLogin({ type:"tenant", ...existingTenant }); return; }
 
       setStep("role");
@@ -391,7 +328,7 @@ function LoginScreen({ onLogin }) {
       if(role === "owner") {
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ phone:`+91${phone}`, name:name.trim(), city, beta_user:true })
+          .insert({ email, name:name.trim(), city, beta_user:true })
           .select("*").single();
         if(insertErr) throw insertErr;
         onLogin({ type:"owner", ...owner });
@@ -399,7 +336,7 @@ function LoginScreen({ onLogin }) {
         // Tenant self-registration — no unit assigned yet
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
-          .insert({ phone:`+91${phone}`, name:name.trim(), is_active:true, owner_id:null })
+          .insert({ email, name:name.trim(), is_active:true, owner_id:null })
           .select("*").single();
         if(insertErr) throw insertErr;
         onLogin({ type:"tenant", ...tenant });
@@ -430,65 +367,30 @@ function LoginScreen({ onLogin }) {
         <div style={{ background:T.surface, borderRadius:20, padding:28,
           border:`1.5px solid ${T.border}`, boxShadow:"0 4px 24px rgba(0,0,0,.06)" }}>
 
-          {/* STEP: PHONE */}
+          {/* STEP: EMAIL */}
           {step === "phone" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Owner Login</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Sign in to RentAI</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                We'll send a 6-digit OTP to your WhatsApp
+                We'll send a 6-digit code to your email
               </div>
               <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
-                textTransform:"uppercase", marginBottom:8 }}>WhatsApp Number</div>
-              <PhoneInput value={phone} onChange={setPhone} disabled={loading}/>
+                textTransform:"uppercase", marginBottom:8 }}>Email Address</div>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value.trim())}
+                placeholder="you@example.com" disabled={loading}
+                style={{ width:"100%", padding:"12px 14px", background:T.panel,
+                  border:`1.5px solid ${T.border2}`, borderRadius:12, fontSize:15,
+                  fontWeight:600, color:T.ink, fontFamily:"inherit" }}
+              />
               {error && <div style={{ color:T.rose, fontSize:12, marginTop:8, fontWeight:600 }}>{error}</div>}
               <button onClick={sendOtp} disabled={loading}
                 style={{ width:"100%", marginTop:20, padding:14,
                   background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                   border:"none", borderRadius:12, fontSize:15, fontWeight:800,
                   color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Send OTP on WhatsApp →"}
+                {loading ? <Spinner/> : "Send Login Code →"}
               </button>
-
-              {/* Demo login buttons — quick fill for test accounts */}
-              <div style={{ marginTop:20, padding:14, background:T.panel,
-                border:`1.5px dashed ${T.border2}`, borderRadius:12 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:T.muted,
-                  letterSpacing:.5, textTransform:"uppercase", marginBottom:10 }}>
-                  🧪 Demo Accounts
-                </div>
-                <div style={{ display:"flex", gap:8 }}>
-                  {[
-                    { label:"👤 Owner", phone:"9999999999" },
-                    { label:"🏠 Tenant", phone:"8888888888" },
-                  ].map(d => (
-                    <button key={d.phone} onClick={async () => {
-                      setPhone(d.phone);
-                      setLoading(true); setError("");
-                      // Send OTP then auto-fetch and fill it
-                      const arr = new Uint32Array(1);
-                      crypto.getRandomValues(arr);
-                      const code = String(arr[0] % 1000000).padStart(6, "0");
-                      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-                      await supabase.from("otp_sessions").update({ used:true }).eq("phone",`+91${d.phone}`).eq("used",false);
-                      await supabase.from("otp_sessions").insert({ phone:`+91${d.phone}`, otp_code:code, expires_at:expires });
-                      setOtpSentAt(new Date().toISOString());
-                      setStep("otp");
-                      setResendTimer(30);
-                      setOtp(code); // auto-fill OTP
-                      setLoading(false);
-                    }}
-                      style={{ flex:1, padding:"9px 6px", background:T.surface,
-                        border:`1.5px solid ${T.border2}`, borderRadius:10,
-                        fontSize:12, fontWeight:800, color:T.ink2,
-                        cursor:"pointer", fontFamily:"inherit" }}>
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
-                  Auto-fills OTP · No WhatsApp needed
-                </div>
-              </div>
 
               <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:T.muted }}>
                 New to RentAI?{" "}
@@ -504,9 +406,9 @@ function LoginScreen({ onLogin }) {
           {/* STEP: OTP */}
           {step === "otp" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Enter OTP</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Check your email</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                Sent to WhatsApp <strong style={{ color:T.ink }}>+91 {phone}</strong>
+                Code sent to <strong style={{ color:T.ink }}>{email}</strong>
                 <button onClick={()=>{setStep("phone");setOtp("");setError("");}}
                   style={{ background:"none", border:"none", color:T.saffron,
                     fontWeight:700, fontSize:12, marginLeft:8, cursor:"pointer" }}>Change</button>
@@ -515,10 +417,10 @@ function LoginScreen({ onLogin }) {
               <div style={{ textAlign:"center", marginTop:10, padding:"9px 14px",
                 background:T.saffronL, border:`1px solid ${T.saffron}25`,
                 borderRadius:10, fontSize:12, color:T.ink2, lineHeight:1.6 }}>
-                🔐 During beta, use the access code sent to you on WhatsApp by the RentAI team.
+                📧 Enter the 6-digit code from your email. Check spam if you don't see it.
                 <br/>
                 <span style={{ fontSize:11, color:T.muted }}>
-                  Haven't received it? Email <a href="mailto:support@rentai.co.in"
+                  Need help? Email <a href="mailto:support@rentai.co.in"
                   style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>support@rentai.co.in</a>
                 </span>
               </div>
