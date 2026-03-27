@@ -1,12 +1,14 @@
-import { T } from "../../../theme";
+import { useTheme } from "../../../shared/contexts/ThemeContext";
 
 /**
- * Sticky top bar: welcome greeting, property name, role badge, logout.
+ * Sticky top bar: welcome greeting, property name, role badge, theme toggle, logout.
  *
  * @param {{ name: string, role: string, property: string }} user
  * @param {() => void} onLogout
  */
 export default function DashboardHeader({ user, onLogout }) {
+  const { T, isDark, toggle } = useTheme();
+
   return (
     <header
       style={{
@@ -44,22 +46,41 @@ export default function DashboardHeader({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Logout */}
-        <button
-          onClick={onLogout}
-          style={{
-            background: "transparent",
-            border: `1.5px solid ${T.border}`,
-            borderRadius: 8,
-            padding: "5px 12px",
-            fontSize: 11,
-            fontWeight: 700,
-            color: T.muted,
-            marginTop: 4,
-          }}
-        >
-          Logout
-        </button>
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{
+              background: T.panel,
+              border: `1.5px solid ${T.border}`,
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 14,
+              lineHeight: 1,
+              color: T.ink2,
+            }}
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
+
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            style={{
+              background: "transparent",
+              border: `1.5px solid ${T.border}`,
+              borderRadius: 8,
+              padding: "5px 12px",
+              fontSize: 11,
+              fontWeight: 700,
+              color: T.muted,
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </header>
   );

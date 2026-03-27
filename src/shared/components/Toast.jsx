@@ -1,10 +1,11 @@
-import { T } from "../../theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 /**
  * Fixed-position toast notification.
  * Renders nothing when `msg` is null/empty.
  */
 export default function Toast({ msg }) {
+  const { T } = useTheme();
   if (!msg) return null;
 
   return (

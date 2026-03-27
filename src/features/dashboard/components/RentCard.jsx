@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { STATUS_CONFIG } from "../../../theme";
+import { useTheme } from "../../../shared/contexts/ThemeContext";
 import { fd } from "../../../utils/currency";
 import { fmt } from "../../../utils/date";
 
@@ -13,6 +13,7 @@ import { fmt } from "../../../utils/date";
  * @param {Function} onSendReminder  - (rent: object) => void
  */
 export default function RentCard({ rent, derivedStatus, onMarkPaid, onSendReminder }) {
+  const { STATUS_CONFIG } = useTheme();
   const [loading, setLoading] = useState(false);
   const cfg    = STATUS_CONFIG[derivedStatus] ?? STATUS_CONFIG.upcoming;
   const isPaid = derivedStatus === "paid";

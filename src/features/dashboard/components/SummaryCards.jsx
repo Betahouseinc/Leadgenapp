@@ -1,10 +1,4 @@
-import { T } from "../../../theme";
-
-const CARDS = [
-  { key: "dueToday",     icon: "📅", label: "Due Today", color: T.amber,  bg: T.amberL },
-  { key: "overdueCount", icon: "🚨", label: "Overdue",   color: T.rose,   bg: T.roseL  },
-  { key: "pendingCount", icon: "🔔", label: "Reminders", color: T.sky,    bg: T.skyL   },
-];
+import { useTheme } from "../../../shared/contexts/ThemeContext";
 
 /**
  * Three-card grid showing today's rent summary.
@@ -14,7 +8,14 @@ const CARDS = [
  * @param {number} pendingCount
  */
 export default function SummaryCards({ dueToday, overdueCount, pendingCount }) {
+  const { T } = useTheme();
   const values = { dueToday, overdueCount, pendingCount };
+
+  const CARDS = [
+    { key: "dueToday",     icon: "📅", label: "Due Today", color: T.amber,  bg: T.amberL },
+    { key: "overdueCount", icon: "🚨", label: "Overdue",   color: T.rose,   bg: T.roseL  },
+    { key: "pendingCount", icon: "🔔", label: "Reminders", color: T.sky,    bg: T.skyL   },
+  ];
 
   return (
     <div

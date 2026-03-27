@@ -1,22 +1,24 @@
-import { T, GLOBAL_CSS } from "../../theme";
+import { GLOBAL_CSS } from "../../theme";
 import { mockUser } from "../../data/mockData";
 import { useDashboard } from "./hooks/useDashboard";
+import { ThemeProvider, useTheme } from "../../shared/contexts/ThemeContext";
 import DashboardHeader from "./components/DashboardHeader";
 import RentCard        from "./components/RentCard";
 import SummaryCards    from "./components/SummaryCards";
 import Timeline        from "./components/Timeline";
 import Toast           from "../../shared/components/Toast";
 
-const SectionLabel = ({ children }) => (
-  <div style={{ fontSize: 10, fontWeight: 800, color: T.muted, letterSpacing: 0.8, marginBottom: 10 }}>
-    {children}
-  </div>
-);
+const SectionLabel = ({ children }) => {
+  const { T } = useTheme();
+  return (
+    <div style={{ fontSize: 10, fontWeight: 800, color: T.muted, letterSpacing: 0.8, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+};
 
-/**
- * Action-first Owner Dashboard — thin presenter, all logic in useDashboard.
- */
-export default function Dashboard() {
+function DashboardInner() {
+  const { T } = useTheme();
   const { rentsWithStatus, heroRent, summary, markPaid, sendReminder, toastMsg } = useDashboard();
 
   const handleLogout = () => {
@@ -61,5 +63,16 @@ export default function Dashboard() {
 
       <Toast msg={toastMsg} />
     </div>
+  );
+}
+
+/**
+ * Action-first Owner Dashboard — wraps inner content with ThemeProvider.
+ */
+export default function Dashboard() {
+  return (
+    <ThemeProvider>
+      <DashboardInner />
+    </ThemeProvider>
   );
 }

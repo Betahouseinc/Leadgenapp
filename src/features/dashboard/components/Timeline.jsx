@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T, STATUS_CONFIG } from "../../../theme";
+import { useTheme } from "../../../shared/contexts/ThemeContext";
 import { fd } from "../../../utils/currency";
 import { fmtShort } from "../../../utils/date";
 
@@ -10,6 +10,7 @@ import { fmtShort } from "../../../utils/date";
  * @param {Array} rents - Rent records with `derivedStatus` attached.
  */
 export default function Timeline({ rents }) {
+  const { T, STATUS_CONFIG } = useTheme();
   const [showAll, setShowAll] = useState(false);
 
   const today          = new Date();
