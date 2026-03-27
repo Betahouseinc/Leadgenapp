@@ -405,7 +405,7 @@ function LoginScreen({ onLogin }) {
         onLogin({ type:"tenant", ...tenant });
       }
     } catch(e) {
-      setError("Could not create profile. Please try again.");
+      setError(e?.message || "Could not create profile. Please try again.");
     }
     setLoading(false);
   };
