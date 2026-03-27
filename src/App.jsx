@@ -3919,43 +3919,53 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   const [showLanding, setShowLanding] = useState(true);
 
-  const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  // ── Load profile from DB by email ───────────────────────────
+  const loadProfile = async (email) => {
+    try {
+      const { data: adminRow } = await supabase
+        .from("admin_phones").select("*")
+        .eq("email", email).eq("is_active", true).maybeSingle();
+      if (adminRow) return { type: "admin", email, name: adminRow.name, role: adminRow.role };
+    } catch (_) {}
+
+    const { data: owner } = await supabase
+      .from("owners").select("*").eq("email", email).maybeSingle();
+    if (owner) return { type: "owner", ...owner };
+
+    const { data: tenant } = await supabase
+      .from("tenants").select("*, units(*, properties(*))")
+      .eq("email", email).eq("is_active", true).maybeSingle();
+    if (tenant) return { type: "tenant", ...tenant };
+
+    return null;
+  };
 
   useEffect(() => {
-    const saved = localStorage.getItem("rentai_user");
-    if(saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Check session expiry
-        if(!parsed.session_exp || Date.now() > parsed.session_exp) {
-          localStorage.removeItem("rentai_user");
-          setChecking(false);
-          return;
-        }
-        if(parsed.type === "admin") {
-          setUser(parsed);
-          setShowLanding(false);
-          setChecking(false);
-          return;
-        }
-        const table = parsed.type === "tenant" ? "tenants" : "owners";
-        supabase.from(table).select("*").eq("id", parsed.id).single()
-          .then(({ data }) => {
-            if(data) { setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data }); setShowLanding(false); }
-            setChecking(false);
-          });
-      } catch { localStorage.removeItem("rentai_user"); setChecking(false); }
-    } else { setChecking(false); }
+    // 1. Restore Supabase session on mount
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user?.email) {
+        const profile = await loadProfile(session.user.email);
+        if (profile) { setUser(profile); setShowLanding(false); }
+      }
+      setChecking(false);
+    });
+
+    // 2. Listen for token refresh and sign-out events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") setUser(null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogin = (userData) => {
-    const session = { ...userData, session_exp: Date.now() + SESSION_TTL_MS };
-    localStorage.setItem("rentai_user", JSON.stringify(session));
-    setUser(session);
+    setUser(userData);
+    setShowLanding(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("rentai_user");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("rentai_user"); // clean up any legacy key
     setUser(null);
   };
 
