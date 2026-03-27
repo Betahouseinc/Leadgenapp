@@ -526,9 +526,9 @@ function LoginScreen({ onLogin }) {
 
         <div style={{ textAlign:"center", marginTop:16, fontSize:11, color:T.muted }}>
           By logging in you agree to our{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Terms</span>
+          <a href="/legal/terms" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Terms</a>
           {" "}and{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Privacy Policy</span>
+          <a href="/legal/privacy" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Privacy Policy</a>
         </div>
       </div>
     </div>
@@ -1535,6 +1535,49 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 )}
               </div>
             )}
+
+            {/* ── REFER & EARN ── */}
+            {(() => {
+              const refCode = (owner.name || "").replace(/\s+/g,"").toUpperCase().slice(0,6) + (owner.id||"").toString().slice(-4).toUpperCase();
+              const refLink = `https://rentai.co.in?ref=${refCode}`;
+              const refMsg  = `Hey! I use RentAI to manage my rental properties. Try it free → ${refLink}`;
+              return (
+                <div style={{ background:`linear-gradient(135deg,${T.plum}15,${T.plum}08)`,
+                  border:`1.5px solid ${T.plum}30`, borderRadius:16, padding:16, marginTop:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                    <span style={{ fontSize:22 }}>🎁</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.plum }}>Refer & Earn</div>
+                      <div style={{ fontSize:11, color:T.ink2 }}>Get 1 month free for every 2 owners you refer</div>
+                    </div>
+                  </div>
+                  <div style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:8,
+                    padding:"8px 12px", fontSize:12, fontWeight:700, color:T.ink2,
+                    marginBottom:12, letterSpacing:.3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ color:T.plum }}>{refCode}</span>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ background:"none", border:"none", fontSize:11, color:T.muted,
+                        fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      📋 Copy link
+                    </button>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(refMsg)}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ flex:1, padding:"8px 0", background:"#25D366", borderRadius:9,
+                        fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none",
+                        textAlign:"center" }}>
+                      💬 Share on WhatsApp
+                    </a>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ flex:1, padding:"8px 0", background:T.plumL, border:`1px solid ${T.plum}30`,
+                        borderRadius:9, fontSize:11, fontWeight:800, color:T.plum, cursor:"pointer" }}>
+                      🔗 Copy referral link
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -3898,10 +3941,50 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* ── SHARE SECTION ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`, padding:"28px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI 🏡</div>
+        <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>Help fellow property owners manage rent effortlessly</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { label:"WhatsApp", icon:"💬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI — AI-powered rent management for Indian landlords 🏡 https://rentai.co.in")}` },
+            { label:"Twitter / X", icon:"𝕏", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India — built for Indian landlords 🇮🇳 https://rentai.co.in")}` },
+            { label:"LinkedIn", icon:"in", color:"#0A66C2", url:`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://rentai.co.in")}` },
+          ].map(s => (
+            <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+                background:s.color, color:"#fff", borderRadius:10, fontSize:12, fontWeight:800,
+                textDecoration:"none", letterSpacing:.2 }}>
+              <span style={{ fontWeight:900 }}>{s.icon}</span> {s.label}
+            </a>
+          ))}
+          <button onClick={()=>{ navigator.clipboard.writeText("https://rentai.co.in"); }}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+              background:T.surface, border:`1.5px solid ${T.border2}`, color:T.ink2,
+              borderRadius:10, fontSize:12, fontWeight:800, cursor:"pointer" }}>
+            🔗 Copy Link
+          </button>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"20px",
-        textAlign:"center", color:T.muted, fontSize:11, fontWeight:700 }}>
-        © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"24px 20px", textAlign:"center" }}>
+        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:12 }}>
+          {[
+            { label:"Privacy Policy", href:"/legal/privacy" },
+            { label:"Terms of Use", href:"/legal/terms" },
+            { label:"Security", href:"/legal/security" },
+            { label:"Data Protection", href:"/legal/data-protection" },
+          ].map(l => (
+            <a key={l.href} href={l.href}
+              style={{ fontSize:11, fontWeight:700, color:T.muted, textDecoration:"none" }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ color:T.muted, fontSize:11, fontWeight:700 }}>
+          © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+        </div>
       </footer>
     </div>
   );
