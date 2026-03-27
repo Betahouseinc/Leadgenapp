@@ -531,7 +531,7 @@ function LoginScreen({ onLogin }) {
                   color:otp.length===6?"#fff":T.muted,
                   display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                   transition:"all .2s" }}>
-                {loading ? <Spinner/> : "Verify & Login →"}
+                {loading ? <Spinner/> : "Verify & Get Started →"}
               </button>
               <div style={{ textAlign:"center", marginTop:14, fontSize:12, color:T.muted }}>
                 {resendTimer > 0
@@ -3497,7 +3497,7 @@ function LandingPage({ onGetStarted }) {
         <button onClick={onGetStarted} className="ghost-btn"
           style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
             border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
-          Login →
+          Get Started →
         </button>
       </nav>
 
