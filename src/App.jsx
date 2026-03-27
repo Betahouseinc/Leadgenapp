@@ -68,7 +68,7 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   const [submitting, setSubmitting] = useState(false);
   const [utrError, setUtrError] = useState("");
 
-  const upiId = "rentoksupport@oksbi";
+  const upiId = tenant?.units?.properties?.upi_id || payment?.upi_id || "";
   const amount = payment.amount;
   const name = encodeURIComponent("RentAI");
   const note = encodeURIComponent(`${payment.type} - ${tenant.name}`);
@@ -212,6 +212,369 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════════
+// LANDING PAGE
+// ══════════════════════════════════════════════════════════════
+const LANDING_CSS = `
+  @keyframes floatA { 0%,100%{transform:translateY(0px) rotate(-3deg)} 50%{transform:translateY(-12px) rotate(-3deg)} }
+  @keyframes floatB { 0%,100%{transform:translateY(0px) rotate(2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+  @keyframes floatC { 0%,100%{transform:translateY(0px) rotate(-1deg)} 50%{transform:translateY(-14px) rotate(-1deg)} }
+  @keyframes slideIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes badgePop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .land-hero { animation: slideIn .6s ease both; }
+  .land-h2   { animation: slideIn .6s .1s ease both; }
+  .land-sub  { animation: slideIn .6s .2s ease both; }
+  .land-cta  { animation: slideIn .6s .3s ease both; }
+  .land-cards{ animation: slideIn .6s .4s ease both; }
+  .float-a   { animation: floatA 4s ease-in-out infinite; }
+  .float-b   { animation: floatB 5s ease-in-out infinite; }
+  .float-c   { animation: floatC 3.5s ease-in-out infinite; }
+  .badge-pop { animation: badgePop .5s .8s ease both; }
+  .grad-btn  { background-size:200% 200%; animation: gradShift 4s ease infinite; }
+  .feat-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.10); }
+  .feat-card { transition: transform .25s ease, box-shadow .25s ease; }
+  .step-dot:hover { transform:scale(1.1); }
+  .step-dot { transition: transform .2s ease; }
+  .cta-btn:hover { opacity:.92; transform:translateY(-1px); box-shadow:0 12px 36px ${T.saffron}55; }
+  .cta-btn { transition: all .2s ease; }
+  .ghost-btn:hover { background:${T.saffronL}; border-color:${T.saffron}; color:${T.saffron}; }
+  .ghost-btn { transition: all .2s ease; }
+`;
+
+function LandingPage({ onGetStarted }) {
+  const [pricingYearly, setPricingYearly] = useState(true);
+  const features = [
+    { icon:"🏠", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance — no spreadsheets.", color:T.saffron, bg:T.saffronL },
+    { icon:"💸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
+    { icon:"📲", title:"WhatsApp OTP Login", desc:"No passwords. Landlords and tenants login with a quick WhatsApp verification.", color:T.sky, bg:T.skyL },
+    { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
+    { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
+    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants via WhatsApp before due date.", color:T.rose, bg:T.roseL },
+  ];
+
+  const steps = [
+    { n:"1", title:"Sign up with WhatsApp", desc:"Enter your number, get an OTP — you're in within 30 seconds." },
+    { n:"2", title:"Add your properties & units", desc:"Set rent amounts, due dates, and invite your tenants." },
+    { n:"3", title:"Collect rent effortlessly", desc:"Tenants pay via UPI. You see it confirmed in real time." },
+  ];
+
+  const stats = [
+    { value:"₹0", label:"Setup cost" },
+    { value:"30s", label:"To get started" },
+    { value:"100%", label:"UPI compatible" },
+    { value:"24/7", label:"Access anywhere" },
+  ];
+
+  return (
+    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
+      <style>{CSS}{LANDING_CSS}</style>
+
+      {/* ── NAV ── */}
+      <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
+        backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
+        padding:"0 20px", height:58, display:"flex", alignItems:"center",
+        justifyContent:"space-between", maxWidth:960, margin:"0 auto" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+          <div style={{ width:34, height:34, borderRadius:10,
+            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:18, boxShadow:`0 4px 12px ${T.saffron}40` }}>🏡</div>
+          <span style={{ fontSize:18, fontWeight:900, color:T.ink, letterSpacing:-.3 }}>RentAI</span>
+          <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
+            background:T.saffronL, padding:"2px 8px", borderRadius:20,
+            border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
+        </div>
+        <button onClick={onGetStarted} className="ghost-btn"
+          style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
+            border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
+          Login →
+        </button>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"56px 20px 40px", textAlign:"center" }}>
+
+        {/* Badge */}
+        <div className="badge-pop" style={{ display:"inline-flex", alignItems:"center", gap:7,
+          background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:30,
+          padding:"6px 16px", marginBottom:24, fontSize:12, fontWeight:800, color:T.teal }}>
+          <span>✨</span> Built for Indian landlords
+        </div>
+
+        {/* Headline */}
+        <h1 className="land-hero" style={{ fontSize:"clamp(28px,7vw,52px)", fontWeight:900,
+          color:T.ink, lineHeight:1.15, letterSpacing:-.5, marginBottom:18 }}>
+          Manage rent.{" "}
+          <span style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            Effortlessly.
+          </span>
+        </h1>
+
+        {/* Sub */}
+        <p className="land-sub" style={{ fontSize:"clamp(14px,3.5vw,18px)", color:T.ink2,
+          maxWidth:520, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
+          RentAI is your AI powered rental manager — collect rent, track expenses, manage tenants,
+          and handle maintenance — all in one place. No Excel. No chasing.
+        </p>
+
+        {/* CTAs */}
+        <div className="land-cta" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+          <button onClick={onGetStarted} className="cta-btn grad-btn"
+            style={{ padding:"14px 32px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB},${T.amber})` }}>
+            Get Started Free →
+          </button>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"14px 28px", borderRadius:14, fontSize:15, fontWeight:800,
+              border:`2px solid ${T.border2}`, background:T.surface, color:T.ink2, cursor:"pointer" }}>
+            I'm a Tenant
+          </button>
+        </div>
+
+        {/* Social proof */}
+        <div style={{ marginTop:28, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}>
+          {["🔒 Secure OTP login", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+            <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
+              background:T.panel, border:`1px solid ${T.border}`,
+              padding:"4px 12px", borderRadius:20 }}>{t}</span>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FLOATING CARDS (visual) ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"8px 20px 48px" }}>
+        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { cls:"float-a", emoji:"🏠", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
+            { cls:"float-b", emoji:"✅", label:"Payment received!", sub:"₹18,500 via GPay · UTR confirmed", color:T.teal, bg:T.tealL },
+            { cls:"float-c", emoji:"🔧", label:"Maintenance request", sub:"Water leakage – Unit 4B", color:T.sky, bg:T.skyL },
+          ].map(c => (
+            <div key={c.label} className={c.cls}
+              style={{ background:T.card, border:`2px solid ${c.color}25`,
+                borderRadius:18, padding:"16px 20px", minWidth:200, maxWidth:260,
+                boxShadow:`0 8px 24px ${c.color}18`, flex:"1 1 200px" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>{c.emoji}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:3 }}>{c.label}</div>
+              <div style={{ fontSize:11, color:T.muted, fontWeight:600 }}>{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STATS STRIP ── */}
+      <section style={{ background:T.ink, padding:"28px 20px" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", display:"flex",
+          justifyContent:"space-around", flexWrap:"wrap", gap:20 }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ textAlign:"center" }}>
+              <div style={{ fontSize:28, fontWeight:900, color:T.saffron }}>{s.value}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#9C8E7A", marginTop:2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+          <h2 className="land-h2" style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900,
+            color:T.ink, letterSpacing:-.3, marginBottom:10 }}>
+            Everything a landlord needs
+          </h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            No complexity. Just tools that work.
+          </p>
+        </div>
+        <div className="land-cards" style={{ display:"grid",
+          gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
+          {features.map(f => (
+            <div key={f.title} className="feat-card"
+              style={{ background:T.card, border:`1.5px solid ${T.border}`,
+                borderRadius:18, padding:"22px 20px", cursor:"default" }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:f.bg,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, marginBottom:14, border:`1px solid ${f.color}20` }}>
+                {f.icon}
+              </div>
+              <div style={{ fontSize:14, fontWeight:900, color:T.ink, marginBottom:7 }}>{f.title}</div>
+              <div style={{ fontSize:12, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`,
+        borderBottom:`1px solid ${T.border}`, padding:"56px 20px" }}>
+        <div style={{ maxWidth:680, margin:"0 auto", textAlign:"center" }}>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Up and running in minutes</h2>
+          <p style={{ fontSize:14, color:T.muted, fontWeight:600, marginBottom:40 }}>
+            No installs. No training. Just open your browser.
+          </p>
+          <div style={{ display:"flex", flexDirection:"column", gap:20, textAlign:"left" }}>
+            {steps.map((s,i) => (
+              <div key={s.n} style={{ display:"flex", gap:18, alignItems:"flex-start" }}>
+                <div className="step-dot" style={{ width:44, height:44, borderRadius:14, flexShrink:0,
+                  background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, fontWeight:900, color:"#fff",
+                  boxShadow:`0 4px 16px ${T.saffron}35` }}>{s.n}</div>
+                <div style={{ paddingTop:3 }}>
+                  <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:5 }}>{s.title}</div>
+                  <div style={{ fontSize:13, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:38 }}>
+          <h2 style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Simple, Transparent Pricing</h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            Manage, track, and grow your rental income with RentAI
+          </p>
+          {/* Monthly / Yearly toggle */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center",
+            gap:12, marginTop:20 }}>
+            <span style={{ fontSize:13, fontWeight:700,
+              color:T.ink2 }}>Monthly</span>
+            <div onClick={()=>setPricingYearly(y=>!y)}
+              style={{ width:48, height:26, borderRadius:13, cursor:"pointer",
+                background:pricingYearly?T.saffron:T.border2, position:"relative",
+                transition:"background .2s" }}>
+              <div style={{ width:20, height:20, borderRadius:"50%", background:"#fff",
+                position:"absolute", top:3,
+                left:pricingYearly?24:4,
+                transition:"left .2s",
+                boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
+            </div>
+            <span style={{ fontSize:13, fontWeight:700, color:T.ink2 }}>Yearly</span>
+            <span style={{ fontSize:11, fontWeight:800, color:T.teal,
+              background:T.tealL, padding:"3px 10px", borderRadius:20,
+              border:`1px solid ${T.teal}30` }}>2 months free</span>
+          </div>
+        </div>
+
+        {/* Pricing cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:16 }}>
+          {[
+            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
+              features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
+              cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
+            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
+              features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
+            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+              highlight:true,
+              features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
+            { name:"Pro", monthly:"Custom", yearly:"Custom", desc:"For 10+ properties",
+              features:["10+ Properties","Dedicated support","Custom automation","Advanced AI analytics","Custom integrations"],
+              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.teal, bg:T.tealL },
+          ].map((plan,i) => (
+            <div key={plan.name} style={{
+              background:plan.highlight?T.ink:T.card,
+              border:plan.highlight?`2px solid ${T.saffron}`:`1.5px solid ${T.border}`,
+              borderRadius:20, padding:"24px 20px",
+              transform:plan.highlight?"scale(1.04)":"none",
+              boxShadow:plan.highlight?`0 16px 48px ${T.saffron}25`:"none",
+              transition:"transform .2s, box-shadow .2s",
+              display:"flex", flexDirection:"column"
+            }}>
+              {plan.highlight && (
+                <div style={{ fontSize:10, fontWeight:800, color:T.saffron,
+                  background:`${T.saffron}22`, border:`1px solid ${T.saffron}40`,
+                  borderRadius:20, padding:"3px 12px", alignSelf:"flex-start",
+                  marginBottom:10 }}>⭐ MOST POPULAR</div>
+              )}
+              <div style={{ fontSize:17, fontWeight:900,
+                color:plan.highlight?"#fff":T.ink, marginBottom:4 }}>{plan.name}</div>
+              <div style={{ fontSize:12, fontWeight:600,
+                color:plan.highlight?T.subtle:T.muted, marginBottom:16 }}>{plan.desc}</div>
+              <div style={{ fontSize:26, fontWeight:900,
+                color:plan.highlight?T.saffron:plan.color, marginBottom:20 }}>
+                {pricingYearly ? plan.yearly : plan.monthly}
+              </div>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, color:plan.highlight?T.teal:T.teal,
+                      fontWeight:800 }}>✓</span>
+                    <span style={{ fontSize:12, fontWeight:600,
+                      color:plan.highlight?"#E8E4DC":T.ink2 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button style={{
+                width:"100%", padding:"11px", borderRadius:12, fontSize:13,
+                fontWeight:900, border:"none", cursor:"pointer",
+                background:plan.highlight?`linear-gradient(135deg,${T.saffron},${T.saffronB})`
+                  :plan.name==="Free"?T.panel:`${plan.color}18`,
+                color:plan.highlight?"#fff":plan.name==="Free"?T.ink2:plan.color,
+                border:plan.highlight?"none":`1.5px solid ${plan.color}30`,
+              }}>{plan.cta}</button>
+              <div style={{ fontSize:11, color:plan.highlight?T.subtle:T.muted,
+                fontWeight:600, textAlign:"center", marginTop:8 }}>{plan.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enterprise callout */}
+        <div style={{ textAlign:"center", marginTop:40, padding:"24px",
+          background:T.panel, borderRadius:16, border:`1.5px solid ${T.border}` }}>
+          <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:6 }}>
+            🏢 Managing a large portfolio?
+          </div>
+          <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
+            Tech parks, commercial complexes, PG networks — we'll build a plan around you.
+          </div>
+          <button style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
+            fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
+            Contact Sales →
+          </button>
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"64px 20px", textAlign:"center" }}>
+        <div style={{ background:`linear-gradient(135deg,${T.saffronL},${T.tealL})`,
+          border:`2px solid ${T.saffron}20`, borderRadius:24, padding:"48px 28px" }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>🏡</div>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:12 }}>
+            Start managing smarter today
+          </h2>
+          <p style={{ fontSize:14, color:T.ink2, fontWeight:600,
+            maxWidth:400, margin:"0 auto 28px", lineHeight:1.7 }}>
+            Join landlords across India who've switched from WhatsApp chaos to RentAI's clean dashboard.
+          </p>
+          <button onClick={onGetStarted} className="cta-btn"
+            style={{ padding:"15px 36px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              boxShadow:`0 8px 28px ${T.saffron}40` }}>
+            Get Started — It's Free →
+          </button>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"20px",
+        textAlign:"center", color:T.muted, fontSize:11, fontWeight:700 }}>
+        © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+      </footer>
+    </div>
+  );
+}
+
 // ── PHONE INPUT COMPONENT ────────────────────────────────────
 const PhoneInput = ({ value, onChange, disabled }) => (
   <div style={{ display:"flex", border:`1.5px solid ${T.border2}`, borderRadius:12,
@@ -253,156 +616,129 @@ const OtpInput = ({ value, onChange }) => (
 // LOGIN SCREEN
 // ══════════════════════════════════════════════════════════════
 function LoginScreen({ onLogin }) {
-  const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("Bengaluru");
-  const [role, setRole] = useState("owner");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [step, setStep]               = useState("phone");   // "phone" | "otp" | "role" | "profile"
+  const [email, setEmail]             = useState("");
+  const [phone, setPhone]             = useState("");         // captured for future SMS/WA use
+  const [otp, setOtp]                 = useState("");
+  const [name, setName]               = useState("");
+  const [city, setCity]               = useState("Bengaluru");
+  const [role, setRole]               = useState("owner");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [sessionId, setSessionId] = useState(null);
-  const [otpSentAt, setOtpSentAt] = useState(null); // timestamp when OTP was sent
 
+  // Countdown timer for resend button
   useEffect(() => {
-    if(resendTimer > 0) {
-      const t = setTimeout(() => setResendTimer(r => r-1), 1000);
+    if (resendTimer > 0) {
+      const t = setTimeout(() => setResendTimer(r => r - 1), 1000);
       return () => clearTimeout(t);
     }
   }, [resendTimer]);
 
+  // ── Step 1: Send OTP via Supabase Email ─────────────────────
   const sendOtp = async () => {
-    if(phone.length !== 10) { setError("Enter a valid 10-digit WhatsApp number"); return; }
-    setLoading(true); setError("");
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes("@") || !trimmed.includes(".")) {
+      setError("Enter a valid email address");
+      return;
+    }
+    setLoading(true);
+    setError("");
     try {
-      const arr = new Uint32Array(1);
-      crypto.getRandomValues(arr);
-      const code    = String(arr[0] % 1000000).padStart(6, "0");
-      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      // Invalidate old OTPs
-      await supabase.from("otp_sessions")
-        .update({ used: true })
-        .eq("phone", `+91${phone}`)
-        .eq("used", false);
-
-      // Save OTP to DB
-      const sentAt = new Date().toISOString();
-      const { error: insertErr } = await supabase.from("otp_sessions")
-        .insert({ phone: `+91${phone}`, otp_code: code, expires_at: expires });
-
-      if(insertErr) {
-        setError("DB error: " + insertErr.message);
-        setLoading(false);
-        return;
-      }
-
-      setOtpSentAt(sentAt);
-
-      // Send WhatsApp via Edge Function (fire and forget)
-      fetch(`${SUPABASE_URL}/functions/v1/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phone}`, code }),
-      }).catch(() => {});
-
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { shouldCreateUser: true },
+      });
+      if (otpErr) throw otpErr;
+      setEmail(trimmed);
       setStep("otp");
       setResendTimer(30);
-    } catch(e) {
-      setError("Error: " + (e?.message || "unknown"));
+    } catch (e) {
+      setError("Could not send OTP: " + (e?.message || "unknown error"));
     }
     setLoading(false);
   };
 
+  // ── Step 2: Verify OTP via Supabase ─────────────────────────
   const verifyOtp = async () => {
-    if(otp.length !== 6) { setError("Enter the 6-digit OTP"); return; }
-    if(!/^\d{6}$/.test(otp)) { setError("OTP must be 6 digits"); return; }
-    setLoading(true); setError("");
+    if (otp.length !== 6)        { setError("Enter the 6-digit OTP"); return; }
+    if (!/^\d{6}$/.test(otp))    { setError("OTP must be 6 digits");  return; }
+    setLoading(true);
+    setError("");
     try {
+      const { error: verifyErr } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type:  "email",
+      });
+      if (verifyErr) throw verifyErr;
 
-      // ── Demo account bypass ──────────────────────────────────
-      // Only works for phones marked is_demo=true in demo_accounts table
-      if(otp === "123456") {
-        const { data: demoRow } = await supabase
-          .from("demo_accounts")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("is_active", true)
-          .maybeSingle();
-
-        if(!demoRow) {
-          setError("Incorrect OTP. Please try again.");
-          setLoading(false);
-          return;
-        }
-        // Demo account verified — fall through to role check below
-      } else {
-        // Normal OTP verification
-        const { data: sessions, error: readErr } = await supabase
-          .from("otp_sessions")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("used", false)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if(readErr) { setError("DB read error: " + readErr.message); setLoading(false); return; }
-
-        const session = sessions?.[0];
-        if(!session) { setError("OTP not found. Please request a new one."); setLoading(false); return; }
-        if(new Date(session.expires_at) < new Date()) { setError("OTP expired. Please request a new one."); setLoading(false); return; }
-        if(String(session.otp_code).trim() !== String(otp).trim()) { setError("Incorrect OTP. Please try again."); setLoading(false); return; }
-
-        await supabase.from("otp_sessions").update({ used: true }).eq("id", session.id);
-      }
-
-      // Check if admin
+      // ── Check admin ──────────────────────────────────────────
       try {
         const { data: adminRow } = await supabase
           .from("admin_phones").select("*")
-          .eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
-        if(adminRow) { onLogin({ type:"admin", phone:`+91${phone}`, name:adminRow.name, role:adminRow.role }); return; }
-      } catch(_) {}
+          .eq("email", email).eq("is_active", true).maybeSingle();
+        if (adminRow) {
+          onLogin({ type: "admin", email, name: adminRow.name, role: adminRow.role });
+          return;
+        }
+      } catch (_) {}
 
-      // Check if owner
+      // ── Check existing owner ─────────────────────────────────
       const { data: existingOwner, error: ownerErr } = await supabase
-        .from("owners").select("*").eq("phone", `+91${phone}`).maybeSingle();
-      if(ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
-      if(existingOwner) { onLogin({ type:"owner", ...existingOwner }); return; }
+        .from("owners").select("*").eq("email", email).maybeSingle();
+      if (ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
+      if (existingOwner) { onLogin({ type: "owner", ...existingOwner }); return; }
 
-      // Check if tenant
+      // ── Check existing tenant ────────────────────────────────
       const { data: existingTenant } = await supabase
-        .from("tenants").select("*, units(*, properties(*))").eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
-      if(existingTenant) { onLogin({ type:"tenant", ...existingTenant }); return; }
+        .from("tenants")
+        .select("*, units(*, properties(*))")
+        .eq("email", email)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (existingTenant) { onLogin({ type: "tenant", ...existingTenant }); return; }
 
+      // ── New user — pick role ─────────────────────────────────
       setStep("role");
-    } catch(e) {
-      setError("Verification failed. Please try again.");
+    } catch (e) {
+      setError("Incorrect or expired OTP. Please try again.");
     }
     setLoading(false);
   };
 
-
+  // ── Step 3: Create profile ───────────────────────────────────
   const createProfile = async () => {
-    if(!name.trim()) { setError("Please enter your name"); return; }
-    setLoading(true); setError("");
+    if (!name.trim()) { setError("Please enter your name"); return; }
+    setLoading(true);
+    setError("");
     try {
-      if(role === "owner") {
+      if (role === "owner") {
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ phone:`+91${phone}`, name:name.trim(), city, beta_user:true })
+          .insert({
+            email:     email,
+            phone:     phone.trim() ? `+91${phone.trim().replace(/\D/g, "").slice(0, 10)}` : null,
+            name:      name.trim(),
+            city,
+            beta_user: true,
+          })
           .select("*").single();
-        if(insertErr) throw insertErr;
-        onLogin({ type:"owner", ...owner });
+        if (insertErr) throw insertErr;
+        onLogin({ type: "owner", ...owner });
       } else {
-        // Tenant self-registration — no unit assigned yet
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
-          .insert({ phone:`+91${phone}`, name:name.trim(), is_active:true, owner_id:null })
+          .insert({
+            email:     email,
+            phone:     phone.trim() ? `+91${phone.trim().replace(/\D/g, "").slice(0, 10)}` : null,
+            name:      name.trim(),
+            is_active: true,
+            owner_id:  null,
+          })
           .select("*").single();
-        if(insertErr) throw insertErr;
-        onLogin({ type:"tenant", ...tenant });
+        if (insertErr) throw insertErr;
+        onLogin({ type: "tenant", ...tenant });
       }
     } catch(e) {
       setError(e?.message || "Could not create profile. Please try again.");
@@ -410,211 +746,349 @@ function LoginScreen({ onLogin }) {
     setLoading(false);
   };
 
+  // ── Render ───────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:T.bg,
-      minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20 }}>
+    <div style={{
+      fontFamily: "'Nunito','Segoe UI',sans-serif",
+      background: T.bg,
+      minHeight:  "100vh",
+      display:    "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    }}>
       <style>{CSS}</style>
-      <div className="fu" style={{ width:"100%", maxWidth:400 }}>
+      <div className="fu" style={{ width: "100%", maxWidth: 400 }}>
 
         {/* Logo */}
-        <div style={{ textAlign:"center", marginBottom:32 }}>
-          <div style={{ width:64, height:64, borderRadius:20,
-            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:32, margin:"0 auto 12px", boxShadow:`0 8px 24px ${T.saffron}35` }}>🔑</div>
-          <div style={{ fontSize:26, fontWeight:900, color:T.ink, letterSpacing:-.8 }}>RentAI</div>
-          <div style={{ fontSize:13, color:T.muted, marginTop:4 }}>AI-powered Rent Management</div>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 20,
+            background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 32, margin: "0 auto 12px",
+            boxShadow: `0 8px 24px ${T.saffron}35`,
+          }}>🔑</div>
+          <div style={{ fontSize: 26, fontWeight: 900, color: T.ink, letterSpacing: -.8 }}>RentAI</div>
+          <div style={{ fontSize: 13, color: T.muted, marginTop: 4 }}>AI-powered Rent Management</div>
         </div>
 
-        <div style={{ background:T.surface, borderRadius:20, padding:28,
-          border:`1.5px solid ${T.border}`, boxShadow:"0 4px 24px rgba(0,0,0,.06)" }}>
+        <div style={{
+          background: T.surface, borderRadius: 20, padding: 28,
+          border: `1.5px solid ${T.border}`,
+          boxShadow: "0 4px 24px rgba(0,0,0,.06)",
+        }}>
 
-          {/* STEP: PHONE */}
+          {/* ── STEP: EMAIL ── */}
           {step === "phone" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Owner Login</div>
-              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                We'll send a 6-digit OTP to your WhatsApp
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.ink, marginBottom: 6 }}>
+                Welcome to RentAI 👋
               </div>
-              <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
-                textTransform:"uppercase", marginBottom:8 }}>WhatsApp Number</div>
-              <PhoneInput value={phone} onChange={setPhone} disabled={loading}/>
-              {error && <div style={{ color:T.rose, fontSize:12, marginTop:8, fontWeight:600 }}>{error}</div>}
-              <button onClick={sendOtp} disabled={loading}
-                style={{ width:"100%", marginTop:20, padding:14,
-                  background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-                  border:"none", borderRadius:12, fontSize:15, fontWeight:800,
-                  color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Send OTP on WhatsApp →"}
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 24 }}>
+                Enter your email — we'll send a 6-digit OTP to sign you in.
+              </div>
+
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: T.muted,
+                letterSpacing: .5, textTransform: "uppercase", marginBottom: 8,
+              }}>Email Address</div>
+
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(""); }}
+                onKeyDown={e => e.key === "Enter" && sendOtp()}
+                placeholder="you@example.com"
+                disabled={loading}
+                style={{
+                  width: "100%", background: T.panel,
+                  border: `1.5px solid ${error ? T.rose : T.border2}`,
+                  color: T.ink, borderRadius: 12,
+                  padding: "12px 14px", fontSize: 15,
+                  fontWeight: 600, boxSizing: "border-box",
+                }}
+              />
+
+              {error && (
+                <div style={{ color: T.rose, fontSize: 12, marginTop: 8, fontWeight: 600 }}>{error}</div>
+              )}
+
+              <button
+                onClick={sendOtp}
+                disabled={loading}
+                style={{
+                  width: "100%", marginTop: 20, padding: 14,
+                  background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800,
+                  color: "#fff", display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: 8, cursor: "pointer",
+                }}
+              >
+                {loading ? <Spinner /> : "Send OTP →"}
               </button>
 
-              {/* Demo login buttons — quick fill for test accounts */}
-              <div style={{ marginTop:20, padding:14, background:T.panel,
-                border:`1.5px dashed ${T.border2}`, borderRadius:12 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:T.muted,
-                  letterSpacing:.5, textTransform:"uppercase", marginBottom:10 }}>
-                  🧪 Demo Accounts
-                </div>
-                <div style={{ display:"flex", gap:8 }}>
-                  {[
-                    { label:"👤 Owner", phone:"9999999999" },
-                    { label:"🏠 Tenant", phone:"8888888888" },
-                  ].map(d => (
-                    <button key={d.phone} onClick={async () => {
-                      setPhone(d.phone);
-                      setLoading(true); setError("");
-                      // Send OTP then auto-fetch and fill it
-                      const arr = new Uint32Array(1);
-                      crypto.getRandomValues(arr);
-                      const code = String(arr[0] % 1000000).padStart(6, "0");
-                      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-                      await supabase.from("otp_sessions").update({ used:true }).eq("phone",`+91${d.phone}`).eq("used",false);
-                      await supabase.from("otp_sessions").insert({ phone:`+91${d.phone}`, otp_code:code, expires_at:expires });
-                      setOtpSentAt(new Date().toISOString());
-                      setStep("otp");
-                      setResendTimer(30);
-                      setOtp(code); // auto-fill OTP
-                      setLoading(false);
-                    }}
-                      style={{ flex:1, padding:"9px 6px", background:T.surface,
-                        border:`1.5px solid ${T.border2}`, borderRadius:10,
-                        fontSize:12, fontWeight:800, color:T.ink2,
-                        cursor:"pointer", fontFamily:"inherit" }}>
-                      {d.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
-                  Auto-fills OTP · No WhatsApp needed
-                </div>
+              {/* Beta notice */}
+              <div style={{
+                marginTop: 20, padding: 14,
+                background: T.tealL, border: `1.5px solid ${T.teal}30`,
+                borderRadius: 12, fontSize: 12, color: T.teal, fontWeight: 600,
+                lineHeight: 1.6,
+              }}>
+                🚀 <strong>Beta access:</strong> Email OTP is live! Phone / WhatsApp login coming soon.
               </div>
 
-              <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:T.muted }}>
+              <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: T.muted }}>
                 New to RentAI?{" "}
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSOMa0ExM-c0ZpJVU1xOd6XD63Fs6pQA/viewform"
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSOMa0ExM-c0ZpJVU1xOd6XD63Fs6pQA/viewform"
                   target="_blank" rel="noreferrer"
-                  style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>
+                  style={{ color: T.saffron, fontWeight: 700, textDecoration: "none" }}
+                >
                   Request beta access →
                 </a>
               </div>
             </>
           )}
 
-          {/* STEP: OTP */}
+          {/* ── STEP: OTP ── */}
           {step === "otp" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Enter OTP</div>
-              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                Sent to WhatsApp <strong style={{ color:T.ink }}>+91 {phone}</strong>
-                <button onClick={()=>{setStep("phone");setOtp("");setError("");}}
-                  style={{ background:"none", border:"none", color:T.saffron,
-                    fontWeight:700, fontSize:12, marginLeft:8, cursor:"pointer" }}>Change</button>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.ink, marginBottom: 6 }}>
+                Check your inbox 📬
               </div>
-              <OtpInput value={otp} onChange={setOtp}/>
-              <div style={{ textAlign:"center", marginTop:10, padding:"9px 14px",
-                background:T.saffronL, border:`1px solid ${T.saffron}25`,
-                borderRadius:10, fontSize:12, color:T.ink2, lineHeight:1.6 }}>
-                🔐 During beta, use the access code sent to you on WhatsApp by the RentAI team.
-                <br/>
-                <span style={{ fontSize:11, color:T.muted }}>
-                  Haven't received it? Email <a href="mailto:support@rentai.co.in"
-                  style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>support@rentai.co.in</a>
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 24 }}>
+                OTP sent to{" "}
+                <strong style={{ color: T.ink }}>{email}</strong>
+                <button
+                  onClick={() => { setStep("phone"); setOtp(""); setError(""); }}
+                  style={{
+                    background: "none", border: "none", color: T.saffron,
+                    fontWeight: 700, fontSize: 12, marginLeft: 8, cursor: "pointer",
+                  }}
+                >Change</button>
+              </div>
+
+              <OtpInput value={otp} onChange={v => { setOtp(v); setError(""); }} />
+
+              <div style={{
+                textAlign: "center", marginTop: 10, padding: "9px 14px",
+                background: T.saffronL, border: `1px solid ${T.saffron}25`,
+                borderRadius: 10, fontSize: 12, color: T.ink2, lineHeight: 1.6,
+              }}>
+                📧 Check your spam folder if you don't see it within a minute.
+                <br />
+                <span style={{ fontSize: 11, color: T.muted }}>
+                  Need help? Email{" "}
+                  <a
+                    href="mailto:support@rentai.co.in"
+                    style={{ color: T.saffron, fontWeight: 700, textDecoration: "none" }}
+                  >support@rentai.co.in</a>
                 </span>
               </div>
-              {error && <div style={{ color:T.rose, fontSize:12, marginTop:12,
-                textAlign:"center", fontWeight:600 }}>{error}</div>}
-              <button onClick={verifyOtp} disabled={loading || otp.length < 6}
-                style={{ width:"100%", marginTop:20, padding:14,
-                  background:otp.length===6?`linear-gradient(135deg,${T.saffron},${T.saffronB})`:T.panel,
-                  border:"none", borderRadius:12, fontSize:15, fontWeight:800,
-                  color:otp.length===6?"#fff":T.muted,
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                  transition:"all .2s" }}>
-                {loading ? <Spinner/> : "Verify & Login →"}
+
+              {error && (
+                <div style={{
+                  color: T.rose, fontSize: 12, marginTop: 12,
+                  textAlign: "center", fontWeight: 600,
+                }}>{error}</div>
+              )}
+
+              <button
+                onClick={verifyOtp}
+                disabled={loading || otp.length < 6}
+                style={{
+                  width: "100%", marginTop: 20, padding: 14,
+                  background: otp.length === 6
+                    ? `linear-gradient(135deg,${T.saffron},${T.saffronB})`
+                    : T.panel,
+                  border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800,
+                  color: otp.length === 6 ? "#fff" : T.muted,
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: 8, cursor: "pointer",
+                  transition: "all .2s",
+                }}
+              >
+                {loading ? <Spinner /> : "Verify & Login →"}
               </button>
-              <div style={{ textAlign:"center", marginTop:14, fontSize:12, color:T.muted }}>
+
+              <div style={{ textAlign: "center", marginTop: 14, fontSize: 12, color: T.muted }}>
                 {resendTimer > 0
                   ? `Resend OTP in ${resendTimer}s`
-                  : <button onClick={()=>{setOtp("");sendOtp();}}
-                      style={{ background:"none", border:"none", color:T.saffron,
-                        fontWeight:700, fontSize:12, cursor:"pointer" }}>
-                      Resend OTP
-                    </button>
+                  : (
+                    <button
+                      onClick={() => { setOtp(""); sendOtp(); }}
+                      style={{
+                        background: "none", border: "none", color: T.saffron,
+                        fontWeight: 700, fontSize: 12, cursor: "pointer",
+                      }}
+                    >Resend OTP</button>
+                  )
                 }
               </div>
             </>
           )}
 
-          {/* STEP: ROLE */}
+          {/* ── STEP: ROLE ── */}
           {step === "role" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Welcome to RentAI! 🎉</div>
-              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>Are you a property owner or a tenant?</div>
-              <div style={{ display:"flex", gap:12, marginBottom:20 }}>
-                {[["owner","🏢","Property Owner","Manage flats & collect rent"],
-                  ["tenant","🏠","Tenant","View bills & pay rent"]].map(([v,icon,label,sub])=>(
-                  <button key={v} onClick={()=>setRole(v)}
-                    style={{ flex:1, padding:"16px 8px", borderRadius:14,
-                      border:`2px solid ${role===v?T.saffron:T.border2}`,
-                      background:role===v?T.saffronL:T.panel,
-                      cursor:"pointer", fontFamily:"inherit", textAlign:"center", transition:"all .15s" }}>
-                    <div style={{ fontSize:28, marginBottom:6 }}>{icon}</div>
-                    <div style={{ fontSize:13, fontWeight:800, color:role===v?T.saffron:T.ink }}>{label}</div>
-                    <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>{sub}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.ink, marginBottom: 6 }}>
+                Welcome to RentAI! 🎉
+              </div>
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 24 }}>
+                Are you a property owner or a tenant?
+              </div>
+
+              <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                {[
+                  ["owner",  "🏢", "Property Owner", "Manage flats & collect rent"],
+                  ["tenant", "🏠", "Tenant",         "View bills & pay rent"],
+                ].map(([v, icon, label, sub]) => (
+                  <button
+                    key={v}
+                    onClick={() => setRole(v)}
+                    style={{
+                      flex: 1, padding: "16px 8px", borderRadius: 14,
+                      border: `2px solid ${role === v ? T.saffron : T.border2}`,
+                      background: role === v ? T.saffronL : T.panel,
+                      cursor: "pointer", fontFamily: "inherit",
+                      textAlign: "center", transition: "all .15s",
+                    }}
+                  >
+                    <div style={{ fontSize: 28, marginBottom: 6 }}>{icon}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: role === v ? T.saffron : T.ink }}>{label}</div>
+                    <div style={{ fontSize: 10, color: T.muted, marginTop: 3 }}>{sub}</div>
                   </button>
                 ))}
               </div>
-              <button onClick={()=>setStep("profile")}
-                style={{ width:"100%", padding:14, background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-                  border:"none", borderRadius:12, fontSize:15, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                Continue as {role==="owner"?"Owner":"Tenant"} →
+
+              <button
+                onClick={() => setStep("profile")}
+                style={{
+                  width: "100%", padding: 14,
+                  background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  border: "none", borderRadius: 12, fontSize: 15,
+                  fontWeight: 800, color: "#fff", cursor: "pointer",
+                }}
+              >
+                Continue as {role === "owner" ? "Owner" : "Tenant"} →
               </button>
             </>
           )}
 
-          {/* STEP: PROFILE (first time) */}
+          {/* ── STEP: PROFILE (first time) ── */}
           {step === "profile" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>
-                {role==="owner"?"Set up your account":"Almost there!"} 🎉
+              <div style={{ fontSize: 18, fontWeight: 900, color: T.ink, marginBottom: 6 }}>
+                {role === "owner" ? "Set up your account" : "Almost there!"} 🎉
               </div>
-              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>Quick setup — takes 30 seconds</div>
-              {[
-                { label:"Your Name", key:"name", value:name, set:setName, placeholder:"e.g. Suresh Rao" },
-                ...(role==="owner"?[{ label:"City", key:"city", value:city, set:setCity, placeholder:"e.g. Bengaluru" }]:[]),
-              ].map(f => (
-                <div key={f.key} style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
-                    textTransform:"uppercase", marginBottom:6 }}>{f.label}</div>
-                  <input value={f.value} onChange={e=>f.set(e.target.value)} placeholder={f.placeholder}
-                    style={{ width:"100%", background:T.panel, border:`1.5px solid ${T.border2}`,
-                      color:T.ink, borderRadius:10, padding:"11px 14px", fontSize:14, fontWeight:600 }}/>
+              <div style={{ fontSize: 13, color: T.muted, marginBottom: 24 }}>
+                Quick setup — takes 30 seconds
+              </div>
+
+              {/* Name */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: T.muted,
+                  letterSpacing: .5, textTransform: "uppercase", marginBottom: 6,
+                }}>Your Name *</div>
+                <input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Suresh Rao"
+                  style={{
+                    width: "100%", background: T.panel,
+                    border: `1.5px solid ${T.border2}`, color: T.ink,
+                    borderRadius: 10, padding: "11px 14px",
+                    fontSize: 14, fontWeight: 600, boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* City — owners only */}
+              {role === "owner" && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: T.muted,
+                    letterSpacing: .5, textTransform: "uppercase", marginBottom: 6,
+                  }}>City</div>
+                  <input
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    placeholder="e.g. Bengaluru"
+                    style={{
+                      width: "100%", background: T.panel,
+                      border: `1.5px solid ${T.border2}`, color: T.ink,
+                      borderRadius: 10, padding: "11px 14px",
+                      fontSize: 14, fontWeight: 600, boxSizing: "border-box",
+                    }}
+                  />
                 </div>
-              ))}
-              {error && <div style={{ color:T.rose, fontSize:12, marginBottom:8, fontWeight:600 }}>{error}</div>}
-              <button onClick={createProfile} disabled={loading}
-                style={{ width:"100%", marginTop:8, padding:14,
-                  background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-                  border:"none", borderRadius:12, fontSize:15, fontWeight:800,
-                  color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Enter RentAI →"}
+              )}
+
+              {/* Phone — optional, saved for future WhatsApp/SMS */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: T.muted,
+                  letterSpacing: .5, textTransform: "uppercase", marginBottom: 6,
+                }}>WhatsApp Number <span style={{ fontWeight: 500, textTransform: "none" }}>(optional — for future OTP)</span></div>
+                <div style={{
+                  display: "flex", border: `1.5px solid ${T.border2}`,
+                  borderRadius: 12, overflow: "hidden", background: T.panel,
+                }}>
+                  <div style={{
+                    padding: "12px 14px", background: T.surface,
+                    borderRight: `1px solid ${T.border2}`,
+                    fontSize: 14, fontWeight: 700, color: T.ink2, whiteSpace: "nowrap",
+                  }}>🇮🇳 +91</div>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    placeholder="10-digit number"
+                    style={{
+                      flex: 1, padding: "12px 14px", background: "transparent",
+                      border: "none", fontSize: 14, fontWeight: 600,
+                      color: T.ink, letterSpacing: .5,
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: T.muted, marginTop: 5, fontWeight: 600 }}>
+                  📱 We'll use this when WhatsApp / SMS OTP goes live
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ color: T.rose, fontSize: 12, marginBottom: 8, fontWeight: 600 }}>{error}</div>
+              )}
+
+              <button
+                onClick={createProfile}
+                disabled={loading}
+                style={{
+                  width: "100%", marginTop: 8, padding: 14,
+                  background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800,
+                  color: "#fff", display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: 8, cursor: "pointer",
+                }}
+              >
+                {loading ? <Spinner /> : "Enter RentAI →"}
               </button>
             </>
           )}
         </div>
 
-        <div style={{ textAlign:"center", marginTop:16, fontSize:11, color:T.muted }}>
+        <div style={{ textAlign: "center", marginTop: 16, fontSize: 11, color: T.muted }}>
           By logging in you agree to our{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Terms</span>
+          <span style={{ color: T.saffron, fontWeight: 700, cursor: "pointer" }}>Terms</span>
           {" "}and{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Privacy Policy</span>
+          <span style={{ color: T.saffron, fontWeight: 700, cursor: "pointer" }}>Privacy Policy</span>
         </div>
       </div>
     </div>
   );
 }
-
 // ══════════════════════════════════════════════════════════════
 // ADD TENANT FORM
 // ══════════════════════════════════════════════════════════════
@@ -3430,6 +3904,7 @@ function AdminDashboard({ admin, onLogout }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
 
   const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -3444,16 +3919,16 @@ export default function App() {
           setChecking(false);
           return;
         }
-        // Admin — no DB lookup needed, phone is the identity
         if(parsed.type === "admin") {
           setUser(parsed);
+          setShowLanding(false);
           setChecking(false);
           return;
         }
         const table = parsed.type === "tenant" ? "tenants" : "owners";
         supabase.from(table).select("*").eq("id", parsed.id).single()
           .then(({ data }) => {
-            if(data) setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data });
+            if(data) { setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data }); setShowLanding(false); }
             setChecking(false);
           });
       } catch { localStorage.removeItem("rentai_user"); setChecking(false); }
@@ -3482,5 +3957,6 @@ export default function App() {
   if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout}/>;
   if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout}/>;
   if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout}/>;
+  if(showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)}/>;
   return <LoginScreen onLogin={handleLogin}/>;
 }
