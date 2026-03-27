@@ -3620,7 +3620,7 @@ function LandingPage({ onGetStarted }) {
         <button onClick={onGetStarted} className="ghost-btn"
           style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
             border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
-          Get Started →
+          Login / Get Started →
         </button>
       </nav>
 
@@ -3922,7 +3922,7 @@ export default function App() {
     return !d;
   });
 
-  const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
   useEffect(() => {
     const saved = localStorage.getItem("rentai_user");
