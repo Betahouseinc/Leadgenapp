@@ -311,25 +311,27 @@ function LoginScreen({ onLogin }) {
       const { error: authErr } = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
       if(authErr) { setError("Incorrect code. Please try again."); setLoading(false); return; }
 
-      // Check if admin
-      try {
-        const { data: adminRow } = await supabase
-          .from("admin_phones").select("*")
-          .eq("email", email).eq("is_active", true).maybeSingle();
-        if(adminRow) { onLogin({ type:"admin", email, name:adminRow.name, role:adminRow.role }); return; }
-      } catch(_) {}
+      // Check all tables in parallel to discover all roles for this email
+      const [
+        { data: adminRow },
+        { data: ownerRow },
+        { data: tenantRow },
+      ] = await Promise.all([
+        supabase.from("admin_phones").select("*").eq("email", email).eq("is_active", true).maybeSingle(),
+        supabase.from("owners").select("*").eq("email", email).maybeSingle(),
+        supabase.from("tenants").select("*, units(*, properties(*))").eq("email", email).eq("is_active", true).maybeSingle(),
+      ]);
 
-      // Check if owner
-      const { data: existingOwner } = await supabase
-        .from("owners").select("*").eq("email", email).maybeSingle();
-      if(existingOwner) { onLogin({ type:"owner", ...existingOwner }); return; }
+      const roles = {};
+      if(adminRow) roles.admin  = { type:"admin",  email, name:adminRow.name, role:adminRow.role };
+      if(ownerRow)  roles.owner  = { type:"owner",  ...ownerRow };
+      if(tenantRow) roles.tenant = { type:"tenant", ...tenantRow };
 
-      // Check if tenant
-      const { data: existingTenant } = await supabase
-        .from("tenants").select("*, units(*, properties(*))").eq("email", email).eq("is_active", true).maybeSingle();
-      if(existingTenant) { onLogin({ type:"tenant", ...existingTenant }); return; }
+      if(Object.keys(roles).length === 0) { setStep("role"); setLoading(false); return; }
 
-      setStep("role");
+      // Priority: admin > owner > tenant
+      const activeRole = adminRow ? "admin" : ownerRow ? "owner" : "tenant";
+      onLogin({ activeRole, roles, email });
     } catch(e) {
       setError("Verification failed. Please try again.");
     }
@@ -347,7 +349,7 @@ function LoginScreen({ onLogin }) {
           .insert({ email, name:name.trim(), city, beta_user:true })
           .select("*").single();
         if(insertErr) throw insertErr;
-        onLogin({ type:"owner", ...owner });
+        onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
       } else {
         // Tenant self-registration — no unit assigned yet
         const { data: tenant, error: insertErr } = await supabase
@@ -355,7 +357,7 @@ function LoginScreen({ onLogin }) {
           .insert({ email, name:name.trim(), is_active:true, owner_id:null })
           .select("*").single();
         if(insertErr) throw insertErr;
-        onLogin({ type:"tenant", ...tenant });
+        onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...tenant } }, email });
       }
     } catch(e) {
       setError("Could not create profile. Please try again.");
@@ -652,7 +654,7 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // OWNER DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme }) {
+function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
   const [units, setUnits] = useState([]);
@@ -1010,6 +1012,18 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? T.saffron : "transparent",
+                    color: r === activeRole ? "#fff" : T.muted }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
           <button onClick={onToggleTheme}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
@@ -2190,7 +2204,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme }) {
 // ══════════════════════════════════════════════════════════════
 // TENANT DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme }) {
+function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "tenant", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("home");
   const [payments, setPayments] = useState([]);
@@ -2316,6 +2330,18 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? T.teal : "transparent",
+                    color: r === activeRole ? "#fff" : T.muted }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
           <button onClick={onToggleTheme}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
@@ -2606,7 +2632,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme }) {
 // ══════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function AdminDashboard({ admin, onLogout, isDark, onToggleTheme }) {
+function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "admin", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab]           = useState("overview");
   const [owners, setOwners]     = useState([]);
@@ -2993,6 +3019,18 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? "rgba(255,255,255,.35)" : "transparent",
+                    color: "#fff" }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
           <button onClick={onToggleTheme}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
@@ -3757,7 +3795,14 @@ export default function App() {
           setChecking(false);
           return;
         }
-        // Admin — no DB lookup needed, phone is the identity
+        // New multi-role format — restore directly from stored session
+        if(parsed.roles) {
+          setUser(parsed);
+          setShowLanding(false);
+          setChecking(false);
+          return;
+        }
+        // Legacy single-role format
         if(parsed.type === "admin") {
           setUser(parsed);
           setShowLanding(false);
@@ -3793,6 +3838,21 @@ export default function App() {
     </div>
   );
 
+  // New multi-role format
+  if(user?.roles) {
+    const roleData = user.roles[user.activeRole];
+    const availableRoles = Object.keys(user.roles);
+    const switchRole = (role) => {
+      const updated = { ...user, activeRole: role };
+      localStorage.setItem("rentai_user", JSON.stringify(updated));
+      setUser(updated);
+    };
+    const common = { onLogout: handleLogout, isDark, onToggleTheme: toggleTheme, availableRoles, activeRole: user.activeRole, onSwitchRole: switchRole };
+    if(user.activeRole === "admin")  return <AdminDashboard  admin={roleData}   {...common}/>;
+    if(user.activeRole === "tenant") return <TenantDashboard tenant={roleData}  {...common}/>;
+    if(user.activeRole === "owner")  return <OwnerDashboard  owner={roleData}   {...common}/>;
+  }
+  // Legacy single-role format
   if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
   if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
   if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
