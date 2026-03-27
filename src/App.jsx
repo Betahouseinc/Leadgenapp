@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 // No Twilio keys exposed in frontend
 const SEND_OTP_FN = `${SUPABASE_URL}/functions/v1/send-otp`;
 
-const T = {
+const LIGHT_T = {
   bg:"#FAFAF7", surface:"#FFFFFF", panel:"#F5F3EE", card:"#FFFFFF",
   border:"#E8E4DC", border2:"#D4CFC4",
   ink:"#2C2416", ink2:"#5C5240", muted:"#9C8E7A", subtle:"#C4BAA8",
@@ -24,6 +24,22 @@ const T = {
   plum:"#7C3AED", plumL:"#EDE9FE",
   green:"#2E7D32", greenL:"#E8F5E9",
 };
+
+const DARK_T = {
+  bg:"#18181B", surface:"#1F1F23", panel:"#27272A", card:"#1F1F23",
+  border:"#3F3F46", border2:"#52525B",
+  ink:"#FAFAF7", ink2:"#D4CFC4", muted:"#78716C", subtle:"#57534E",
+  saffron:"#E8821A", saffronL:"#2D1F0A", saffronB:"#F5A650",
+  teal:"#2AB394", tealL:"#0A2420", tealB:"#1A8A72",
+  amber:"#D4A017", amberL:"#2D2208",
+  rose:"#E05555", roseL:"#2D1010",
+  sky:"#60A5FA", skyL:"#0C1A2E",
+  plum:"#A78BFA", plumL:"#2D1F4A",
+  green:"#4ADE80", greenL:"#0A2010",
+};
+
+// Login screen and shared components always use light theme
+const T = LIGHT_T;
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
@@ -636,7 +652,8 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // OWNER DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function OwnerDashboard({ owner, onLogout }) {
+function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme }) {
+  const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
   const [units, setUnits] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -992,10 +1009,18 @@ function OwnerDashboard({ owner, onLogout }) {
             <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} · Owner</div>
           </div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:T.panel, border:`1.5px solid ${T.border}`,
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:T.muted, cursor:"pointer" }}>Logout</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+              color:T.muted, cursor:"pointer" }}>Logout</button>
+        </div>
       </div>
 
       {/* Content */}
@@ -2165,7 +2190,8 @@ function OwnerDashboard({ owner, onLogout }) {
 // ══════════════════════════════════════════════════════════════
 // TENANT DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function TenantDashboard({ tenant, onLogout }) {
+function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme }) {
+  const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("home");
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -2289,10 +2315,18 @@ function TenantDashboard({ tenant, onLogout }) {
             <div style={{ fontSize:9, color:T.muted }}>{tenant.name} · Tenant Portal</div>
           </div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:T.panel, border:`1.5px solid ${T.border}`,
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:T.muted, cursor:"pointer" }}>Logout</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+              color:T.muted, cursor:"pointer" }}>Logout</button>
+        </div>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", paddingBottom:72 }}>
@@ -2572,7 +2606,8 @@ function TenantDashboard({ tenant, onLogout }) {
 // ══════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function AdminDashboard({ admin, onLogout }) {
+function AdminDashboard({ admin, onLogout, isDark, onToggleTheme }) {
+  const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab]           = useState("overview");
   const [owners, setOwners]     = useState([]);
   const [tenants, setTenants]   = useState([]);
@@ -2957,11 +2992,19 @@ function AdminDashboard({ admin, onLogout }) {
             <div style={{ fontSize:9, color:"rgba(255,255,255,.7)" }}>{admin.name} · {admin.role}</div>
           </div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer" }}>
-          Logout
-        </button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:"#fff", cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer" }}>
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -3694,6 +3737,12 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [showLanding, setShowLanding] = useState(true);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("rentai_theme") === "dark");
+
+  const toggleTheme = () => setIsDark(d => {
+    localStorage.setItem("rentai_theme", !d ? "dark" : "light");
+    return !d;
+  });
 
   const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -3744,9 +3793,9 @@ export default function App() {
     </div>
   );
 
-  if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout}/>;
-  if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout}/>;
-  if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout}/>;
+  if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
+  if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
+  if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
   if(showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)}/>;
   return <LoginScreen onLogin={handleLogin}/>;
 }
