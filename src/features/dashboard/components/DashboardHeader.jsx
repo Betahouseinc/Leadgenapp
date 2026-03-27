@@ -1,31 +1,26 @@
-// ── DASHBOARD HEADER ─────────────────────────────────────────
-// Shows: Welcome {name}, property name, Owner badge, logout button.
+import { T } from "../../../theme";
 
-const T = {
-  surface: "#FFFFFF",
-  border:  "#E8E4DC",
-  ink:     "#2C2416",
-  ink2:    "#5C5240",
-  muted:   "#9C8E7A",
-  teal:    "#1A8A72",
-  tealL:   "#E0F5F0",
-  saffron: "#E8821A",
-  saffronB:"#F5A650",
-};
-
+/**
+ * Sticky top bar: welcome greeting, property name, role badge, logout.
+ *
+ * @param {{ name: string, role: string, property: string }} user
+ * @param {() => void} onLogout
+ */
 export default function DashboardHeader({ user, onLogout }) {
   return (
-    <div style={{
-      background: T.surface,
-      borderBottom: `1.5px solid ${T.border}`,
-      padding: "14px 16px 12px",
-      position: "sticky",
-      top: 0,
-      zIndex: 50,
-    }}>
+    <header
+      style={{
+        background: T.surface,
+        borderBottom: `1.5px solid ${T.border}`,
+        padding: "14px 16px 12px",
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+      }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
 
-        {/* Left: identity */}
+        {/* Identity */}
         <div>
           <div style={{ fontSize: 11, color: T.muted, fontWeight: 600, marginBottom: 1 }}>
             Welcome back,
@@ -34,20 +29,22 @@ export default function DashboardHeader({ user, onLogout }) {
             {user.name} 👋
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
-            <div style={{ fontSize: 11, color: T.ink2, fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: T.ink2, fontWeight: 600 }}>
               🏠 {user.property}
-            </div>
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: "2px 8px",
-              borderRadius: 20, background: T.tealL, color: T.teal,
-              border: `1px solid ${T.teal}35`, letterSpacing: 0.4,
-            }}>
+            </span>
+            <span
+              style={{
+                fontSize: 9, fontWeight: 800, padding: "2px 8px",
+                borderRadius: 20, background: T.tealL, color: T.teal,
+                border: `1px solid ${T.teal}35`, letterSpacing: 0.4,
+              }}
+            >
               {(user.role || "Owner").toUpperCase()}
             </span>
           </div>
         </div>
 
-        {/* Right: logout */}
+        {/* Logout */}
         <button
           onClick={onLogout}
           style={{
@@ -58,13 +55,12 @@ export default function DashboardHeader({ user, onLogout }) {
             fontSize: 11,
             fontWeight: 700,
             color: T.muted,
-            cursor: "pointer",
             marginTop: 4,
           }}
         >
           Logout
         </button>
       </div>
-    </div>
+    </header>
   );
 }
