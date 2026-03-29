@@ -333,6 +333,7 @@ function LoginScreen({ onLogin }) {
       const activeRole = adminRow ? "admin" : ownerRow ? "owner" : "tenant";
       onLogin({ activeRole, roles, email });
     } catch(e) {
+      console.error("verifyOtp error:", e);
       setError("Verification failed. Please try again.");
     }
     setLoading(false);
@@ -344,22 +345,40 @@ function LoginScreen({ onLogin }) {
     setLoading(true); setError("");
     try {
       if(role === "owner") {
+        // Check if owner already exists (e.g. user hit back and retried)
+        const { data: existing } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
+        if(existing) { onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...existing } }, email }); return; }
+
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ email, name:name.trim(), city, beta_user:true })
+          .insert({ email, name:name.trim(), city })
           .select("*").single();
-        if(insertErr) throw insertErr;
+        if(insertErr) {
+          console.error("Owner insert error:", insertErr);
+          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
+          else setError(insertErr.message || "Could not create account. Please try again.");
+          setLoading(false); return;
+        }
         onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
       } else {
         // Tenant self-registration — no unit assigned yet
+        const { data: existing } = await supabase.from("tenants").select("*").eq("email", email).maybeSingle();
+        if(existing) { onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...existing } }, email }); return; }
+
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
-          .insert({ email, name:name.trim(), is_active:true, owner_id:null })
+          .insert({ email, name:name.trim(), is_active:true })
           .select("*").single();
-        if(insertErr) throw insertErr;
+        if(insertErr) {
+          console.error("Tenant insert error:", insertErr);
+          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
+          else setError(insertErr.message || "Could not create account. Please try again.");
+          setLoading(false); return;
+        }
         onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...tenant } }, email });
       }
     } catch(e) {
+      console.error("createProfile error:", e);
       setError("Could not create profile. Please try again.");
     }
     setLoading(false);
@@ -685,6 +704,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const [selfTenantModal, setSelfTenantModal] = useState(false);
   const [selfTenantForm, setSelfTenantForm] = useState({ property_address:"", monthly_rent:"", rent_due_day:"1", landlord_name:"", landlord_phone:"" });
   const [selfTenantLoading, setSelfTenantLoading] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [showAddProp, setShowAddProp] = useState(false);
+  const [newProp, setNewProp] = useState({ name:"", address:"", city:"" });
+  const [savingProp, setSavingProp] = useState(false);
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name:owner.name||"", phone:owner.phone||"", city:owner.city||"" });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
 
@@ -725,16 +751,18 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: u }, { data: p }, { data: r }, { data: e }] = await Promise.all([
+      const [{ data: u }, { data: p }, { data: r }, { data: e }, { data: pr }] = await Promise.all([
         supabase.from("units").select("*, tenants(*)").eq("owner_id", owner.id).order("unit_number"),
         supabase.from("payments").select("*, units(unit_number), tenants(name, phone)").eq("owner_id", owner.id).order("created_at", { ascending:false }).limit(50),
         supabase.from("maintenance_requests").select("*, units(unit_number)").eq("owner_id", owner.id).order("created_at", { ascending:false }),
         supabase.from("expenses").select("*, units(unit_number)").eq("owner_id", owner.id).order("date", { ascending:false }).limit(100),
+        supabase.from("properties").select("id, name, address, city").eq("owner_id", owner.id).order("created_at"),
       ]);
       setUnits(u || []);
       setPayments(p || []);
       setRequests(r || []);
       setExpenses(e || []);
+      setProperties(pr || []);
     } catch(e) { console.error(e); }
     setLoading(false);
   }, [owner.id]);
@@ -1006,6 +1034,39 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
     loadData();
   };
 
+  const addProperty = async () => {
+    if(!newProp.name.trim()) { showToast("Property name is required"); return; }
+    setSavingProp(true);
+    try {
+      const { error } = await supabase.from("properties").insert({
+        owner_id: owner.id,
+        name: newProp.name.trim(),
+        address: newProp.address.trim() || null,
+        city: newProp.city.trim() || owner.city || null,
+      });
+      if(error) throw error;
+      setNewProp({ name:"", address:"", city:"" });
+      setShowAddProp(false);
+      showToast("Property added ✓");
+      loadData();
+    } catch(e) { showToast("Could not add property"); }
+    setSavingProp(false);
+  };
+
+  const saveProfile = async () => {
+    if(!profileForm.name.trim()) { showToast("Name is required"); return; }
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase.from("owners")
+        .update({ name: profileForm.name.trim(), phone: profileForm.phone.trim()||null, city: profileForm.city.trim()||null })
+        .eq("id", owner.id);
+      if(error) throw error;
+      setEditProfile(false);
+      showToast("Profile updated ✓");
+    } catch(e) { showToast("Could not update profile"); }
+    setSavingProfile(false);
+  };
+
   const totalExpenses  = expenses.reduce((s, e) => s + (isNaN(Number(e.amount)) ? 0 : Number(e.amount)), 0);
   const totalCollected = payments.filter(p => p.status === "paid").reduce((s,p) => s + (isNaN(Number(p.amount)) ? 0 : Number(p.amount)), 0);
   const netIncome      = totalCollected - totalExpenses;
@@ -1018,17 +1079,18 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
     { value:"tax",         label:"📋 Tax / Legal",    color: T.ink2 },
     { value:"insurance",   label:"🛡 Insurance",      color: T.teal },
     { value:"renovation",  label:"🏗 Renovation",     color: T.saffron },
+    { value:"emi",         label:"🏦 Home Loan EMI",  color: "#7C3AED" },
     { value:"other",       label:"📦 Other",          color: T.muted },
   ];
   const catMeta = (val) => EXP_CATEGORIES.find(c => c.value === val) || EXP_CATEGORIES[EXP_CATEGORIES.length-1];
 
   const tabs = [
-    { id:"dashboard", icon:"📊", label:"Dashboard" },
-    { id:"units",     icon:"🏡", label:"Units" },
-    { id:"payments",  icon:"💰", label:"Payments" },
-    { id:"expenses",  icon:"🧾", label:"Expenses" },
-    { id:"requests",  icon:"🔧", label:"Requests" },
-    { id:"reports",   icon:"📈", label:"Reports" },
+    { id:"dashboard",   icon:"📊", label:"Dashboard" },
+    { id:"properties",  icon:"🏢", label:"Properties" },
+    { id:"payments",    icon:"💰", label:"Payments" },
+    { id:"expenses",    icon:"🧾", label:"Expenses" },
+    { id:"reports",     icon:"📈", label:"Reports" },
+    { id:"profile",     icon:"👤", label:"Profile" },
   ];
 
   if(loading) return (
@@ -1120,12 +1182,19 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             </div>
 
             {/* Stats grid — expandable tiles */}
+            {(()=>{
+              const now = new Date();
+              const mthExp = expenses.filter(e=>{ const d=new Date(e.date||e.created_at); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); }).reduce((s,e)=>s+Number(e.amount||0),0);
+              const mthNet = totalCollected - mthExp;
+              return (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginBottom:18 }}>
               {[
                 { id:"occupied", icon:"🏡", label:"Occupied", value:`${occupied.length}/${units.length}`, sub:`${units.length-occupied.length} vacant`, color:T.teal, light:T.tealL },
                 { id:"pending", icon:"⚠️", label:"Rent Pending", value:pendingPayments.length, sub:fd(totalPending)+" due", color:T.rose, light:T.roseL },
                 { id:"requests", icon:"🔧", label:"Open Requests", value:openReqs, sub:"maintenance", color:T.sky, light:T.skyL },
                 { id:"units", icon:"📋", label:"Total Units", value:units.length, sub:"in portfolio", color:T.amber, light:T.amberL },
+                { id:"expenses", icon:"💸", label:"This Month Expenses", value:fd(mthExp), sub:"tracked spend", color:T.rose, light:T.roseL },
+                { id:"net", icon:"📈", label:"Net Income", value:fd(mthNet), sub:mthNet>=0?"positive":"negative", color:mthNet>=0?T.teal:T.rose, light:mthNet>=0?T.tealL:T.roseL },
               ].map(s => (
                 <div key={s.id} onClick={()=>setExpandedTile(expandedTile===s.id?null:s.id)}
                   style={{ background:T.card,
@@ -1258,6 +1327,47 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 </div>
               ))}
             </div>
+              ); })()}
+
+            {/* Revenue vs Expenses — last 6 months */}
+            {(()=>{
+              const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const now2 = new Date();
+              const last6 = Array.from({length:6},(_,i)=>{
+                const d = new Date(now2.getFullYear(), now2.getMonth()-5+i, 1);
+                return { label:MONTHS[d.getMonth()], year:d.getFullYear(), month:d.getMonth() };
+              });
+              const bars = last6.map(m => {
+                const rev = payments.filter(p=>(p.status==="paid"||p.status==="verified")&&(()=>{ const d=new Date(p.paid_date||p.created_at); return d.getMonth()===m.month&&d.getFullYear()===m.year; })()).reduce((s,p)=>s+Number(p.amount||0),0);
+                const exp = expenses.filter(e=>{ const d=new Date(e.date||e.created_at); return d.getMonth()===m.month&&d.getFullYear()===m.year; }).reduce((s,e)=>s+Number(e.amount||0),0);
+                return { ...m, rev, exp };
+              });
+              const maxVal = Math.max(1, ...bars.flatMap(b=>[b.rev,b.exp]));
+              return (
+                <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, padding:16, marginBottom:18 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:14 }}>Revenue vs Expenses — Last 6 Months</div>
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80, marginBottom:8 }}>
+                    {bars.map((b,i) => (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ display:"flex", gap:2, alignItems:"flex-end", height:72 }}>
+                          <div style={{ width:11, height:Math.max(3, Math.round((b.rev/maxVal)*72)), background:T.teal, borderRadius:"3px 3px 0 0", transition:"height .3s" }}/>
+                          <div style={{ width:11, height:Math.max(3, Math.round((b.exp/maxVal)*72)), background:T.rose, borderRadius:"3px 3px 0 0", transition:"height .3s" }}/>
+                        </div>
+                        <div style={{ fontSize:8, color:T.muted, fontWeight:700 }}>{b.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display:"flex", gap:14 }}>
+                    {[{color:T.teal,label:"Revenue"},{color:T.rose,label:"Expenses"}].map(l=>(
+                      <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                        <div style={{ width:10, height:10, borderRadius:2, background:l.color }}/>
+                        <span style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Pending payments list */}
             {pendingPayments.length > 0 && (
@@ -1327,7 +1437,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ fontSize:13, color:T.muted, marginBottom:16 }}>
                   Start by adding a flat or room to track rent
                 </div>
-                <button onClick={()=>{setTab("units");setShowAddUnit(true);}}
+                <button onClick={()=>{setTab("properties");setShowAddUnit(true);}}
                   style={{ background:T.saffron, border:"none", borderRadius:10,
                     padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
                   + Add Unit
@@ -1649,17 +1759,72 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
           </div>
         )}
 
-        {/* UNITS TAB */}
-        {tab === "units" && (
+        {/* PROPERTIES TAB */}
+        {tab === "properties" && (
           <div style={{ padding:"18px 16px" }} className="fu">
+            {/* Header */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Your Units</div>
-              <button onClick={()=>setShowAddUnit(true)}
-                style={{ background:T.saffron, border:"none", borderRadius:10,
-                  padding:"7px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                + Add Unit
-              </button>
+              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Properties & Units</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={()=>setShowAddProp(v=>!v)}
+                  style={{ background:showAddProp?T.panel:T.surface, border:`1.5px solid ${T.border2}`, borderRadius:10,
+                    padding:"7px 12px", fontSize:12, fontWeight:800, color:T.ink2, cursor:"pointer" }}>
+                  {showAddProp ? "✕" : "🏢 + Property"}
+                </button>
+                <button onClick={()=>{setShowAddUnit(true);setShowAddProp(false);}}
+                  style={{ background:T.saffron, border:"none", borderRadius:10,
+                    padding:"7px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                  + Unit
+                </button>
+              </div>
             </div>
+
+            {/* Add property form */}
+            {showAddProp && (
+              <div style={{ background:T.surface, border:`1.5px solid ${T.saffron}40`, borderRadius:16, padding:18, marginBottom:18 }} className="fu">
+                <div style={{ fontWeight:800, fontSize:14, color:T.ink, marginBottom:14 }}>New Property</div>
+                {[
+                  { label:"Property Name *", key:"name", placeholder:"e.g. Sai Residency, Green Apartments" },
+                  { label:"Address", key:"address", placeholder:"e.g. 12, MG Road, Koramangala" },
+                  { label:"City", key:"city", placeholder:"e.g. Bengaluru" },
+                ].map(f => (
+                  <div key={f.key} style={{ marginBottom:11 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5, textTransform:"uppercase", marginBottom:5 }}>{f.label}</div>
+                    <input value={newProp[f.key]} onChange={e=>setNewProp(p=>({...p,[f.key]:e.target.value}))}
+                      placeholder={f.placeholder}
+                      style={{ width:"100%", background:T.panel, border:`1.5px solid ${T.border2}`, color:T.ink,
+                        borderRadius:10, padding:"10px 13px", fontSize:13, fontWeight:600, boxSizing:"border-box" }}/>
+                  </div>
+                ))}
+                <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                  <button onClick={()=>setShowAddProp(false)}
+                    style={{ flex:1, padding:"10px", background:T.panel, border:`1.5px solid ${T.border2}`, borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                    Cancel
+                  </button>
+                  <button onClick={addProperty} disabled={savingProp}
+                    style={{ flex:2, padding:"10px", background:T.saffron, border:"none", borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    {savingProp ? <Spinner/> : "Save Property →"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Properties summary chips */}
+            {properties.length > 0 && (
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
+                {properties.map(pr => {
+                  const prUnits = units.filter(u=>u.property_id===pr.id);
+                  return (
+                    <div key={pr.id} style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:12, padding:"8px 14px" }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{pr.name}</div>
+                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} · {pr.city||pr.address||""}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
 
             {/* Add unit form */}
             {showAddUnit && (
@@ -1756,7 +1921,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               </div>
             )}
 
-            {/* Units list */}
+            {/* Units list — grouped by property */}
             {units.length === 0 && !showAddUnit && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
                 <div style={{ fontSize:32, marginBottom:10 }}>🏠</div>
@@ -1764,7 +1929,24 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ fontSize:12, marginTop:4 }}>Add your first flat or room above</div>
               </div>
             )}
-            {units.map(u => {
+            {(()=>{
+              // Group units by property
+              const grouped = properties.length > 0
+                ? properties.map(pr => ({ pr, items: units.filter(u=>u.property_id===pr.id) }))
+                : [{ pr:null, items:units }];
+              const unassigned = units.filter(u=>!properties.find(pr=>pr.id===u.property_id));
+              if(unassigned.length > 0 && properties.length > 0) grouped.push({ pr:null, items:unassigned });
+              return grouped.map(({ pr, items }, gi) => (
+                <div key={pr?.id||"none-"+gi}>
+                  {pr && (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, marginTop:gi>0?18:0 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>🏢 {pr.name}</div>
+                      {pr.city && <span style={{ fontSize:11, color:T.muted }}>{pr.city}</span>}
+                      <div style={{ flex:1, height:1, background:T.border, marginLeft:4 }}/>
+                      <div style={{ fontSize:10, color:T.muted }}>{items.length} unit{items.length!==1?"s":""}</div>
+                    </div>
+                  )}
+                  {items.map(u => {
               const tenant = u.tenants?.[0];
               const isOpen = selUnit?.id === u.id;
               return (
@@ -1945,7 +2127,10 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   )}
                 </div>
               );
-            })}
+                  })}
+                </div>
+              ));
+            })()}
           </div>
         )}
 
@@ -2416,16 +2601,148 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             ))}
           </div>
         )}
+
+        {/* PROFILE TAB */}
+        {tab === "profile" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:18 }}>My Profile</div>
+
+            {/* Avatar + name card */}
+            <div style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              borderRadius:18, padding:20, marginBottom:18, color:"#fff",
+              display:"flex", alignItems:"center", gap:16, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
+                borderRadius:"50%", background:"rgba(255,255,255,.1)", pointerEvents:"none" }}/>
+              <div style={{ width:54, height:54, borderRadius:16, background:"rgba(255,255,255,.25)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:22, fontWeight:900, flexShrink:0 }}>
+                {(owner.name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize:18, fontWeight:900 }}>{owner.name||"Owner"}</div>
+                <div style={{ fontSize:12, opacity:.85 }}>{owner.email}</div>
+                {owner.city && <div style={{ fontSize:11, opacity:.75, marginTop:2 }}>📍 {owner.city}</div>}
+              </div>
+            </div>
+
+            {/* Account stats */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:18 }}>
+              {[
+                { icon:"🏢", label:"Properties", value:properties.length },
+                { icon:"🏡", label:"Units", value:units.length },
+                { icon:"👤", label:"Tenants", value:units.filter(u=>u.is_occupied).length },
+              ].map(s => (
+                <div key={s.label} style={{ background:T.card, border:`1.5px solid ${T.border}`,
+                  borderRadius:13, padding:"12px 10px", textAlign:"center" }}>
+                  <div style={{ fontSize:20, marginBottom:4 }}>{s.icon}</div>
+                  <div style={{ fontSize:18, fontWeight:900, color:T.ink }}>{s.value}</div>
+                  <div style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Edit profile form */}
+            <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>Account Details</div>
+                <button onClick={()=>setEditProfile(v=>!v)}
+                  style={{ background:editProfile?T.panel:T.saffronL, border:`1px solid ${editProfile?T.border2:T.saffron}30`,
+                    borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+                    color:editProfile?T.muted:T.saffron, cursor:"pointer" }}>
+                  {editProfile ? "Cancel" : "✏️ Edit"}
+                </button>
+              </div>
+              {editProfile ? (
+                <>
+                  {[
+                    { label:"Full Name *", key:"name", placeholder:"Your name", type:"text" },
+                    { label:"Phone", key:"phone", placeholder:"e.g. 9876543210", type:"tel" },
+                    { label:"City", key:"city", placeholder:"e.g. Bengaluru", type:"text" },
+                  ].map(f => (
+                    <div key={f.key} style={{ marginBottom:11 }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5,
+                        textTransform:"uppercase", marginBottom:5 }}>{f.label}</div>
+                      <input type={f.type} value={profileForm[f.key]}
+                        onChange={e=>setProfileForm(p=>({...p,[f.key]:e.target.value}))}
+                        placeholder={f.placeholder}
+                        style={{ width:"100%", background:T.surface, border:`1.5px solid ${T.border2}`,
+                          color:T.ink, borderRadius:10, padding:"10px 13px", fontSize:13,
+                          fontWeight:600, boxSizing:"border-box" }}/>
+                    </div>
+                  ))}
+                  <button onClick={saveProfile} disabled={savingProfile}
+                    style={{ width:"100%", padding:"11px", background:T.saffron, border:"none",
+                      borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    {savingProfile ? <Spinner/> : "Save Changes →"}
+                  </button>
+                </>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {[
+                    { label:"Name", value:owner.name },
+                    { label:"Email", value:owner.email },
+                    { label:"Phone", value:owner.phone||"—" },
+                    { label:"City", value:owner.city||"—" },
+                  ].map(r => (
+                    <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                      padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                      <div style={{ fontSize:11, color:T.muted, fontWeight:700 }}>{r.label}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{r.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Preferences */}
+            <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:12 }}>Preferences</div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
+                <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>{isDark?"🌙 Dark Mode":"☀️ Light Mode"}</div>
+                <button onClick={onToggleTheme}
+                  style={{ background:isDark?T.panel:T.saffronL, border:`1px solid ${T.border2}`,
+                    borderRadius:20, padding:"5px 14px", fontSize:11, fontWeight:700,
+                    color:isDark?T.ink2:T.saffron, cursor:"pointer" }}>
+                  Switch
+                </button>
+              </div>
+              {availableRoles.filter(r=>r!=="owner").length > 0 && (
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0" }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>Switch Role</div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {availableRoles.filter(r=>r!=="owner").map(r=>(
+                      <button key={r} onClick={()=>onSwitchRole(r)}
+                        style={{ background:T.tealL, border:`1px solid ${T.teal}30`, borderRadius:8,
+                          padding:"5px 12px", fontSize:11, fontWeight:700, color:T.teal, cursor:"pointer" }}>
+                        {r.charAt(0).toUpperCase()+r.slice(1)} →
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Logout */}
+            <button onClick={onLogout}
+              style={{ width:"100%", padding:"13px", background:T.roseL,
+                border:`1.5px solid ${T.rose}30`, borderRadius:14, fontSize:14,
+                fontWeight:800, color:T.rose, cursor:"pointer" }}>
+              🚪 Log Out
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, maxWidth:520,
         margin:"0 auto", background:T.surface, borderTop:`1.5px solid ${T.border}`,
-        zIndex:50, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        <div style={{ display:"flex", minWidth:"max-content", width:"100%" }}>
+        zIndex:50 }}>
+        <div style={{ display:"flex", width:"100%" }}>
           {tabs.map(t => (
             <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{ flex:"0 0 72px", padding:"9px 4px 10px", background:"none", border:"none",
+              style={{ flex:1, padding:"9px 4px 10px", background:"none", border:"none",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:2,
                 cursor:"pointer", color:tab===t.id?T.saffron:T.muted,
                 fontFamily:"inherit",
