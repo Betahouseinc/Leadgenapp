@@ -4194,14 +4194,14 @@ function LandingPage({ onGetStarted }) {
   const features = [
     { icon:"🏠", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance — no spreadsheets.", color:T.saffron, bg:T.saffronL },
     { icon:"💸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
-    { icon:"📲", title:"WhatsApp OTP Login", desc:"No passwords. Landlords and tenants login with a quick WhatsApp verification.", color:T.sky, bg:T.skyL },
+    { icon:"📧", title:"Email OTP Login", desc:"No passwords. Landlords and tenants login with a secure 6-digit code sent to their email.", color:T.sky, bg:T.skyL },
     { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
     { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
     { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants via WhatsApp before due date.", color:T.rose, bg:T.roseL },
   ];
 
   const steps = [
-    { n:"1", title:"Sign up with WhatsApp", desc:"Enter your number, get an OTP — you're in within 30 seconds." },
+    { n:"1", title:"Sign up with Email", desc:"Enter your email, get a 6-digit code — you're in within 30 seconds." },
     { n:"2", title:"Add your properties & units", desc:"Set rent amounts, due dates, and invite your tenants." },
     { n:"3", title:"Collect rent effortlessly", desc:"Tenants pay via UPI. You see it confirmed in real time." },
   ];
