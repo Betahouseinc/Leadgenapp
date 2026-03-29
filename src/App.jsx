@@ -429,6 +429,45 @@ function LoginScreen({ onLogin }) {
                 {loading ? <Spinner/> : "Send Login Code →"}
               </button>
 
+              {/* Demo accounts */}
+              <div style={{ marginTop:20, padding:14, background:T.panel,
+                border:`1.5px dashed ${T.border2}`, borderRadius:12 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:T.muted,
+                  letterSpacing:.5, textTransform:"uppercase", marginBottom:6 }}>
+                  🧪 Try a Demo
+                </div>
+                <div style={{ fontSize:11, color:T.muted, marginBottom:10, textAlign:"center" }}>
+                  See how RentAI works — no sign up needed
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  {[
+                    { label:"👤 Owner", email:"demo-owner@rentai.co.in", role:"owner", table:"owners" },
+                    { label:"🏠 Tenant", email:"demo-tenant@rentai.co.in", role:"tenant", table:"tenants" },
+                  ].map(d => (
+                    <button key={d.role} onClick={async () => {
+                      setLoading(true); setError("");
+                      try {
+                        const { data } = await supabase.from(d.table).select("*").eq("email", d.email).maybeSingle();
+                        if(!data) { setError("Demo unavailable. Try again later."); setLoading(false); return; }
+                        onLogin({ activeRole: d.role, roles: { [d.role]: { type: d.role, ...data } }, email: d.email });
+                      } catch(e) {
+                        setError("Could not load demo. Please try again.");
+                        setLoading(false);
+                      }
+                    }}
+                      style={{ flex:1, padding:"9px 6px", background:T.surface,
+                        border:`1.5px solid ${T.border2}`, borderRadius:10,
+                        fontSize:12, fontWeight:800, color:T.ink2,
+                        cursor:"pointer", fontFamily:"inherit" }}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
+                  Auto-login · No OTP needed
+                </div>
+              </div>
+
               <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:T.muted }}>
                 New to RentAI?{" "}
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSOMa0ExM-c0ZpJVU1xOd6XD63Fs6pQA/viewform"
