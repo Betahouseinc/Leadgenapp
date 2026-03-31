@@ -4524,14 +4524,10 @@ function LandingPage({ onGetStarted }) {
         padding:"0 16px", height:56, display:"flex", alignItems:"center",
         justifyContent:"space-between", width:"100%" }}>
         <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-          <div style={{ width:34, height:34, borderRadius:10,
-            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:18, boxShadow:`0 4px 12px ${T.saffron}40` }}>🏡</div>
-          <span style={{ fontSize:18, fontWeight:900, color:T.ink, letterSpacing:-.3 }}>RentAI</span>
+          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:38 }} />
           <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
             background:T.saffronL, padding:"2px 8px", borderRadius:20,
-            border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
+            border:`1px solid ${T.saffron}30` }}>BETA</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
