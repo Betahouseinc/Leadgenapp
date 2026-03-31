@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 // No Twilio keys exposed in frontend
 const SEND_OTP_FN = `${SUPABASE_URL}/functions/v1/send-otp`;
 
-const T = {
+const LIGHT_T = {
   bg:"#FAFAF7", surface:"#FFFFFF", panel:"#F5F3EE", card:"#FFFFFF",
   border:"#E8E4DC", border2:"#D4CFC4",
   ink:"#2C2416", ink2:"#5C5240", muted:"#9C8E7A", subtle:"#C4BAA8",
@@ -25,6 +25,22 @@ const T = {
   green:"#2E7D32", greenL:"#E8F5E9",
 };
 
+const DARK_T = {
+  bg:"#18181B", surface:"#1F1F23", panel:"#27272A", card:"#1F1F23",
+  border:"#3F3F46", border2:"#52525B",
+  ink:"#FAFAF7", ink2:"#D4CFC4", muted:"#78716C", subtle:"#57534E",
+  saffron:"#E8821A", saffronL:"#2D1F0A", saffronB:"#F5A650",
+  teal:"#2AB394", tealL:"#0A2420", tealB:"#1A8A72",
+  amber:"#D4A017", amberL:"#2D2208",
+  rose:"#E05555", roseL:"#2D1010",
+  sky:"#60A5FA", skyL:"#0C1A2E",
+  plum:"#A78BFA", plumL:"#2D1F4A",
+  green:"#4ADE80", greenL:"#0A2010",
+};
+
+// Login screen and shared components always use light theme
+const T = LIGHT_T;
+
 // ── RENTAI LOGO SVG COMPONENT ────────────────────────────────
 const RentAiLogo = ({ height = 44, dark = false }) => (
   <svg viewBox="0 0 490 148" height={height} style={{ display:"block" }}>
@@ -35,8 +51,6 @@ const RentAiLogo = ({ height = 44, dark = false }) => (
         <stop offset="100%" stopColor="#C85200"/>
       </linearGradient>
     </defs>
-
-    {/* ── R-Key: 3D shadow layer ── */}
     <g fill="#7A2E00" transform="translate(5,6)">
       <rect x="5" y="4" width="14" height="138" rx="3.5"/>
       <rect x="5" y="4" width="47" height="13" rx="3.5"/>
@@ -46,8 +60,6 @@ const RentAiLogo = ({ height = 44, dark = false }) => (
       <rect x="56" y="83" width="13" height="10" rx="2.5"/>
       <rect x="56" y="103" width="13" height="10" rx="2.5"/>
     </g>
-
-    {/* ── R-Key: main orange body ── */}
     <g fill="url(#rKeyGrad)">
       <rect x="5" y="4" width="14" height="138" rx="3.5"/>
       <rect x="5" y="4" width="47" height="13" rx="3.5"/>
@@ -57,18 +69,10 @@ const RentAiLogo = ({ height = 44, dark = false }) => (
       <rect x="56" y="83" width="13" height="10" rx="2.5"/>
       <rect x="56" y="103" width="13" height="10" rx="2.5"/>
     </g>
-
-    {/* ── R-Key: highlight streak ── */}
     <rect x="5" y="4" width="5" height="138" rx="2" fill="rgba(255,255,255,0.18)"/>
     <rect x="5" y="4" width="47" height="4"   rx="2" fill="rgba(255,255,255,0.18)"/>
-
-    {/* ── "Rent" text ── */}
-    <text x="112" y="118"
-      fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
-      fontWeight="900" fontSize="105"
-      fill={dark ? "#FFFFFF" : "#0A0D11"}>Rent</text>
-
-    {/* ── Circuit node above "Ai" ── */}
+    <text x="112" y="118" fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
+      fontWeight="900" fontSize="105" fill={dark ? "#FFFFFF" : "#0A0D11"}>Rent</text>
     <g fill="#FF7700" stroke="#FF7700" strokeLinecap="round">
       <circle cx="398" cy="23" r="7" stroke="none"/>
       <line x1="398" y1="16" x2="398" y2="3"   strokeWidth="3"/><circle cx="398" cy="1"   r="4.5" stroke="none"/>
@@ -77,12 +81,8 @@ const RentAiLogo = ({ height = 44, dark = false }) => (
       <line x1="403" y1="29" x2="415" y2="40"  strokeWidth="3"/><circle cx="417" cy="42"  r="4.5" stroke="none"/>
       <line x1="393" y1="17" x2="381" y2="6"   strokeWidth="3"/><circle cx="379" cy="4"   r="4.5" stroke="none"/>
     </g>
-
-    {/* ── "Ai" text ── */}
-    <text x="364" y="118"
-      fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
-      fontWeight="900" fontSize="105"
-      fill="#FF7700">Ai</text>
+    <text x="364" y="118" fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
+      fontWeight="900" fontSize="105" fill="#FF7700">Ai</text>
   </svg>
 );
 
@@ -315,7 +315,7 @@ const OtpInput = ({ value, onChange }) => (
 // ══════════════════════════════════════════════════════════════
 function LoginScreen({ onLogin }) {
   const [step, setStep] = useState("phone");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("Bengaluru");
@@ -323,8 +323,6 @@ function LoginScreen({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [sessionId, setSessionId] = useState(null);
-  const [otpSentAt, setOtpSentAt] = useState(null); // timestamp when OTP was sent
 
   useEffect(() => {
     if(resendTimer > 0) {
@@ -334,111 +332,54 @@ function LoginScreen({ onLogin }) {
   }, [resendTimer]);
 
   const sendOtp = async () => {
-    if(phone.length !== 10) { setError("Enter a valid 10-digit WhatsApp number"); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("Enter a valid email address"); return; }
     setLoading(true); setError("");
     try {
-      const arr = new Uint32Array(1);
-      crypto.getRandomValues(arr);
-      const code    = String(arr[0] % 1000000).padStart(6, "0");
-      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-
-      // Invalidate old OTPs
-      await supabase.from("otp_sessions")
-        .update({ used: true })
-        .eq("phone", `+91${phone}`)
-        .eq("used", false);
-
-      // Save OTP to DB
-      const sentAt = new Date().toISOString();
-      const { error: insertErr } = await supabase.from("otp_sessions")
-        .insert({ phone: `+91${phone}`, otp_code: code, expires_at: expires });
-
-      if(insertErr) {
-        setError("DB error: " + insertErr.message);
-        setLoading(false);
-        return;
-      }
-
-      setOtpSentAt(sentAt);
-
-      // Send WhatsApp via Edge Function (fire and forget)
-      fetch(`${SUPABASE_URL}/functions/v1/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: `+91${phone}`, code }),
-      }).catch(() => {});
-
+      const { error: authErr } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
+      if(authErr) { setError("Couldn't send login code. Please check your email and try again."); setLoading(false); return; }
       setStep("otp");
       setResendTimer(30);
     } catch(e) {
-      setError("Error: " + (e?.message || "unknown"));
+      console.error("sendOtp error:", e);
+      setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   };
 
   const verifyOtp = async () => {
-    if(otp.length !== 6) { setError("Enter the 6-digit OTP"); return; }
-    if(!/^\d{6}$/.test(otp)) { setError("OTP must be 6 digits"); return; }
+    if(otp.length !== 6) { setError("Enter the 6-digit code"); return; }
+    if(!/^\d{6}$/.test(otp)) { setError("Code must be 6 digits"); return; }
     setLoading(true); setError("");
     try {
+      const { error: authErr } = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
+      if(authErr) { setError("Incorrect code. Please try again."); setLoading(false); return; }
 
-      // ── Demo account bypass ──────────────────────────────────
-      // Only works for phones marked is_demo=true in demo_accounts table
-      if(otp === "123456") {
-        const { data: demoRow } = await supabase
-          .from("demo_accounts")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("is_active", true)
-          .maybeSingle();
+      // Check all tables in parallel to discover all roles for this email
+      const [
+        { data: adminRow },
+        { data: ownerRow },
+        { data: tenantRow },
+      ] = await Promise.all([
+        supabase.from("admin_phones").select("*").eq("email", email).eq("is_active", true).maybeSingle(),
+        supabase.from("owners").select("*").eq("email", email).maybeSingle(),
+        supabase.from("tenants").select("*, units(*, properties(*))").eq("email", email).eq("is_active", true).maybeSingle(),
+      ]);
 
-        if(!demoRow) {
-          setError("Incorrect OTP. Please try again.");
-          setLoading(false);
-          return;
-        }
-        // Demo account verified — fall through to role check below
-      } else {
-        // Normal OTP verification
-        const { data: sessions, error: readErr } = await supabase
-          .from("otp_sessions")
-          .select("*")
-          .eq("phone", `+91${phone}`)
-          .eq("used", false)
-          .order("created_at", { ascending: false })
-          .limit(1);
+      const roles = {};
+      if(adminRow) roles.admin  = { type:"admin",  email, name:adminRow.name, role:adminRow.role };
+      if(ownerRow)  roles.owner  = { type:"owner",  ...ownerRow };
+      if(tenantRow) roles.tenant = { type:"tenant", ...tenantRow };
 
-        if(readErr) { setError("DB read error: " + readErr.message); setLoading(false); return; }
+      if(Object.keys(roles).length === 0) { setStep("role"); setLoading(false); return; }
 
-        const session = sessions?.[0];
-        if(!session) { setError("OTP not found. Please request a new one."); setLoading(false); return; }
-        if(new Date(session.expires_at) < new Date()) { setError("OTP expired. Please request a new one."); setLoading(false); return; }
-        if(String(session.otp_code).trim() !== String(otp).trim()) { setError("Incorrect OTP. Please try again."); setLoading(false); return; }
-
-        await supabase.from("otp_sessions").update({ used: true }).eq("id", session.id);
-      }
-
-      // Check if admin
-      try {
-        const { data: adminRow } = await supabase
-          .from("admin_phones").select("*")
-          .eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
-        if(adminRow) { onLogin({ type:"admin", phone:`+91${phone}`, name:adminRow.name, role:adminRow.role }); return; }
-      } catch(_) {}
-
-      // Check if owner
-      const { data: existingOwner, error: ownerErr } = await supabase
-        .from("owners").select("*").eq("phone", `+91${phone}`).maybeSingle();
-      if(ownerErr) { setError("Owner lookup error: " + ownerErr.message); setLoading(false); return; }
-      if(existingOwner) { onLogin({ type:"owner", ...existingOwner }); return; }
-
-      // Check if tenant
-      const { data: existingTenant } = await supabase
-        .from("tenants").select("*, units(*, properties(*))").eq("phone", `+91${phone}`).eq("is_active", true).maybeSingle();
-      if(existingTenant) { onLogin({ type:"tenant", ...existingTenant }); return; }
-
-      setStep("role");
+      // Priority: admin > owner > tenant
+      const activeRole = adminRow ? "admin" : ownerRow ? "owner" : "tenant";
+      onLogin({ activeRole, roles, email });
     } catch(e) {
+      console.error("verifyOtp error:", e);
       setError("Verification failed. Please try again.");
     }
     setLoading(false);
@@ -450,22 +391,40 @@ function LoginScreen({ onLogin }) {
     setLoading(true); setError("");
     try {
       if(role === "owner") {
+        // Check if owner already exists (e.g. user hit back and retried)
+        const { data: existing } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
+        if(existing) { onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...existing } }, email }); return; }
+
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ phone:`+91${phone}`, name:name.trim(), city, beta_user:true })
+          .insert({ email, name:name.trim(), city })
           .select("*").single();
-        if(insertErr) throw insertErr;
-        onLogin({ type:"owner", ...owner });
+        if(insertErr) {
+          console.error("Owner insert error:", insertErr);
+          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
+          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
+          setLoading(false); return;
+        }
+        onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
       } else {
         // Tenant self-registration — no unit assigned yet
+        const { data: existing } = await supabase.from("tenants").select("*").eq("email", email).maybeSingle();
+        if(existing) { onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...existing } }, email }); return; }
+
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
-          .insert({ phone:`+91${phone}`, name:name.trim(), is_active:true, owner_id:null })
+          .insert({ email, name:name.trim(), is_active:true })
           .select("*").single();
-        if(insertErr) throw insertErr;
-        onLogin({ type:"tenant", ...tenant });
+        if(insertErr) {
+          console.error("Tenant insert error:", insertErr);
+          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
+          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
+          setLoading(false); return;
+        }
+        onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...tenant } }, email });
       }
     } catch(e) {
+      console.error("createProfile error:", e);
       setError("Could not create profile. Please try again.");
     }
     setLoading(false);
@@ -487,52 +446,56 @@ function LoginScreen({ onLogin }) {
         <div style={{ background:T.surface, borderRadius:20, padding:28,
           border:`1.5px solid ${T.border}`, boxShadow:"0 4px 24px rgba(0,0,0,.06)" }}>
 
-          {/* STEP: PHONE */}
+          {/* STEP: EMAIL */}
           {step === "phone" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Owner Login</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Sign in to RentAI</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                We'll send a 6-digit OTP to your WhatsApp
+                We'll send a 6-digit code to your email
               </div>
               <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
-                textTransform:"uppercase", marginBottom:8 }}>WhatsApp Number</div>
-              <PhoneInput value={phone} onChange={setPhone} disabled={loading}/>
+                textTransform:"uppercase", marginBottom:8 }}>Email Address</div>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value.trim())}
+                placeholder="you@example.com" disabled={loading}
+                style={{ width:"100%", padding:"12px 14px", background:T.panel,
+                  border:`1.5px solid ${T.border2}`, borderRadius:12, fontSize:15,
+                  fontWeight:600, color:T.ink, fontFamily:"inherit" }}
+              />
               {error && <div style={{ color:T.rose, fontSize:12, marginTop:8, fontWeight:600 }}>{error}</div>}
               <button onClick={sendOtp} disabled={loading}
                 style={{ width:"100%", marginTop:20, padding:14,
                   background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                   border:"none", borderRadius:12, fontSize:15, fontWeight:800,
                   color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Send OTP on WhatsApp →"}
+                {loading ? <Spinner/> : "Send Login Code →"}
               </button>
 
-              {/* Demo login buttons — quick fill for test accounts */}
+              {/* Demo accounts */}
               <div style={{ marginTop:20, padding:14, background:T.panel,
                 border:`1.5px dashed ${T.border2}`, borderRadius:12 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:T.muted,
-                  letterSpacing:.5, textTransform:"uppercase", marginBottom:10 }}>
-                  🧪 Demo Accounts
+                  letterSpacing:.5, textTransform:"uppercase", marginBottom:6 }}>
+                  🧪 Try a Demo
+                </div>
+                <div style={{ fontSize:11, color:T.muted, marginBottom:10, textAlign:"center" }}>
+                  See how RentAI works — no sign up needed
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
                   {[
-                    { label:"👤 Owner", phone:"9999999999" },
-                    { label:"🏠 Tenant", phone:"8888888888" },
+                    { label:"👤 Owner", email:"demo-owner@rentai.co.in", role:"owner", table:"owners" },
+                    { label:"🏠 Tenant", email:"demo-tenant@rentai.co.in", role:"tenant", table:"tenants" },
                   ].map(d => (
-                    <button key={d.phone} onClick={async () => {
-                      setPhone(d.phone);
+                    <button key={d.role} onClick={async () => {
                       setLoading(true); setError("");
-                      // Send OTP then auto-fetch and fill it
-                      const arr = new Uint32Array(1);
-                      crypto.getRandomValues(arr);
-                      const code = String(arr[0] % 1000000).padStart(6, "0");
-                      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-                      await supabase.from("otp_sessions").update({ used:true }).eq("phone",`+91${d.phone}`).eq("used",false);
-                      await supabase.from("otp_sessions").insert({ phone:`+91${d.phone}`, otp_code:code, expires_at:expires });
-                      setOtpSentAt(new Date().toISOString());
-                      setStep("otp");
-                      setResendTimer(30);
-                      setOtp(code); // auto-fill OTP
-                      setLoading(false);
+                      try {
+                        const { data } = await supabase.from(d.table).select("*").eq("email", d.email).maybeSingle();
+                        if(!data) { setError("Demo unavailable. Try again later."); setLoading(false); return; }
+                        onLogin({ activeRole: d.role, roles: { [d.role]: { type: d.role, ...data } }, email: d.email });
+                      } catch(e) {
+                        setError("Could not load demo. Please try again.");
+                        setLoading(false);
+                      }
                     }}
                       style={{ flex:1, padding:"9px 6px", background:T.surface,
                         border:`1.5px solid ${T.border2}`, borderRadius:10,
@@ -543,7 +506,7 @@ function LoginScreen({ onLogin }) {
                   ))}
                 </div>
                 <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
-                  Auto-fills OTP · No WhatsApp needed
+                  Auto-login · No OTP needed
                 </div>
               </div>
 
@@ -561,9 +524,9 @@ function LoginScreen({ onLogin }) {
           {/* STEP: OTP */}
           {step === "otp" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Enter OTP</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Check your email</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                Sent to WhatsApp <strong style={{ color:T.ink }}>+91 {phone}</strong>
+                Code sent to <strong style={{ color:T.ink }}>{email}</strong>
                 <button onClick={()=>{setStep("phone");setOtp("");setError("");}}
                   style={{ background:"none", border:"none", color:T.saffron,
                     fontWeight:700, fontSize:12, marginLeft:8, cursor:"pointer" }}>Change</button>
@@ -572,10 +535,10 @@ function LoginScreen({ onLogin }) {
               <div style={{ textAlign:"center", marginTop:10, padding:"9px 14px",
                 background:T.saffronL, border:`1px solid ${T.saffron}25`,
                 borderRadius:10, fontSize:12, color:T.ink2, lineHeight:1.6 }}>
-                🔐 During beta, use the access code sent to you on WhatsApp by the RentAI team.
+                📧 Enter the 6-digit code from your email. Check spam if you don't see it.
                 <br/>
                 <span style={{ fontSize:11, color:T.muted }}>
-                  Haven't received it? Email <a href="mailto:support@rentai.co.in"
+                  Need help? Email <a href="mailto:support@rentai.co.in"
                   style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>support@rentai.co.in</a>
                 </span>
               </div>
@@ -588,7 +551,7 @@ function LoginScreen({ onLogin }) {
                   color:otp.length===6?"#fff":T.muted,
                   display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                   transition:"all .2s" }}>
-                {loading ? <Spinner/> : "Verify & Login →"}
+                {loading ? <Spinner/> : "Verify & Get Started →"}
               </button>
               <div style={{ textAlign:"center", marginTop:14, fontSize:12, color:T.muted }}>
                 {resendTimer > 0
@@ -663,9 +626,9 @@ function LoginScreen({ onLogin }) {
 
         <div style={{ textAlign:"center", marginTop:16, fontSize:11, color:T.muted }}>
           By logging in you agree to our{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Terms</span>
+          <a href="/legal/terms" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Terms</a>
           {" "}and{" "}
-          <span style={{ color:T.saffron, fontWeight:700, cursor:"pointer" }}>Privacy Policy</span>
+          <a href="/legal/privacy" style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>Privacy Policy</a>
         </div>
       </div>
     </div>
@@ -791,8 +754,19 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
 // ══════════════════════════════════════════════════════════════
 // OWNER DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function OwnerDashboard({ owner, onLogout }) {
+const downloadCSV = (filename, headers, rows) => {
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type:"text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+};
+
+function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "owner", onSwitchRole, onAddRole = () => {} }) {
+  const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab] = useState("dashboard");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [units, setUnits] = useState([]);
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -808,22 +782,68 @@ function OwnerDashboard({ owner, onLogout }) {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [newExp, setNewExp] = useState({ title:"", amount:"", category:"repair", unit_id:"", date:"", notes:"" });
   const [savingExp, setSavingExp] = useState(false);
+  const [selfTenantModal, setSelfTenantModal] = useState(false);
+  const [selfTenantForm, setSelfTenantForm] = useState({ property_address:"", monthly_rent:"", rent_due_day:"1", landlord_name:"", landlord_phone:"" });
+  const [selfTenantLoading, setSelfTenantLoading] = useState(false);
+  const [properties, setProperties] = useState([]);
+  const [showAddProp, setShowAddProp] = useState(false);
+  const [newProp, setNewProp] = useState({ name:"", address:"", city:"" });
+  const [savingProp, setSavingProp] = useState(false);
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name:owner.name||"", phone:owner.phone||"", city:owner.city||"" });
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
+
+  const createSelfTenant = async () => {
+    if(!selfTenantForm.property_address.trim()) { showToast("Enter your property address"); return; }
+    if(!selfTenantForm.monthly_rent || isNaN(selfTenantForm.monthly_rent)) { showToast("Enter a valid rent amount"); return; }
+    setSelfTenantLoading(true);
+    try {
+      const { data: existing } = await supabase.from("tenants")
+        .select("*").eq("email", owner.email).eq("self_managed", true).maybeSingle();
+      if(existing) {
+        onAddRole("tenant", { type:"tenant", ...existing });
+        setSelfTenantModal(false);
+        showToast("Switched to your tenant profile");
+        setSelfTenantLoading(false);
+        return;
+      }
+      const { data: tenant, error } = await supabase.from("tenants").insert({
+        email: owner.email,
+        name: owner.name,
+        is_active: true,
+        self_managed: true,
+        landlord_name: selfTenantForm.landlord_name.trim() || null,
+        landlord_phone: selfTenantForm.landlord_phone.trim() || null,
+        property_address: selfTenantForm.property_address.trim(),
+        monthly_rent: Number(selfTenantForm.monthly_rent),
+        rent_due_day: Number(selfTenantForm.rent_due_day) || 1,
+      }).select("*").single();
+      if(error) throw error;
+      onAddRole("tenant", { type:"tenant", ...tenant });
+      setSelfTenantModal(false);
+    } catch(e) {
+      showToast("Could not create profile. Try again.");
+    }
+    setSelfTenantLoading(false);
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: u }, { data: p }, { data: r }, { data: e }] = await Promise.all([
+      const [{ data: u }, { data: p }, { data: r }, { data: e }, { data: pr }] = await Promise.all([
         supabase.from("units").select("*, tenants(*)").eq("owner_id", owner.id).order("unit_number"),
         supabase.from("payments").select("*, units(unit_number), tenants(name, phone)").eq("owner_id", owner.id).order("created_at", { ascending:false }).limit(50),
         supabase.from("maintenance_requests").select("*, units(unit_number)").eq("owner_id", owner.id).order("created_at", { ascending:false }),
         supabase.from("expenses").select("*, units(unit_number)").eq("owner_id", owner.id).order("date", { ascending:false }).limit(100),
+        supabase.from("properties").select("id, name, address, city").eq("owner_id", owner.id).order("created_at"),
       ]);
       setUnits(u || []);
       setPayments(p || []);
       setRequests(r || []);
       setExpenses(e || []);
+      setProperties(pr || []);
     } catch(e) { console.error(e); }
     setLoading(false);
   }, [owner.id]);
@@ -1095,6 +1115,39 @@ function OwnerDashboard({ owner, onLogout }) {
     loadData();
   };
 
+  const addProperty = async () => {
+    if(!newProp.name.trim()) { showToast("Property name is required"); return; }
+    setSavingProp(true);
+    try {
+      const { error } = await supabase.from("properties").insert({
+        owner_id: owner.id,
+        name: newProp.name.trim(),
+        address: newProp.address.trim() || null,
+        city: newProp.city.trim() || owner.city || null,
+      });
+      if(error) throw error;
+      setNewProp({ name:"", address:"", city:"" });
+      setShowAddProp(false);
+      showToast("Property added ✓");
+      loadData();
+    } catch(e) { showToast("Could not add property"); }
+    setSavingProp(false);
+  };
+
+  const saveProfile = async () => {
+    if(!profileForm.name.trim()) { showToast("Name is required"); return; }
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase.from("owners")
+        .update({ name: profileForm.name.trim(), phone: profileForm.phone.trim()||null, city: profileForm.city.trim()||null })
+        .eq("id", owner.id);
+      if(error) throw error;
+      setEditProfile(false);
+      showToast("Profile updated ✓");
+    } catch(e) { showToast("Could not update profile"); }
+    setSavingProfile(false);
+  };
+
   const totalExpenses  = expenses.reduce((s, e) => s + (isNaN(Number(e.amount)) ? 0 : Number(e.amount)), 0);
   const totalCollected = payments.filter(p => p.status === "paid").reduce((s,p) => s + (isNaN(Number(p.amount)) ? 0 : Number(p.amount)), 0);
   const netIncome      = totalCollected - totalExpenses;
@@ -1107,16 +1160,18 @@ function OwnerDashboard({ owner, onLogout }) {
     { value:"tax",         label:"📋 Tax / Legal",    color: T.ink2 },
     { value:"insurance",   label:"🛡 Insurance",      color: T.teal },
     { value:"renovation",  label:"🏗 Renovation",     color: T.saffron },
+    { value:"emi",         label:"🏦 Home Loan EMI",  color: "#7C3AED" },
     { value:"other",       label:"📦 Other",          color: T.muted },
   ];
   const catMeta = (val) => EXP_CATEGORIES.find(c => c.value === val) || EXP_CATEGORIES[EXP_CATEGORIES.length-1];
 
   const tabs = [
-    { id:"dashboard", icon:"📊", label:"Dashboard" },
-    { id:"units",     icon:"🏡", label:"Units" },
-    { id:"payments",  icon:"💰", label:"Payments" },
-    { id:"expenses",  icon:"🧾", label:"Expenses" },
-    { id:"requests",  icon:"🔧", label:"Requests" },
+    { id:"dashboard",   icon:"📊", label:"Dashboard" },
+    { id:"properties",  icon:"🏢", label:"Properties" },
+    { id:"payments",    icon:"💰", label:"Payments" },
+    { id:"expenses",    icon:"🧾", label:"Expenses" },
+    { id:"reports",     icon:"📈", label:"Reports" },
+    { id:"profile",     icon:"👤", label:"Profile" },
   ];
 
   if(loading) return (
@@ -1142,10 +1197,30 @@ function OwnerDashboard({ owner, onLogout }) {
           <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{owner.name || owner.phone} · Owner</div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:"rgba(255,255,255,.8)", cursor:"pointer" }}>Logout</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? T.saffron : "transparent",
+                    color: r === activeRole ? "#fff" : T.muted }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+              color:T.muted, cursor:"pointer" }}>Logout</button>
+        </div>
       </div>
 
       {/* Content */}
@@ -1183,12 +1258,19 @@ function OwnerDashboard({ owner, onLogout }) {
             </div>
 
             {/* Stats grid — expandable tiles */}
+            {(()=>{
+              const now = new Date();
+              const mthExp = expenses.filter(e=>{ const d=new Date(e.date||e.created_at); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); }).reduce((s,e)=>s+Number(e.amount||0),0);
+              const mthNet = totalCollected - mthExp;
+              return (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginBottom:18 }}>
               {[
                 { id:"occupied", icon:"🏡", label:"Occupied", value:`${occupied.length}/${units.length}`, sub:`${units.length-occupied.length} vacant`, color:T.teal, light:T.tealL },
                 { id:"pending", icon:"⚠️", label:"Rent Pending", value:pendingPayments.length, sub:fd(totalPending)+" due", color:T.rose, light:T.roseL },
                 { id:"requests", icon:"🔧", label:"Open Requests", value:openReqs, sub:"maintenance", color:T.sky, light:T.skyL },
                 { id:"units", icon:"📋", label:"Total Units", value:units.length, sub:"in portfolio", color:T.amber, light:T.amberL },
+                { id:"expenses", icon:"💸", label:"This Month Expenses", value:fd(mthExp), sub:"tracked spend", color:T.rose, light:T.roseL },
+                { id:"net", icon:"📈", label:"Net Income", value:fd(mthNet), sub:mthNet>=0?"positive":"negative", color:mthNet>=0?T.teal:T.rose, light:mthNet>=0?T.tealL:T.roseL },
               ].map(s => (
                 <div key={s.id} onClick={()=>setExpandedTile(expandedTile===s.id?null:s.id)}
                   style={{ background:T.card,
@@ -1321,6 +1403,47 @@ function OwnerDashboard({ owner, onLogout }) {
                 </div>
               ))}
             </div>
+              ); })()}
+
+            {/* Revenue vs Expenses — last 6 months */}
+            {(()=>{
+              const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+              const now2 = new Date();
+              const last6 = Array.from({length:6},(_,i)=>{
+                const d = new Date(now2.getFullYear(), now2.getMonth()-5+i, 1);
+                return { label:MONTHS[d.getMonth()], year:d.getFullYear(), month:d.getMonth() };
+              });
+              const bars = last6.map(m => {
+                const rev = payments.filter(p=>(p.status==="paid"||p.status==="verified")&&(()=>{ const d=new Date(p.paid_date||p.created_at); return d.getMonth()===m.month&&d.getFullYear()===m.year; })()).reduce((s,p)=>s+Number(p.amount||0),0);
+                const exp = expenses.filter(e=>{ const d=new Date(e.date||e.created_at); return d.getMonth()===m.month&&d.getFullYear()===m.year; }).reduce((s,e)=>s+Number(e.amount||0),0);
+                return { ...m, rev, exp };
+              });
+              const maxVal = Math.max(1, ...bars.flatMap(b=>[b.rev,b.exp]));
+              return (
+                <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, padding:16, marginBottom:18 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:14 }}>Revenue vs Expenses — Last 6 Months</div>
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80, marginBottom:8 }}>
+                    {bars.map((b,i) => (
+                      <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                        <div style={{ display:"flex", gap:2, alignItems:"flex-end", height:72 }}>
+                          <div style={{ width:11, height:Math.max(3, Math.round((b.rev/maxVal)*72)), background:T.teal, borderRadius:"3px 3px 0 0", transition:"height .3s" }}/>
+                          <div style={{ width:11, height:Math.max(3, Math.round((b.exp/maxVal)*72)), background:T.rose, borderRadius:"3px 3px 0 0", transition:"height .3s" }}/>
+                        </div>
+                        <div style={{ fontSize:8, color:T.muted, fontWeight:700 }}>{b.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display:"flex", gap:14 }}>
+                    {[{color:T.teal,label:"Revenue"},{color:T.rose,label:"Expenses"}].map(l=>(
+                      <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                        <div style={{ width:10, height:10, borderRadius:2, background:l.color }}/>
+                        <span style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{l.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Pending payments list */}
             {pendingPayments.length > 0 && (
@@ -1390,7 +1513,7 @@ function OwnerDashboard({ owner, onLogout }) {
                 <div style={{ fontSize:13, color:T.muted, marginBottom:16 }}>
                   Start by adding a flat or room to track rent
                 </div>
-                <button onClick={()=>{setTab("units");setShowAddUnit(true);}}
+                <button onClick={()=>{setTab("properties");setShowAddUnit(true);}}
                   style={{ background:T.saffron, border:"none", borderRadius:10,
                     padding:"10px 24px", fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
                   + Add Unit
@@ -1635,20 +1758,149 @@ function OwnerDashboard({ owner, onLogout }) {
                 )}
               </div>
             )}
+
+            {/* ── REFER & EARN ── */}
+            {(() => {
+              const refCode = (owner.name || "").replace(/\s+/g,"").toUpperCase().slice(0,6) + (owner.id||"").toString().slice(-4).toUpperCase();
+              const refLink = `https://rentai.co.in?ref=${refCode}`;
+              const refMsg  = `Hey! I use RentAI to manage my rental properties. Try it free → ${refLink}`;
+              return (
+                <div style={{ background:`linear-gradient(135deg,${T.plum}15,${T.plum}08)`,
+                  border:`1.5px solid ${T.plum}30`, borderRadius:16, padding:16, marginTop:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                    <span style={{ fontSize:22 }}>🎁</span>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.plum }}>Refer & Earn</div>
+                      <div style={{ fontSize:11, color:T.ink2 }}>Get 1 month free for every 2 owners you refer</div>
+                    </div>
+                  </div>
+                  <div style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:8,
+                    padding:"8px 12px", fontSize:12, fontWeight:700, color:T.ink2,
+                    marginBottom:12, letterSpacing:.3, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ color:T.plum }}>{refCode}</span>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ background:"none", border:"none", fontSize:11, color:T.muted,
+                        fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      📋 Copy link
+                    </button>
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(refMsg)}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ flex:1, padding:"8px 0", background:"#25D366", borderRadius:9,
+                        fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none",
+                        textAlign:"center" }}>
+                      💬 Share on WhatsApp
+                    </a>
+                    <button onClick={()=>navigator.clipboard.writeText(refLink)}
+                      style={{ flex:1, padding:"8px 0", background:T.plumL, border:`1px solid ${T.plum}30`,
+                        borderRadius:9, fontSize:11, fontWeight:800, color:T.plum, cursor:"pointer" }}>
+                      🔗 Copy referral link
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── TRACK MY OWN RENT ── */}
+            {!availableRoles.includes("tenant") ? (
+              <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:16, marginTop:8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                  <span style={{ fontSize:22 }}>🏠</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:800, color:T.teal }}>Also Renting Somewhere?</div>
+                    <div style={{ fontSize:11, color:T.ink2 }}>Track your own rent — even if your landlord isn't on RentAI</div>
+                  </div>
+                </div>
+                <button onClick={() => setSelfTenantModal(true)}
+                  style={{ width:"100%", padding:"9px 0", background:T.teal, borderRadius:9,
+                    fontSize:12, fontWeight:800, color:"#fff", border:"none", cursor:"pointer" }}>
+                  + Add Tenant Profile
+                </button>
+              </div>
+            ) : (
+              <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:"12px 16px", marginTop:8,
+                display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:18 }}>🏠</span>
+                  <div style={{ fontSize:12, fontWeight:700, color:T.teal }}>You have a tenant profile</div>
+                </div>
+                <button onClick={() => onSwitchRole("tenant")}
+                  style={{ padding:"6px 14px", background:T.teal, borderRadius:8,
+                    fontSize:11, fontWeight:800, color:"#fff", border:"none", cursor:"pointer" }}>
+                  Switch →
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* UNITS TAB */}
-        {tab === "units" && (
+        {/* PROPERTIES TAB */}
+        {tab === "properties" && (
           <div style={{ padding:"18px 16px" }} className="fu">
+            {/* Header */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Your Units</div>
-              <button onClick={()=>setShowAddUnit(true)}
-                style={{ background:T.saffron, border:"none", borderRadius:10,
-                  padding:"7px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                + Add Unit
-              </button>
+              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Properties & Units</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={()=>setShowAddProp(v=>!v)}
+                  style={{ background:showAddProp?T.panel:T.surface, border:`1.5px solid ${T.border2}`, borderRadius:10,
+                    padding:"7px 12px", fontSize:12, fontWeight:800, color:T.ink2, cursor:"pointer" }}>
+                  {showAddProp ? "✕" : "🏢 + Property"}
+                </button>
+                <button onClick={()=>{setShowAddUnit(true);setShowAddProp(false);}}
+                  style={{ background:T.saffron, border:"none", borderRadius:10,
+                    padding:"7px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                  + Unit
+                </button>
+              </div>
             </div>
+
+            {/* Add property form */}
+            {showAddProp && (
+              <div style={{ background:T.surface, border:`1.5px solid ${T.saffron}40`, borderRadius:16, padding:18, marginBottom:18 }} className="fu">
+                <div style={{ fontWeight:800, fontSize:14, color:T.ink, marginBottom:14 }}>New Property</div>
+                {[
+                  { label:"Property Name *", key:"name", placeholder:"e.g. Sai Residency, Green Apartments" },
+                  { label:"Address", key:"address", placeholder:"e.g. 12, MG Road, Koramangala" },
+                  { label:"City", key:"city", placeholder:"e.g. Bengaluru" },
+                ].map(f => (
+                  <div key={f.key} style={{ marginBottom:11 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5, textTransform:"uppercase", marginBottom:5 }}>{f.label}</div>
+                    <input value={newProp[f.key]} onChange={e=>setNewProp(p=>({...p,[f.key]:e.target.value}))}
+                      placeholder={f.placeholder}
+                      style={{ width:"100%", background:T.panel, border:`1.5px solid ${T.border2}`, color:T.ink,
+                        borderRadius:10, padding:"10px 13px", fontSize:13, fontWeight:600, boxSizing:"border-box" }}/>
+                  </div>
+                ))}
+                <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                  <button onClick={()=>setShowAddProp(false)}
+                    style={{ flex:1, padding:"10px", background:T.panel, border:`1.5px solid ${T.border2}`, borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                    Cancel
+                  </button>
+                  <button onClick={addProperty} disabled={savingProp}
+                    style={{ flex:2, padding:"10px", background:T.saffron, border:"none", borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    {savingProp ? <Spinner/> : "Save Property →"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Properties summary chips */}
+            {properties.length > 0 && (
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:16 }}>
+                {properties.map(pr => {
+                  const prUnits = units.filter(u=>u.property_id===pr.id);
+                  return (
+                    <div key={pr.id} style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:12, padding:"8px 14px" }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{pr.name}</div>
+                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} · {pr.city||pr.address||""}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
 
             {/* Add unit form */}
             {showAddUnit && (
@@ -1745,7 +1997,7 @@ function OwnerDashboard({ owner, onLogout }) {
               </div>
             )}
 
-            {/* Units list */}
+            {/* Units list — grouped by property */}
             {units.length === 0 && !showAddUnit && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
                 <div style={{ fontSize:32, marginBottom:10 }}>🏠</div>
@@ -1753,7 +2005,24 @@ function OwnerDashboard({ owner, onLogout }) {
                 <div style={{ fontSize:12, marginTop:4 }}>Add your first flat or room above</div>
               </div>
             )}
-            {units.map(u => {
+            {(()=>{
+              // Group units by property
+              const grouped = properties.length > 0
+                ? properties.map(pr => ({ pr, items: units.filter(u=>u.property_id===pr.id) }))
+                : [{ pr:null, items:units }];
+              const unassigned = units.filter(u=>!properties.find(pr=>pr.id===u.property_id));
+              if(unassigned.length > 0 && properties.length > 0) grouped.push({ pr:null, items:unassigned });
+              return grouped.map(({ pr, items }, gi) => (
+                <div key={pr?.id||"none-"+gi}>
+                  {pr && (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, marginTop:gi>0?18:0 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>🏢 {pr.name}</div>
+                      {pr.city && <span style={{ fontSize:11, color:T.muted }}>{pr.city}</span>}
+                      <div style={{ flex:1, height:1, background:T.border, marginLeft:4 }}/>
+                      <div style={{ fontSize:10, color:T.muted }}>{items.length} unit{items.length!==1?"s":""}</div>
+                    </div>
+                  )}
+                  {items.map(u => {
               const tenant = u.tenants?.[0];
               const isOpen = selUnit?.id === u.id;
               return (
@@ -1934,7 +2203,10 @@ function OwnerDashboard({ owner, onLogout }) {
                   )}
                 </div>
               );
-            })}
+                  })}
+                </div>
+              ));
+            })()}
           </div>
         )}
 
@@ -2236,6 +2508,135 @@ function OwnerDashboard({ owner, onLogout }) {
           </div>
         )}
 
+        {/* REPORTS TAB */}
+        {tab === "reports" && (() => {
+          const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          const years = [...new Set([
+            new Date().getFullYear(),
+            ...payments.map(p => new Date(p.due_date||p.created_at).getFullYear()),
+            ...expenses.map(e => new Date(e.date||e.created_at).getFullYear()),
+          ])].sort((a,b)=>b-a);
+
+          const isPaid = p => p.status==="paid"||p.status==="verified";
+
+          const monthly = MONTHS.map((label, i) => {
+            const mp = payments.filter(p => { const d=new Date(p.due_date||p.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const me = expenses.filter(e => { const d=new Date(e.date||e.created_at); return d.getFullYear()===selectedYear && d.getMonth()===i; });
+            const collected = mp.filter(isPaid).reduce((s,p)=>s+Number(p.amount||0),0);
+            const expected  = mp.reduce((s,p)=>s+Number(p.amount||0),0);
+            const expTotal  = me.reduce((s,e)=>s+Number(e.amount||0),0);
+            return { label, collected, expected, expTotal, net: collected-expTotal, hasData: mp.length>0||me.length>0 };
+          });
+
+          const totCollected = monthly.reduce((s,m)=>s+m.collected,0);
+          const totExpected  = monthly.reduce((s,m)=>s+m.expected,0);
+          const totExpenses  = monthly.reduce((s,m)=>s+m.expTotal,0);
+          const totNet       = totCollected - totExpenses;
+
+          const exportPaymentsCSV = () => downloadCSV(
+            `RentAI_Payments_${selectedYear}.csv`,
+            ["Date","Unit","Tenant","Type","Amount","Status"],
+            payments
+              .filter(p=>new Date(p.due_date||p.created_at).getFullYear()===selectedYear)
+              .map(p=>[fmt(p.due_date||p.created_at), p.units?.unit_number||"", p.tenants?.name||"", p.type||"rent", p.amount, p.status])
+          );
+
+          const exportExpensesCSV = () => downloadCSV(
+            `RentAI_Expenses_${selectedYear}.csv`,
+            ["Date","Category","Description","Unit","Amount"],
+            expenses
+              .filter(e=>new Date(e.date||e.created_at).getFullYear()===selectedYear)
+              .map(e=>[fmt(e.date||e.created_at), e.category||"", e.title||"", e.units?.unit_number||"", e.amount])
+          );
+
+          const exportSummaryCSV = () => downloadCSV(
+            `RentAI_YearlySummary_${selectedYear}.csv`,
+            ["Month","Expected (₹)","Collected (₹)","Expenses (₹)","Net (₹)"],
+            monthly.map(m=>[m.label, m.expected, m.collected, m.expTotal, m.net])
+          );
+
+          return (
+            <div style={{ padding:"18px 16px" }} className="fu">
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:T.ink }}>Rental Reports</div>
+                <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))}
+                  style={{ background:T.panel, border:`1.5px solid ${T.border2}`, borderRadius:8,
+                    padding:"5px 10px", fontSize:12, fontWeight:700, color:T.ink, cursor:"pointer" }}>
+                  {years.map(y=><option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+
+              {/* Summary cards */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+                {[
+                  { label:"Collected", value:fd(totCollected), color:T.green,  bg:T.greenL  },
+                  { label:"Expected",  value:fd(totExpected),  color:T.amber,  bg:T.amberL  },
+                  { label:"Expenses",  value:fd(totExpenses),  color:T.rose,   bg:T.roseL   },
+                  { label:"Net Income",value:fd(totNet),       color:totNet>=0?T.teal:T.rose, bg:totNet>=0?T.tealL:T.roseL },
+                ].map(c=>(
+                  <div key={c.label} style={{ background:c.bg, border:`1.5px solid ${c.color}25`, borderRadius:13, padding:"12px 14px" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:c.color, letterSpacing:.5, marginBottom:4 }}>{c.label.toUpperCase()}</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:c.color }}>{c.value}</div>
+                    <div style={{ fontSize:9, color:T.muted, marginTop:2 }}>{selectedYear} total</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly breakdown */}
+              <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, overflow:"hidden", marginBottom:16 }}>
+                <div style={{ padding:"10px 14px", borderBottom:`1px solid ${T.border}`, fontSize:11, fontWeight:800, color:T.ink }}>
+                  Monthly Breakdown
+                </div>
+                {monthly.map((m,i)=>(
+                  <div key={m.label} style={{ display:"grid", gridTemplateColumns:"40px 1fr 1fr 1fr", gap:4,
+                    padding:"9px 14px", borderBottom:i<11?`1px solid ${T.border}`:"none",
+                    background: i%2===0 ? T.card : T.panel, opacity: m.hasData ? 1 : 0.45 }}>
+                    <div style={{ fontSize:11, fontWeight:800, color:T.ink2 }}>{m.label}</div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Collected</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.green }}>{m.collected>0?fd(m.collected):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Expenses</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:m.expTotal>0?T.rose:T.muted }}>{m.expTotal>0?fd(m.expTotal):"—"}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:9, color:T.muted }}>Net</div>
+                      <div style={{ fontSize:11, fontWeight:800, color:m.net>=0?T.teal:T.rose }}>{m.hasData?fd(m.net):"—"}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Export buttons */}
+              <div style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:.5, marginBottom:8 }}>EXPORT AS CSV (EXCEL)</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {[
+                  { label:"📥 Yearly Summary", fn: exportSummaryCSV },
+                  { label:"📥 All Payments",   fn: exportPaymentsCSV },
+                  { label:"📥 All Expenses",   fn: exportExpensesCSV },
+                ].map(b=>(
+                  <button key={b.label} onClick={b.fn}
+                    style={{ width:"100%", padding:"11px 16px", background:T.surface,
+                      border:`1.5px solid ${T.border2}`, borderRadius:11,
+                      fontSize:13, fontWeight:700, color:T.ink, textAlign:"left", cursor:"pointer" }}>
+                    {b.label}
+                    <span style={{ float:"right", fontSize:10, color:T.muted }}>→ .csv</span>
+                  </button>
+                ))}
+                <button onClick={()=>window.print()}
+                  style={{ width:"100%", padding:"11px 16px", background:T.saffronL,
+                    border:`1.5px solid ${T.saffron}30`, borderRadius:11,
+                    fontSize:13, fontWeight:700, color:T.saffron, textAlign:"left", cursor:"pointer" }}>
+                  🖨️ Print / Save as PDF
+                  <span style={{ float:"right", fontSize:10, color:T.saffron, opacity:.7 }}>→ .pdf</span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* REQUESTS TAB */}
         {tab === "requests" && (
           <div style={{ padding:"18px 16px" }} className="fu">
@@ -2276,16 +2677,148 @@ function OwnerDashboard({ owner, onLogout }) {
             ))}
           </div>
         )}
+
+        {/* PROFILE TAB */}
+        {tab === "profile" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:18 }}>My Profile</div>
+
+            {/* Avatar + name card */}
+            <div style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              borderRadius:18, padding:20, marginBottom:18, color:"#fff",
+              display:"flex", alignItems:"center", gap:16, position:"relative", overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
+                borderRadius:"50%", background:"rgba(255,255,255,.1)", pointerEvents:"none" }}/>
+              <div style={{ width:54, height:54, borderRadius:16, background:"rgba(255,255,255,.25)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:22, fontWeight:900, flexShrink:0 }}>
+                {(owner.name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize:18, fontWeight:900 }}>{owner.name||"Owner"}</div>
+                <div style={{ fontSize:12, opacity:.85 }}>{owner.email}</div>
+                {owner.city && <div style={{ fontSize:11, opacity:.75, marginTop:2 }}>📍 {owner.city}</div>}
+              </div>
+            </div>
+
+            {/* Account stats */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:18 }}>
+              {[
+                { icon:"🏢", label:"Properties", value:properties.length },
+                { icon:"🏡", label:"Units", value:units.length },
+                { icon:"👤", label:"Tenants", value:units.filter(u=>u.is_occupied).length },
+              ].map(s => (
+                <div key={s.label} style={{ background:T.card, border:`1.5px solid ${T.border}`,
+                  borderRadius:13, padding:"12px 10px", textAlign:"center" }}>
+                  <div style={{ fontSize:20, marginBottom:4 }}>{s.icon}</div>
+                  <div style={{ fontSize:18, fontWeight:900, color:T.ink }}>{s.value}</div>
+                  <div style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Edit profile form */}
+            <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>Account Details</div>
+                <button onClick={()=>setEditProfile(v=>!v)}
+                  style={{ background:editProfile?T.panel:T.saffronL, border:`1px solid ${editProfile?T.border2:T.saffron}30`,
+                    borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+                    color:editProfile?T.muted:T.saffron, cursor:"pointer" }}>
+                  {editProfile ? "Cancel" : "✏️ Edit"}
+                </button>
+              </div>
+              {editProfile ? (
+                <>
+                  {[
+                    { label:"Full Name *", key:"name", placeholder:"Your name", type:"text" },
+                    { label:"Phone", key:"phone", placeholder:"e.g. 9876543210", type:"tel" },
+                    { label:"City", key:"city", placeholder:"e.g. Bengaluru", type:"text" },
+                  ].map(f => (
+                    <div key={f.key} style={{ marginBottom:11 }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5,
+                        textTransform:"uppercase", marginBottom:5 }}>{f.label}</div>
+                      <input type={f.type} value={profileForm[f.key]}
+                        onChange={e=>setProfileForm(p=>({...p,[f.key]:e.target.value}))}
+                        placeholder={f.placeholder}
+                        style={{ width:"100%", background:T.surface, border:`1.5px solid ${T.border2}`,
+                          color:T.ink, borderRadius:10, padding:"10px 13px", fontSize:13,
+                          fontWeight:600, boxSizing:"border-box" }}/>
+                    </div>
+                  ))}
+                  <button onClick={saveProfile} disabled={savingProfile}
+                    style={{ width:"100%", padding:"11px", background:T.saffron, border:"none",
+                      borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                    {savingProfile ? <Spinner/> : "Save Changes →"}
+                  </button>
+                </>
+              ) : (
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {[
+                    { label:"Name", value:owner.name },
+                    { label:"Email", value:owner.email },
+                    { label:"Phone", value:owner.phone||"—" },
+                    { label:"City", value:owner.city||"—" },
+                  ].map(r => (
+                    <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                      padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                      <div style={{ fontSize:11, color:T.muted, fontWeight:700 }}>{r.label}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{r.value}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Preferences */}
+            <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:16, padding:16, marginBottom:14 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:12 }}>Preferences</div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
+                <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>{isDark?"🌙 Dark Mode":"☀️ Light Mode"}</div>
+                <button onClick={onToggleTheme}
+                  style={{ background:isDark?T.panel:T.saffronL, border:`1px solid ${T.border2}`,
+                    borderRadius:20, padding:"5px 14px", fontSize:11, fontWeight:700,
+                    color:isDark?T.ink2:T.saffron, cursor:"pointer" }}>
+                  Switch
+                </button>
+              </div>
+              {availableRoles.filter(r=>r!=="owner").length > 0 && (
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0" }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>Switch Role</div>
+                  <div style={{ display:"flex", gap:6 }}>
+                    {availableRoles.filter(r=>r!=="owner").map(r=>(
+                      <button key={r} onClick={()=>onSwitchRole(r)}
+                        style={{ background:T.tealL, border:`1px solid ${T.teal}30`, borderRadius:8,
+                          padding:"5px 12px", fontSize:11, fontWeight:700, color:T.teal, cursor:"pointer" }}>
+                        {r.charAt(0).toUpperCase()+r.slice(1)} →
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Logout */}
+            <button onClick={onLogout}
+              style={{ width:"100%", padding:"13px", background:T.roseL,
+                border:`1.5px solid ${T.rose}30`, borderRadius:14, fontSize:14,
+                fontWeight:800, color:T.rose, cursor:"pointer" }}>
+              🚪 Log Out
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, maxWidth:520,
         margin:"0 auto", background:T.surface, borderTop:`1.5px solid ${T.border}`,
-        zIndex:50, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        <div style={{ display:"flex", minWidth:"max-content", width:"100%" }}>
+        zIndex:50 }}>
+        <div style={{ display:"flex", width:"100%" }}>
           {tabs.map(t => (
             <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{ flex:"0 0 72px", padding:"9px 4px 10px", background:"none", border:"none",
+              style={{ flex:1, padding:"9px 4px 10px", background:"none", border:"none",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:2,
                 cursor:"pointer", color:tab===t.id?T.saffron:T.muted,
                 fontFamily:"inherit",
@@ -2307,6 +2840,52 @@ function OwnerDashboard({ owner, onLogout }) {
         </div>
       </div>
 
+      {/* Self-managed tenant modal */}
+      {selfTenantModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000060", zIndex:200,
+          display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target === e.currentTarget) setSelfTenantModal(false); }}>
+          <div style={{ background:T.surface, borderRadius:"20px 20px 0 0", padding:24,
+            width:"100%", maxWidth:520, margin:"0 auto" }}>
+            <div style={{ fontWeight:900, fontSize:15, color:T.ink, marginBottom:4 }}>
+              Track Your Own Rent
+            </div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
+              Your landlord doesn't need to be on RentAI. Fill in your details and manage it yourself.
+            </div>
+            {[
+              { key:"property_address", label:"Property Address *", placeholder:"e.g. Flat 4B, Green Heights, Mumbai" },
+              { key:"monthly_rent",     label:"Monthly Rent (₹) *", placeholder:"e.g. 18000",  type:"number" },
+              { key:"rent_due_day",     label:"Rent Due Day (1–31)", placeholder:"e.g. 1",      type:"number" },
+              { key:"landlord_name",    label:"Landlord Name",       placeholder:"e.g. Rajesh Sharma" },
+              { key:"landlord_phone",   label:"Landlord Phone",      placeholder:"e.g. 9876543210" },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:T.ink2, marginBottom:4 }}>{f.label}</div>
+                <input value={selfTenantForm[f.key]}
+                  onChange={e => setSelfTenantForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  type={f.type || "text"} placeholder={f.placeholder}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10,
+                    border:`1.5px solid ${T.border}`, background:T.bg,
+                    color:T.ink, fontSize:13, fontFamily:"inherit", outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ display:"flex", gap:8, marginTop:4 }}>
+              <button onClick={() => setSelfTenantModal(false)}
+                style={{ flex:1, padding:"11px 0", background:T.panel, border:`1.5px solid ${T.border}`,
+                  borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={createSelfTenant} disabled={selfTenantLoading}
+                style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
+                  borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                {selfTenantLoading ? "Creating…" : "Create & Switch →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast msg={toast}/>
     </div>
   );
@@ -2315,7 +2894,9 @@ function OwnerDashboard({ owner, onLogout }) {
 // ══════════════════════════════════════════════════════════════
 // TENANT DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function TenantDashboard({ tenant, onLogout }) {
+function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "tenant", onSwitchRole }) {
+  const T = isDark ? DARK_T : LIGHT_T;
+  const isSelfManaged = !!tenant.self_managed;
   const [tab, setTab] = useState("home");
   const [payments, setPayments] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -2324,10 +2905,36 @@ function TenantDashboard({ tenant, onLogout }) {
   const [toast, setToast] = useState(null);
   const [newReq, setNewReq] = useState({ title:"", description:"", priority:"medium" });
   const [submitting, setSubmitting] = useState(false);
-  const [upiModal, setUpiModal] = useState(null); // payment object or null
+  const [upiModal, setUpiModal] = useState(null);
+  const [logPayModal, setLogPayModal] = useState(false);
+  const [logPayForm, setLogPayForm] = useState({ amount: tenant.monthly_rent ? String(tenant.monthly_rent) : "", paid_date: new Date().toISOString().split("T")[0], notes:"" });
+  const [logPayLoading, setLogPayLoading] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
   const firstName = (tenant.name||"").split(" ")[0] || "there";
+
+  const logPayment = async () => {
+    if(!logPayForm.amount || isNaN(logPayForm.amount)) { showToast("Enter a valid amount"); return; }
+    setLogPayLoading(true);
+    try {
+      await supabase.from("payments").insert({
+        tenant_id: tenant.id,
+        type: "rent",
+        amount: Number(logPayForm.amount),
+        status: "paid",
+        paid_date: logPayForm.paid_date,
+        due_date: logPayForm.paid_date,
+        notes: logPayForm.notes.trim() || "Self-logged",
+      });
+      const { data: p } = await supabase.from("payments").select("*")
+        .eq("tenant_id", tenant.id).order("created_at", { ascending:false });
+      setPayments(p || []);
+      setLogPayModal(false);
+      setLogPayForm({ amount: tenant.monthly_rent ? String(tenant.monthly_rent) : "", paid_date: new Date().toISOString().split("T")[0], notes:"" });
+      showToast("Payment logged ✓");
+    } catch(e) { showToast("Failed to log payment. Try again."); }
+    setLogPayLoading(false);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -2337,7 +2944,7 @@ function TenantDashboard({ tenant, onLogout }) {
           supabase.from("payments").select("*")
             .eq("tenant_id", tenant.id)
             .order("created_at", { ascending:false }),
-          supabase.from("maintenance_requests").select("*, units(unit_number)")
+          isSelfManaged ? { data:[] } : supabase.from("maintenance_requests").select("*, units(unit_number)")
             .eq("tenant_id", tenant.id)
             .order("created_at", { ascending:false }),
           tenant.unit_id ? supabase.from("units").select("*, properties(name, address)").eq("id", tenant.unit_id).single() : { data:null },
@@ -2349,7 +2956,7 @@ function TenantDashboard({ tenant, onLogout }) {
       setLoading(false);
     };
     load();
-  }, [tenant.id, tenant.unit_id]);
+  }, [tenant.id, tenant.unit_id, isSelfManaged]);
 
   const submitRequest = async () => {
     if(!newReq.title.trim()) { showToast("Please describe the issue"); return; }
@@ -2434,10 +3041,30 @@ function TenantDashboard({ tenant, onLogout }) {
           <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{tenant.name} · Tenant Portal</div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:"rgba(255,255,255,.8)", cursor:"pointer" }}>Logout</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? T.teal : "transparent",
+                    color: r === activeRole ? "#fff" : T.muted }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
+              color:T.muted, cursor:"pointer" }}>Logout</button>
+        </div>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", paddingBottom:72 }}>
@@ -2449,8 +3076,43 @@ function TenantDashboard({ tenant, onLogout }) {
               Hi {firstName}! 👋
             </div>
 
-            {/* Unit info */}
-            {unit ? (
+            {/* Unit / property info */}
+            {isSelfManaged ? (
+              <div style={{ background:`linear-gradient(135deg,${T.teal},${T.tealB})`,
+                borderRadius:18, padding:20, marginBottom:18, color:"#fff" }}>
+                <div style={{ fontSize:10, fontWeight:700, opacity:.8, letterSpacing:.5, marginBottom:3 }}>
+                  YOUR RENTAL
+                </div>
+                <div style={{ fontSize:15, fontWeight:900, letterSpacing:-.3, marginBottom:4, lineHeight:1.3 }}>
+                  {tenant.property_address || "Property"}
+                </div>
+                {tenant.landlord_name && (
+                  <div style={{ fontSize:12, opacity:.85, marginBottom:8 }}>Landlord: {tenant.landlord_name}</div>
+                )}
+                <div style={{ display:"flex", gap:16, marginTop:4 }}>
+                  {[["Rent", fd(tenant.monthly_rent||0)+"/mo"], ["Due Day", `${tenant.rent_due_day || 1}${["st","nd","rd"][((tenant.rent_due_day||1)%10)-1]||"th"} of month`]].map(([l,v])=>(
+                    <div key={l}><div style={{ fontSize:9, opacity:.75 }}>{l}</div><div style={{ fontSize:12, fontWeight:800 }}>{v}</div></div>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                  <button onClick={() => setLogPayModal(true)}
+                    style={{ flex:1, padding:"8px 0", background:"rgba(255,255,255,.2)",
+                      border:"1.5px solid rgba(255,255,255,.4)", borderRadius:9,
+                      fontSize:11, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                    + Log Payment
+                  </button>
+                  {tenant.landlord_phone && (
+                    <a href={`https://wa.me/91${tenant.landlord_phone.replace(/\D/g,"")}?text=${encodeURIComponent("Hi "+tenant.landlord_name+", I'm tracking our rent on RentAI. You can join here to manage it together: https://rentai.co.in")}`}
+                      target="_blank" rel="noreferrer"
+                      style={{ flex:1, padding:"8px 0", background:"rgba(255,255,255,.2)",
+                        border:"1.5px solid rgba(255,255,255,.4)", borderRadius:9,
+                        fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none", textAlign:"center" }}>
+                      💬 Invite Landlord
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : unit ? (
               <div style={{ background:`linear-gradient(135deg,${T.teal},${T.tealB})`,
                 borderRadius:18, padding:20, marginBottom:18, color:"#fff" }}>
                 <div style={{ fontSize:10, fontWeight:700, opacity:.8, letterSpacing:.5, marginBottom:3 }}>
@@ -2710,6 +3372,46 @@ function TenantDashboard({ tenant, onLogout }) {
           }}
         />
       )}
+
+      {/* Log Payment Modal (self-managed) */}
+      {logPayModal && (
+        <div style={{ position:"fixed", inset:0, background:"#00000060", zIndex:200,
+          display:"flex", alignItems:"flex-end" }}
+          onClick={e => { if(e.target === e.currentTarget) setLogPayModal(false); }}>
+          <div style={{ background:T.surface, borderRadius:"20px 20px 0 0", padding:24,
+            width:"100%", maxWidth:520, margin:"0 auto" }}>
+            <div style={{ fontWeight:900, fontSize:15, color:T.ink, marginBottom:4 }}>Log Rent Payment</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>Record a payment you've already made.</div>
+            {[
+              { key:"amount",    label:"Amount (₹) *",  placeholder:"e.g. 18000", type:"number" },
+              { key:"paid_date", label:"Date Paid *",    type:"date" },
+              { key:"notes",     label:"Notes",          placeholder:"e.g. Paid via GPay" },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:T.ink2, marginBottom:4 }}>{f.label}</div>
+                <input value={logPayForm[f.key]}
+                  onChange={e => setLogPayForm(p => ({ ...p, [f.key]: e.target.value }))}
+                  type={f.type || "text"} placeholder={f.placeholder || ""}
+                  style={{ width:"100%", padding:"10px 12px", borderRadius:10,
+                    border:`1.5px solid ${T.border}`, background:T.bg,
+                    color:T.ink, fontSize:13, fontFamily:"inherit", outline:"none" }}/>
+              </div>
+            ))}
+            <div style={{ display:"flex", gap:8, marginTop:4 }}>
+              <button onClick={() => setLogPayModal(false)}
+                style={{ flex:1, padding:"11px 0", background:T.panel, border:`1.5px solid ${T.border}`,
+                  borderRadius:10, fontSize:13, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                Cancel
+              </button>
+              <button onClick={logPayment} disabled={logPayLoading}
+                style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
+                  borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
+                {logPayLoading ? "Saving…" : "Save Payment ✓"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2717,7 +3419,8 @@ function TenantDashboard({ tenant, onLogout }) {
 // ══════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD
 // ══════════════════════════════════════════════════════════════
-function AdminDashboard({ admin, onLogout }) {
+function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "admin", onSwitchRole }) {
+  const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab]           = useState("overview");
   const [owners, setOwners]     = useState([]);
   const [tenants, setTenants]   = useState([]);
@@ -2738,6 +3441,11 @@ function AdminDashboard({ admin, onLogout }) {
   const [confirmDelete, setConfirmDelete] = useState(null); // owner object to confirm deletion
   const [deleting, setDeleting] = useState(false);
   const [units, setUnits] = useState([]);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [liveConnected, setLiveConnected] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [newAdmin, setNewAdmin] = useState({ email:"", name:"", role:"support" });
+  const [savingAdmin, setSavingAdmin] = useState(false);
 
   const deleteOwner = async (owner) => {
     setDeleting(true);
@@ -2782,11 +3490,28 @@ function AdminDashboard({ admin, onLogout }) {
       setOwners(o||[]); setTenants(t||[]); setPayments(p||[]);
       setRequests(r||[]); setExpenses(e||[]); setNotes(n||[]);
       setUnits(u||[]);
+      const { data: admins } = await supabase.from("admin_phones").select("*").order("created_at", { ascending:false });
+      setAdminUsers(admins||[]);
     } catch(err) { console.error(err); }
+    setLastRefresh(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Supabase Realtime — live updates
+  useEffect(() => {
+    const channel = supabase.channel("admin-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" },   () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "owners" },     () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tenants" },    () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_requests" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" },   () => loadAll())
+      .subscribe((status) => {
+        setLiveConnected(status === "SUBSCRIBED");
+      });
+    return () => { supabase.removeChannel(channel); };
+  }, [loadAll]);
 
   const addNote = async (entityType, entityId) => {
     if(!newNote.trim()) return;
@@ -2826,13 +3551,58 @@ function AdminDashboard({ admin, onLogout }) {
 
   const ATABS = [
     { id:"overview",  icon:"📊", label:"Overview"  },
+    { id:"activity",  icon:"⚡", label:"Activity"  },
     { id:"owners",    icon:"🏢", label:"Owners"    },
     { id:"tenants",   icon:"👥", label:"Tenants"   },
     { id:"payments",  icon:"💰", label:"Payments"  },
     { id:"requests",  icon:"🔧", label:"Requests"  },
     { id:"expenses",  icon:"🧾", label:"Expenses"  },
+    { id:"admins",    icon:"🛡",  label:"Admins"    },
     { id:"cleanup",   icon:"🗑",  label:"Cleanup"   },
   ];
+
+  // Build unified activity feed from all data
+  const activityFeed = [
+    ...owners.map(o => ({
+      id: "owner-" + o.id, ts: o.created_at,
+      icon: "🏢", color: T.saffron, bg: T.saffronL,
+      title: "New owner joined",
+      desc: `${o.name}${o.city ? " · " + o.city : ""}`,
+    })),
+    ...tenants.map(t => ({
+      id: "tenant-" + t.id, ts: t.created_at,
+      icon: "👤", color: T.teal, bg: T.tealL,
+      title: "New tenant added",
+      desc: `${t.name}${t.units?.unit_number ? " → Unit " + t.units.unit_number : ""}`,
+    })),
+    ...payments.map(p => {
+      const statusMap = {
+        paid: { icon:"💰", color: T.teal, bg: T.tealL, title:"Payment received" },
+        verification_pending: { icon:"⚡", color: T.amber, bg: T.amberL, title:"Payment pending verification" },
+        pending: { icon:"⏳", color: T.rose, bg: T.roseL, title:"Payment bill created" },
+      };
+      const s = statusMap[p.status] || statusMap.pending;
+      return {
+        id: "pay-" + p.id, ts: p.created_at,
+        icon: s.icon, color: s.color, bg: s.bg,
+        title: s.title,
+        desc: `${fd(p.amount)}${p.tenants?.name ? " · " + p.tenants.name : ""}${p.units?.unit_number ? " · Unit " + p.units.unit_number : ""}`,
+      };
+    }),
+    ...requests.map(r => ({
+      id: "req-" + r.id, ts: r.created_at,
+      icon: r.status === "resolved" ? "✅" : "🔧",
+      color: r.status === "resolved" ? T.teal : T.sky, bg: r.status === "resolved" ? T.tealL : T.skyL,
+      title: r.status === "resolved" ? "Request resolved" : "Maintenance request opened",
+      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " · " + r.tenants.name : ""}`,
+    })),
+    ...expenses.map(e => ({
+      id: "exp-" + e.id, ts: e.date || e.created_at,
+      icon: "🧾", color: T.rose, bg: T.roseL,
+      title: "Expense logged",
+      desc: `${fd(e.amount)} · ${e.title || e.category}${e.owners?.name ? " · " + e.owners.name : ""}`,
+    })),
+  ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
   // ── Detail panel for owner ──────────────────────────────────
   const OwnerPanel = ({ owner }) => {
@@ -3098,11 +3868,31 @@ function AdminDashboard({ admin, onLogout }) {
           <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{admin.name} · {admin.role}</div>
         </div>
-        <button onClick={onLogout}
-          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"rgba(255,255,255,.8)", cursor:"pointer" }}>
-          Logout
-        </button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {availableRoles.length > 1 && (
+            <div style={{ display:"flex", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:20, padding:2 }}>
+              {availableRoles.map(r => (
+                <button key={r} onClick={() => onSwitchRole(r)}
+                  style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
+                    background: r === activeRole ? "rgba(255,255,255,.35)" : "transparent",
+                    color: "#fff" }}>
+                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={onToggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:"#fff", cursor:"pointer" }}>
+            {isDark ? "☀️" : "🌙"}
+          </button>
+          <button onClick={onLogout}
+            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer" }}>
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -3132,9 +3922,77 @@ function AdminDashboard({ admin, onLogout }) {
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div style={{ padding:"18px 16px" }} className="fu">
-            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:14 }}>Platform Overview</div>
+
+            {/* Live status bar */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Platform Overview</div>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%",
+                  background: liveConnected ? T.teal : T.rose,
+                  boxShadow: liveConnected ? `0 0 0 3px ${T.teal}30` : "none",
+                  animation: liveConnected ? "spin 2s linear infinite" : "none",
+                  animationName: liveConnected ? "pulse" : "none" }}/>
+                <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
+                <span style={{ fontSize:10, fontWeight:700, color: liveConnected ? T.teal : T.muted }}>
+                  {liveConnected ? "LIVE" : "connecting…"}
+                </span>
+                {lastRefresh && (
+                  <span style={{ fontSize:10, color:T.muted }}>
+                    · {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                  </span>
+                )}
+                <button onClick={loadAll}
+                  style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:7,
+                    padding:"3px 9px", fontSize:10, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                  ↻
+                </button>
+              </div>
+            </div>
+
+            {/* Today's highlights */}
+            {(() => {
+              const today = new Date().toDateString();
+              const todayOwners   = owners.filter(o => new Date(o.created_at).toDateString() === today);
+              const todayTenants  = tenants.filter(t => new Date(t.created_at).toDateString() === today);
+              const todayPayments = payments.filter(p => new Date(p.created_at).toDateString() === today && p.status === "paid");
+              const todayRequests = requests.filter(r => new Date(r.created_at).toDateString() === today);
+              const todayVerify   = payments.filter(p => new Date(p.created_at).toDateString() === today && p.status === "verification_pending");
+              const hasActivity   = todayOwners.length + todayTenants.length + todayPayments.length + todayRequests.length + todayVerify.length > 0;
+              return (
+                <div style={{ background:`linear-gradient(135deg,${T.plum}12,${T.sky}12)`,
+                  border:`1.5px solid ${T.plum}20`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:T.plum, marginBottom:10,
+                    textTransform:"uppercase", letterSpacing:.5 }}>
+                    📅 Today — {new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"short" })}
+                  </div>
+                  {hasActivity ? (
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                      {[
+                        { label:"New Owners",    v: todayOwners.length,   color:T.saffron, icon:"🏢" },
+                        { label:"New Tenants",   v: todayTenants.length,  color:T.teal,    icon:"👤" },
+                        { label:"Payments In",   v: todayPayments.length, color:T.teal,    icon:"💰" },
+                        { label:"Verify Queue",  v: todayVerify.length,   color:T.amber,   icon:"⚡" },
+                        { label:"Requests",      v: todayRequests.length, color:T.sky,     icon:"🔧" },
+                        { label:"Collected",     v: fd(todayPayments.reduce((s,p)=>s+Number(p.amount),0)), color:T.teal, icon:"₹" },
+                      ].map(s => (
+                        <div key={s.label} style={{ textAlign:"center" }}>
+                          <div style={{ fontSize:16, fontWeight:900, color:s.color }}>{s.v}</div>
+                          <div style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>
+                      No activity yet today
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* KPI grid */}
+            <div style={{ fontSize:12, fontWeight:800, color:T.muted, marginBottom:10,
+              textTransform:"uppercase", letterSpacing:.5 }}>All Time</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:18 }}>
               {[
                 { label:"Property Owners",    v: activeOwners,       icon:"🏢", color:T.saffron },
@@ -3171,6 +4029,40 @@ function AdminDashboard({ admin, onLogout }) {
                 ))}
               </>
             )}
+          </div>
+        )}
+
+        {/* ACTIVITY FEED */}
+        {tab === "activity" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>Activity Feed</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>
+              {activityFeed.length} events across all owners, tenants, payments & requests
+            </div>
+            {activityFeed.length === 0 && (
+              <div style={{ textAlign:"center", color:T.muted, fontSize:13, marginTop:40 }}>No activity yet</div>
+            )}
+            {activityFeed.map((ev, i) => (
+              <div key={ev.id} style={{ display:"flex", gap:12, marginBottom:0 }}>
+                {/* Timeline line */}
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                  <div style={{ width:34, height:34, borderRadius:10,
+                    background: ev.bg, border:`1.5px solid ${ev.color}30`,
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+                    {ev.icon}
+                  </div>
+                  {i < activityFeed.length - 1 && (
+                    <div style={{ width:2, flex:1, minHeight:16, background:T.border, margin:"3px 0" }}/>
+                  )}
+                </div>
+                {/* Event content */}
+                <div style={{ flex:1, paddingBottom:16 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:ev.color }}>{ev.title}</div>
+                  <div style={{ fontSize:12, color:T.ink, marginTop:2, lineHeight:1.5 }}>{ev.desc}</div>
+                  <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>{fmt(ev.ts)}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -3363,6 +4255,110 @@ function AdminDashboard({ admin, onLogout }) {
           </div>
         )}
 
+        {/* ADMINS TAB */}
+        {tab === "admins" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>🛡 Admin Users</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
+              Manage who has access to this admin console.
+            </div>
+
+            {/* Add new admin form */}
+            <div style={{ background:T.panel, border:`1.5px solid ${T.border2}`,
+              borderRadius:14, padding:"14px 16px", marginBottom:20 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:T.muted, textTransform:"uppercase",
+                letterSpacing:.5, marginBottom:12 }}>+ Add Admin</div>
+              <input placeholder="Email address" value={newAdmin.email}
+                onChange={e => setNewAdmin(a => ({ ...a, email: e.target.value.trim() }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:8,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}/>
+              <input placeholder="Full name" value={newAdmin.name}
+                onChange={e => setNewAdmin(a => ({ ...a, name: e.target.value }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:8,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}/>
+              <select value={newAdmin.role}
+                onChange={e => setNewAdmin(a => ({ ...a, role: e.target.value }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:12,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}>
+                <option value="super_admin">super_admin</option>
+                <option value="support">support</option>
+                <option value="viewer">viewer</option>
+              </select>
+              <button disabled={savingAdmin || !newAdmin.email || !newAdmin.name}
+                onClick={async () => {
+                  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAdmin.email)) {
+                    showToast("Enter a valid email"); return;
+                  }
+                  setSavingAdmin(true);
+                  const { error } = await supabase.from("admin_phones")
+                    .insert({ email: newAdmin.email, name: newAdmin.name.trim(),
+                      role: newAdmin.role, is_active: true });
+                  if(error) showToast("Error: " + error.message);
+                  else {
+                    showToast(`${newAdmin.name} added as ${newAdmin.role} ✓`);
+                    setNewAdmin({ email:"", name:"", role:"support" });
+                    loadAll();
+                  }
+                  setSavingAdmin(false);
+                }}
+                style={{ width:"100%", padding:"11px", borderRadius:10,
+                  background: (!newAdmin.email||!newAdmin.name) ? T.border : `linear-gradient(135deg,${T.plum},${T.sky})`,
+                  border:"none", color:"#fff", fontSize:13, fontWeight:800,
+                  cursor: (!newAdmin.email||!newAdmin.name) ? "not-allowed" : "pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                {savingAdmin ? <Spinner/> : "Add Admin"}
+              </button>
+            </div>
+
+            {/* Existing admins list */}
+            {adminUsers.map(a => (
+              <div key={a.id} style={{ background:T.card,
+                border:`1.5px solid ${a.is_active ? T.plum+"25" : T.border}`,
+                borderRadius:13, padding:"12px 14px", marginBottom:10,
+                opacity: a.is_active ? 1 : 0.55 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:11, flexShrink:0,
+                    background: a.is_active
+                      ? `linear-gradient(135deg,${T.plum},${T.sky})`
+                      : T.border,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:16, fontWeight:900, color:"#fff" }}>
+                    {(a.name||"?")[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{a.name}</div>
+                    <div style={{ fontSize:11, color:T.muted }}>{a.email}</div>
+                    <div style={{ display:"flex", gap:6, marginTop:4, alignItems:"center" }}>
+                      <Chip label={a.role} color={a.role==="super_admin" ? T.plum : a.role==="support" ? T.teal : T.muted}/>
+                      {!a.is_active && <Chip label="Inactive" color={T.rose}/>}
+                    </div>
+                  </div>
+                  <button onClick={async () => {
+                    await supabase.from("admin_phones")
+                      .update({ is_active: !a.is_active }).eq("id", a.id);
+                    showToast(a.is_active ? `${a.name} deactivated` : `${a.name} reactivated ✓`);
+                    loadAll();
+                  }}
+                    style={{ padding:"6px 12px", borderRadius:9, border:"none",
+                      background: a.is_active ? T.roseL : T.tealL,
+                      color: a.is_active ? T.rose : T.teal,
+                      fontSize:11, fontWeight:800, cursor:"pointer" }}>
+                    {a.is_active ? "Deactivate" : "Reactivate"}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {adminUsers.length === 0 && (
+              <div style={{ textAlign:"center", color:T.muted, fontSize:13, marginTop:20 }}>
+                No admin users yet
+              </div>
+            )}
+          </div>
+        )}
+
         {/* CLEANUP TAB */}
         {tab === "cleanup" && (
           <div style={{ padding:"18px 16px" }} className="fu">
@@ -3467,14 +4463,426 @@ function AdminDashboard({ admin, onLogout }) {
   );
 }
 
+const LANDING_CSS = `
+  @keyframes floatA { 0%,100%{transform:translateY(0px) rotate(-3deg)} 50%{transform:translateY(-12px) rotate(-3deg)} }
+  @keyframes floatB { 0%,100%{transform:translateY(0px) rotate(2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
+  @keyframes floatC { 0%,100%{transform:translateY(0px) rotate(-1deg)} 50%{transform:translateY(-14px) rotate(-1deg)} }
+  @keyframes slideIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes badgePop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+  @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  .land-hero { animation: slideIn .6s ease both; }
+  .land-h2   { animation: slideIn .6s .1s ease both; }
+  .land-sub  { animation: slideIn .6s .2s ease both; }
+  .land-cta  { animation: slideIn .6s .3s ease both; }
+  .land-cards{ animation: slideIn .6s .4s ease both; }
+  .float-a   { animation: floatA 4s ease-in-out infinite; }
+  .float-b   { animation: floatB 5s ease-in-out infinite; }
+  .float-c   { animation: floatC 3.5s ease-in-out infinite; }
+  .badge-pop { animation: badgePop .5s .8s ease both; }
+  .grad-btn  { background-size:200% 200%; animation: gradShift 4s ease infinite; }
+  .feat-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.10); }
+  .feat-card { transition: transform .25s ease, box-shadow .25s ease; }
+  .step-dot:hover { transform:scale(1.1); }
+  .step-dot { transition: transform .2s ease; }
+  .cta-btn:hover { opacity:.92; transform:translateY(-1px); box-shadow:0 12px 36px ${T.saffron}55; }
+  .cta-btn { transition: all .2s ease; }
+  .ghost-btn:hover { background:${T.saffronL}; border-color:${T.saffron}; color:${T.saffron}; }
+  .ghost-btn { transition: all .2s ease; }
+`;
+
+function LandingPage({ onGetStarted }) {
+  const [pricingYearly, setPricingYearly] = useState(true);
+  const features = [
+    { icon:"🏠", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance — no spreadsheets.", color:T.saffron, bg:T.saffronL },
+    { icon:"💸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
+    { icon:"📧", title:"Email OTP Login", desc:"No passwords. Landlords and tenants login with a secure 6-digit code sent to their email.", color:T.sky, bg:T.skyL },
+    { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
+    { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
+    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants before the due date. Never chase again.", color:T.rose, bg:T.roseL },
+  ];
+
+  const steps = [
+    { n:"1", title:"Sign up with Email", desc:"Enter your email, get a 6-digit code — you're in within 30 seconds." },
+    { n:"2", title:"Add your properties & units", desc:"Set rent amounts, due dates, and invite your tenants." },
+    { n:"3", title:"Collect rent effortlessly", desc:"Tenants pay via UPI. You see it confirmed in real time." },
+  ];
+
+  const stats = [
+    { value:"₹0", label:"Setup cost" },
+    { value:"30s", label:"To get started" },
+    { value:"100%", label:"UPI compatible" },
+    { value:"24/7", label:"Access anywhere" },
+  ];
+
+  return (
+    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
+      <style>{CSS}{LANDING_CSS}</style>
+
+      {/* ── NAV ── */}
+      <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
+        backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
+        padding:"0 16px", height:56, display:"flex", alignItems:"center",
+        justifyContent:"space-between", width:"100%" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+          <div style={{ width:34, height:34, borderRadius:10,
+            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:18, boxShadow:`0 4px 12px ${T.saffron}40` }}>🏡</div>
+          <span style={{ fontSize:18, fontWeight:900, color:T.ink, letterSpacing:-.3 }}>RentAI</span>
+          <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
+            background:T.saffronL, padding:"2px 8px", borderRadius:20,
+            border:`1px solid ${T.saffron}30`, marginLeft:2 }}>BETA</span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"7px 14px", borderRadius:10, fontSize:12, fontWeight:800,
+              border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2,
+              cursor:"pointer", whiteSpace:"nowrap" }}>
+            Login →
+          </button>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"56px 20px 40px", textAlign:"center" }}>
+
+        {/* Badge */}
+        <div className="badge-pop" style={{ display:"inline-flex", alignItems:"center", gap:7,
+          background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:30,
+          padding:"6px 16px", marginBottom:24, fontSize:12, fontWeight:800, color:T.teal }}>
+          <span>✨</span> Built for Indian landlords
+        </div>
+
+        {/* Headline */}
+        <h1 className="land-hero" style={{ fontSize:"clamp(28px,7vw,52px)", fontWeight:900,
+          color:T.ink, lineHeight:1.15, letterSpacing:-.5, marginBottom:18 }}>
+          Manage rent.{" "}
+          <span style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+            Effortlessly.
+          </span>
+        </h1>
+
+        {/* Sub */}
+        <p className="land-sub" style={{ fontSize:"clamp(14px,3.5vw,18px)", color:T.ink2,
+          maxWidth:520, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
+          RentAI is your AI powered rental manager — collect rent, track expenses, manage tenants,
+          and handle maintenance — all in one place. No Excel. No chasing.
+        </p>
+
+        {/* CTAs */}
+        <div className="land-cta" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+          <button onClick={onGetStarted} className="cta-btn grad-btn"
+            style={{ padding:"14px 32px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB},${T.amber})` }}>
+            Get Started Free →
+          </button>
+          <button onClick={onGetStarted} className="ghost-btn"
+            style={{ padding:"14px 28px", borderRadius:14, fontSize:15, fontWeight:800,
+              border:`2px solid ${T.border2}`, background:T.surface, color:T.ink2, cursor:"pointer" }}>
+            I'm a Tenant
+          </button>
+        </div>
+
+        {/* Social proof */}
+        <div style={{ marginTop:28, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}>
+          {["🔒 Secure OTP login", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+            <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
+              background:T.panel, border:`1px solid ${T.border}`,
+              padding:"4px 12px", borderRadius:20 }}>{t}</span>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FLOATING CARDS (visual) ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"8px 20px 48px" }}>
+        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { cls:"float-a", emoji:"🏠", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
+            { cls:"float-b", emoji:"✅", label:"Payment received!", sub:"₹18,500 via GPay · UTR confirmed", color:T.teal, bg:T.tealL },
+            { cls:"float-c", emoji:"🔧", label:"Maintenance request", sub:"Water leakage – Unit 4B", color:T.sky, bg:T.skyL },
+          ].map(c => (
+            <div key={c.label} className={c.cls}
+              style={{ background:T.card, border:`2px solid ${c.color}25`,
+                borderRadius:18, padding:"16px 20px", minWidth:200, maxWidth:260,
+                boxShadow:`0 8px 24px ${c.color}18`, flex:"1 1 200px" }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>{c.emoji}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:3 }}>{c.label}</div>
+              <div style={{ fontSize:11, color:T.muted, fontWeight:600 }}>{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STATS STRIP ── */}
+      <section style={{ background:T.ink, padding:"28px 20px" }}>
+        <div style={{ maxWidth:960, margin:"0 auto", display:"flex",
+          justifyContent:"space-around", flexWrap:"wrap", gap:20 }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ textAlign:"center" }}>
+              <div style={{ fontSize:28, fontWeight:900, color:T.saffron }}>{s.value}</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#9C8E7A", marginTop:2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+          <h2 className="land-h2" style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900,
+            color:T.ink, letterSpacing:-.3, marginBottom:10 }}>
+            Everything a landlord needs
+          </h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            No complexity. Just tools that work.
+          </p>
+        </div>
+        <div className="land-cards" style={{ display:"grid",
+          gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
+          {features.map(f => (
+            <div key={f.title} className="feat-card"
+              style={{ background:T.card, border:`1.5px solid ${T.border}`,
+                borderRadius:18, padding:"22px 20px", cursor:"default" }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:f.bg,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, marginBottom:14, border:`1px solid ${f.color}20` }}>
+                {f.icon}
+              </div>
+              <div style={{ fontSize:14, fontWeight:900, color:T.ink, marginBottom:7 }}>{f.title}</div>
+              <div style={{ fontSize:12, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`,
+        borderBottom:`1px solid ${T.border}`, padding:"56px 20px" }}>
+        <div style={{ maxWidth:680, margin:"0 auto", textAlign:"center" }}>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Up and running in minutes</h2>
+          <p style={{ fontSize:14, color:T.muted, fontWeight:600, marginBottom:40 }}>
+            No installs. No training. Just open your browser.
+          </p>
+          <div style={{ display:"flex", flexDirection:"column", gap:20, textAlign:"left" }}>
+            {steps.map((s,i) => (
+              <div key={s.n} style={{ display:"flex", gap:18, alignItems:"flex-start" }}>
+                <div className="step-dot" style={{ width:44, height:44, borderRadius:14, flexShrink:0,
+                  background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:18, fontWeight:900, color:"#fff",
+                  boxShadow:`0 4px 16px ${T.saffron}35` }}>{s.n}</div>
+                <div style={{ paddingTop:3 }}>
+                  <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:5 }}>{s.title}</div>
+                  <div style={{ fontSize:13, color:T.ink2, lineHeight:1.65, fontWeight:500 }}>{s.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
+        <div style={{ textAlign:"center", marginBottom:38 }}>
+          <h2 style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:10 }}>Simple, Transparent Pricing</h2>
+          <p style={{ fontSize:15, color:T.ink2, fontWeight:500 }}>
+            Manage, track, and grow your rental income with RentAI
+          </p>
+          {/* Monthly / Yearly toggle */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center",
+            gap:12, marginTop:20 }}>
+            <span style={{ fontSize:13, fontWeight:700,
+              color:T.ink2 }}>Monthly</span>
+            <div onClick={()=>setPricingYearly(y=>!y)}
+              style={{ width:48, height:26, borderRadius:13, cursor:"pointer",
+                background:pricingYearly?T.saffron:T.border2, position:"relative",
+                transition:"background .2s" }}>
+              <div style={{ width:20, height:20, borderRadius:"50%", background:"#fff",
+                position:"absolute", top:3,
+                left:pricingYearly?24:4,
+                transition:"left .2s",
+                boxShadow:"0 1px 4px rgba(0,0,0,.2)" }}/>
+            </div>
+            <span style={{ fontSize:13, fontWeight:700, color:T.ink2 }}>Yearly</span>
+            <span style={{ fontSize:11, fontWeight:800, color:T.teal,
+              background:T.tealL, padding:"3px 10px", borderRadius:20,
+              border:`1px solid ${T.teal}30` }}>2 months free</span>
+          </div>
+        </div>
+
+        {/* Pricing cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:16 }}>
+          {[
+            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
+              features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
+              cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
+            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
+              features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
+            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+              highlight:true,
+              features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
+            { name:"Pro", monthly:"Custom", yearly:"Custom", desc:"For 10+ properties",
+              features:["10+ Properties","Dedicated support","Custom automation","Advanced AI analytics","Custom integrations"],
+              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.teal, bg:T.tealL },
+          ].map((plan,i) => (
+            <div key={plan.name} style={{
+              background:plan.highlight?T.ink:T.card,
+              border:plan.highlight?`2px solid ${T.saffron}`:`1.5px solid ${T.border}`,
+              borderRadius:20, padding:"24px 20px",
+              transform:plan.highlight?"scale(1.04)":"none",
+              boxShadow:plan.highlight?`0 16px 48px ${T.saffron}25`:"none",
+              transition:"transform .2s, box-shadow .2s",
+              display:"flex", flexDirection:"column"
+            }}>
+              {plan.highlight && (
+                <div style={{ fontSize:10, fontWeight:800, color:T.saffron,
+                  background:`${T.saffron}22`, border:`1px solid ${T.saffron}40`,
+                  borderRadius:20, padding:"3px 12px", alignSelf:"flex-start",
+                  marginBottom:10 }}>⭐ MOST POPULAR</div>
+              )}
+              <div style={{ fontSize:17, fontWeight:900,
+                color:plan.highlight?"#fff":T.ink, marginBottom:4 }}>{plan.name}</div>
+              <div style={{ fontSize:12, fontWeight:600,
+                color:plan.highlight?T.subtle:T.muted, marginBottom:16 }}>{plan.desc}</div>
+              <div style={{ fontSize:26, fontWeight:900,
+                color:plan.highlight?T.saffron:plan.color, marginBottom:20 }}>
+                {pricingYearly ? plan.yearly : plan.monthly}
+              </div>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, color:plan.highlight?T.teal:T.teal,
+                      fontWeight:800 }}>✓</span>
+                    <span style={{ fontSize:12, fontWeight:600,
+                      color:plan.highlight?"#E8E4DC":T.ink2 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button style={{
+                width:"100%", padding:"11px", borderRadius:12, fontSize:13,
+                fontWeight:900, border:"none", cursor:"pointer",
+                background:plan.highlight?`linear-gradient(135deg,${T.saffron},${T.saffronB})`
+                  :plan.name==="Free"?T.panel:`${plan.color}18`,
+                color:plan.highlight?"#fff":plan.name==="Free"?T.ink2:plan.color,
+                border:plan.highlight?"none":`1.5px solid ${plan.color}30`,
+              }}>{plan.cta}</button>
+              <div style={{ fontSize:11, color:plan.highlight?T.subtle:T.muted,
+                fontWeight:600, textAlign:"center", marginTop:8 }}>{plan.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enterprise callout */}
+        <div style={{ textAlign:"center", marginTop:40, padding:"24px",
+          background:T.panel, borderRadius:16, border:`1.5px solid ${T.border}` }}>
+          <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:6 }}>
+            🏢 Managing a large portfolio?
+          </div>
+          <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
+            Tech parks, commercial complexes, PG networks — we'll build a plan around you.
+          </div>
+          <button style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
+            fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
+            Contact Sales →
+          </button>
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"64px 20px", textAlign:"center" }}>
+        <div style={{ background:`linear-gradient(135deg,${T.saffronL},${T.tealL})`,
+          border:`2px solid ${T.saffron}20`, borderRadius:24, padding:"48px 28px" }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>🏡</div>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:12 }}>
+            Start managing smarter today
+          </h2>
+          <p style={{ fontSize:14, color:T.ink2, fontWeight:600,
+            maxWidth:400, margin:"0 auto 28px", lineHeight:1.7 }}>
+            Join landlords across India who've switched from WhatsApp chaos to RentAI's clean dashboard.
+          </p>
+          <button onClick={onGetStarted} className="cta-btn"
+            style={{ padding:"15px 36px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              boxShadow:`0 8px 28px ${T.saffron}40` }}>
+            Get Started — It's Free →
+          </button>
+        </div>
+      </section>
+
+      {/* ── SHARE SECTION ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`, padding:"28px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI 🏡</div>
+        <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>Help fellow property owners manage rent effortlessly</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { label:"WhatsApp", icon:"💬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI — AI-powered rent management for Indian landlords 🏡 https://rentai.co.in")}` },
+            { label:"Twitter / X", icon:"𝕏", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India — built for Indian landlords 🇮🇳 https://rentai.co.in")}` },
+            { label:"LinkedIn", icon:"in", color:"#0A66C2", url:`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://rentai.co.in")}` },
+          ].map(s => (
+            <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+                background:s.color, color:"#fff", borderRadius:10, fontSize:12, fontWeight:800,
+                textDecoration:"none", letterSpacing:.2 }}>
+              <span style={{ fontWeight:900 }}>{s.icon}</span> {s.label}
+            </a>
+          ))}
+          <button onClick={()=>{ navigator.clipboard.writeText("https://rentai.co.in"); }}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+              background:T.surface, border:`1.5px solid ${T.border2}`, color:T.ink2,
+              borderRadius:10, fontSize:12, fontWeight:800, cursor:"pointer" }}>
+            🔗 Copy Link
+          </button>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"24px 20px", textAlign:"center" }}>
+        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:12 }}>
+          {[
+            { label:"Privacy Policy", href:"/legal/privacy" },
+            { label:"Terms of Use", href:"/legal/terms" },
+            { label:"Security", href:"/legal/security" },
+            { label:"Data Protection", href:"/legal/data-protection" },
+          ].map(l => (
+            <a key={l.href} href={l.href}
+              style={{ fontSize:11, fontWeight:700, color:T.muted, textDecoration:"none" }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ color:T.muted, fontSize:11, fontWeight:700 }}>
+          © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
 // ══════════════════════════════════════════════════════════════
 // ROOT APP
 // ══════════════════════════════════════════════════════════════
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("rentai_theme") === "dark");
 
-  const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  const toggleTheme = () => setIsDark(d => {
+    localStorage.setItem("rentai_theme", !d ? "dark" : "light");
+    return !d;
+  });
+
+  const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
 
   useEffect(() => {
     const saved = localStorage.getItem("rentai_user");
@@ -3487,16 +4895,24 @@ export default function App() {
           setChecking(false);
           return;
         }
-        // Admin — no DB lookup needed, phone is the identity
+        // New multi-role format — restore directly from stored session
+        if(parsed.roles) {
+          setUser(parsed);
+          setShowLanding(false);
+          setChecking(false);
+          return;
+        }
+        // Legacy single-role format
         if(parsed.type === "admin") {
           setUser(parsed);
+          setShowLanding(false);
           setChecking(false);
           return;
         }
         const table = parsed.type === "tenant" ? "tenants" : "owners";
         supabase.from(table).select("*").eq("id", parsed.id).single()
           .then(({ data }) => {
-            if(data) setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data });
+            if(data) { setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data }); setShowLanding(false); }
             setChecking(false);
           });
       } catch { localStorage.removeItem("rentai_user"); setChecking(false); }
@@ -3522,8 +4938,29 @@ export default function App() {
     </div>
   );
 
-  if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout}/>;
-  if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout}/>;
-  if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout}/>;
+  // New multi-role format
+  if(user?.roles) {
+    const roleData = user.roles[user.activeRole];
+    const availableRoles = Object.keys(user.roles);
+    const switchRole = (role) => {
+      const updated = { ...user, activeRole: role };
+      localStorage.setItem("rentai_user", JSON.stringify(updated));
+      setUser(updated);
+    };
+    const addRole = (roleKey, roleData) => {
+      const updated = { ...user, roles: { ...user.roles, [roleKey]: roleData }, activeRole: roleKey };
+      localStorage.setItem("rentai_user", JSON.stringify(updated));
+      setUser(updated);
+    };
+    const common = { onLogout: handleLogout, isDark, onToggleTheme: toggleTheme, availableRoles, activeRole: user.activeRole, onSwitchRole: switchRole, onAddRole: addRole };
+    if(user.activeRole === "admin")  return <AdminDashboard  admin={roleData}   {...common}/>;
+    if(user.activeRole === "tenant") return <TenantDashboard tenant={roleData}  {...common}/>;
+    if(user.activeRole === "owner")  return <OwnerDashboard  owner={roleData}   {...common}/>;
+  }
+  // Legacy single-role format
+  if(user?.type === "admin")  return <AdminDashboard admin={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
+  if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
+  if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
+  if(showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)}/>;
   return <LoginScreen onLogin={handleLogin}/>;
 }
