@@ -3497,6 +3497,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
 
   const ATABS = [
     { id:"overview",  icon:"📊", label:"Overview"  },
+    { id:"activity",  icon:"⚡", label:"Activity"  },
     { id:"owners",    icon:"🏢", label:"Owners"    },
     { id:"tenants",   icon:"👥", label:"Tenants"   },
     { id:"payments",  icon:"💰", label:"Payments"  },
@@ -3504,6 +3505,49 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
     { id:"expenses",  icon:"🧾", label:"Expenses"  },
     { id:"cleanup",   icon:"🗑",  label:"Cleanup"   },
   ];
+
+  // Build unified activity feed from all data
+  const activityFeed = [
+    ...owners.map(o => ({
+      id: "owner-" + o.id, ts: o.created_at,
+      icon: "🏢", color: T.saffron, bg: T.saffronL,
+      title: "New owner joined",
+      desc: `${o.name}${o.city ? " · " + o.city : ""}`,
+    })),
+    ...tenants.map(t => ({
+      id: "tenant-" + t.id, ts: t.created_at,
+      icon: "👤", color: T.teal, bg: T.tealL,
+      title: "New tenant added",
+      desc: `${t.name}${t.units?.unit_number ? " → Unit " + t.units.unit_number : ""}`,
+    })),
+    ...payments.map(p => {
+      const statusMap = {
+        paid: { icon:"💰", color: T.teal, bg: T.tealL, title:"Payment received" },
+        verification_pending: { icon:"⚡", color: T.amber, bg: T.amberL, title:"Payment pending verification" },
+        pending: { icon:"⏳", color: T.rose, bg: T.roseL, title:"Payment bill created" },
+      };
+      const s = statusMap[p.status] || statusMap.pending;
+      return {
+        id: "pay-" + p.id, ts: p.created_at,
+        icon: s.icon, color: s.color, bg: s.bg,
+        title: s.title,
+        desc: `${fd(p.amount)}${p.tenants?.name ? " · " + p.tenants.name : ""}${p.units?.unit_number ? " · Unit " + p.units.unit_number : ""}`,
+      };
+    }),
+    ...requests.map(r => ({
+      id: "req-" + r.id, ts: r.created_at,
+      icon: r.status === "resolved" ? "✅" : "🔧",
+      color: r.status === "resolved" ? T.teal : T.sky, bg: r.status === "resolved" ? T.tealL : T.skyL,
+      title: r.status === "resolved" ? "Request resolved" : "Maintenance request opened",
+      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " · " + r.tenants.name : ""}`,
+    })),
+    ...expenses.map(e => ({
+      id: "exp-" + e.id, ts: e.date || e.created_at,
+      icon: "🧾", color: T.rose, bg: T.roseL,
+      title: "Expense logged",
+      desc: `${fd(e.amount)} · ${e.title || e.category}${e.owners?.name ? " · " + e.owners.name : ""}`,
+    })),
+  ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
   // ── Detail panel for owner ──────────────────────────────────
   const OwnerPanel = ({ owner }) => {
@@ -3866,6 +3910,40 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 ))}
               </>
             )}
+          </div>
+        )}
+
+        {/* ACTIVITY FEED */}
+        {tab === "activity" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>Activity Feed</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>
+              {activityFeed.length} events across all owners, tenants, payments & requests
+            </div>
+            {activityFeed.length === 0 && (
+              <div style={{ textAlign:"center", color:T.muted, fontSize:13, marginTop:40 }}>No activity yet</div>
+            )}
+            {activityFeed.map((ev, i) => (
+              <div key={ev.id} style={{ display:"flex", gap:12, marginBottom:0 }}>
+                {/* Timeline line */}
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0 }}>
+                  <div style={{ width:34, height:34, borderRadius:10,
+                    background: ev.bg, border:`1.5px solid ${ev.color}30`,
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+                    {ev.icon}
+                  </div>
+                  {i < activityFeed.length - 1 && (
+                    <div style={{ width:2, flex:1, minHeight:16, background:T.border, margin:"3px 0" }}/>
+                  )}
+                </div>
+                {/* Event content */}
+                <div style={{ flex:1, paddingBottom:16 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:ev.color }}>{ev.title}</div>
+                  <div style={{ fontSize:12, color:T.ink, marginTop:2, lineHeight:1.5 }}>{ev.desc}</div>
+                  <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>{fmt(ev.ts)}</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
