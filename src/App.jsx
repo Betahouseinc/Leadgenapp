@@ -3409,6 +3409,8 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
   const [confirmDelete, setConfirmDelete] = useState(null); // owner object to confirm deletion
   const [deleting, setDeleting] = useState(false);
   const [units, setUnits] = useState([]);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [liveConnected, setLiveConnected] = useState(false);
 
   const deleteOwner = async (owner) => {
     setDeleting(true);
@@ -3454,10 +3456,25 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       setRequests(r||[]); setExpenses(e||[]); setNotes(n||[]);
       setUnits(u||[]);
     } catch(err) { console.error(err); }
+    setLastRefresh(new Date());
     setLoading(false);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Supabase Realtime — live updates
+  useEffect(() => {
+    const channel = supabase.channel("admin-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payments" },   () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "owners" },     () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "tenants" },    () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "maintenance_requests" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" },   () => loadAll())
+      .subscribe((status) => {
+        setLiveConnected(status === "SUBSCRIBED");
+      });
+    return () => { supabase.removeChannel(channel); };
+  }, [loadAll]);
 
   const addNote = async (entityType, entityId) => {
     if(!newNote.trim()) return;
@@ -3871,9 +3888,77 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div style={{ padding:"18px 16px" }} className="fu">
-            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:14 }}>Platform Overview</div>
+
+            {/* Live status bar */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ fontWeight:800, fontSize:15, color:T.ink }}>Platform Overview</div>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:8, height:8, borderRadius:"50%",
+                  background: liveConnected ? T.teal : T.rose,
+                  boxShadow: liveConnected ? `0 0 0 3px ${T.teal}30` : "none",
+                  animation: liveConnected ? "spin 2s linear infinite" : "none",
+                  animationName: liveConnected ? "pulse" : "none" }}/>
+                <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
+                <span style={{ fontSize:10, fontWeight:700, color: liveConnected ? T.teal : T.muted }}>
+                  {liveConnected ? "LIVE" : "connecting…"}
+                </span>
+                {lastRefresh && (
+                  <span style={{ fontSize:10, color:T.muted }}>
+                    · {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                  </span>
+                )}
+                <button onClick={loadAll}
+                  style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:7,
+                    padding:"3px 9px", fontSize:10, fontWeight:700, color:T.muted, cursor:"pointer" }}>
+                  ↻
+                </button>
+              </div>
+            </div>
+
+            {/* Today's highlights */}
+            {(() => {
+              const today = new Date().toDateString();
+              const todayOwners   = owners.filter(o => new Date(o.created_at).toDateString() === today);
+              const todayTenants  = tenants.filter(t => new Date(t.created_at).toDateString() === today);
+              const todayPayments = payments.filter(p => new Date(p.created_at).toDateString() === today && p.status === "paid");
+              const todayRequests = requests.filter(r => new Date(r.created_at).toDateString() === today);
+              const todayVerify   = payments.filter(p => new Date(p.created_at).toDateString() === today && p.status === "verification_pending");
+              const hasActivity   = todayOwners.length + todayTenants.length + todayPayments.length + todayRequests.length + todayVerify.length > 0;
+              return (
+                <div style={{ background:`linear-gradient(135deg,${T.plum}12,${T.sky}12)`,
+                  border:`1.5px solid ${T.plum}20`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:T.plum, marginBottom:10,
+                    textTransform:"uppercase", letterSpacing:.5 }}>
+                    📅 Today — {new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"short" })}
+                  </div>
+                  {hasActivity ? (
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                      {[
+                        { label:"New Owners",    v: todayOwners.length,   color:T.saffron, icon:"🏢" },
+                        { label:"New Tenants",   v: todayTenants.length,  color:T.teal,    icon:"👤" },
+                        { label:"Payments In",   v: todayPayments.length, color:T.teal,    icon:"💰" },
+                        { label:"Verify Queue",  v: todayVerify.length,   color:T.amber,   icon:"⚡" },
+                        { label:"Requests",      v: todayRequests.length, color:T.sky,     icon:"🔧" },
+                        { label:"Collected",     v: fd(todayPayments.reduce((s,p)=>s+Number(p.amount),0)), color:T.teal, icon:"₹" },
+                      ].map(s => (
+                        <div key={s.label} style={{ textAlign:"center" }}>
+                          <div style={{ fontSize:16, fontWeight:900, color:s.color }}>{s.v}</div>
+                          <div style={{ fontSize:9, color:T.muted, fontWeight:700 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>
+                      No activity yet today
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* KPI grid */}
+            <div style={{ fontSize:12, fontWeight:800, color:T.muted, marginBottom:10,
+              textTransform:"uppercase", letterSpacing:.5 }}>All Time</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:18 }}>
               {[
                 { label:"Property Owners",    v: activeOwners,       icon:"🏢", color:T.saffron },
