@@ -4361,7 +4361,7 @@ function LandingPage({ onGetStarted }) {
     { icon:"📧", title:"Email OTP Login", desc:"No passwords. Landlords and tenants login with a secure 6-digit code sent to their email.", color:T.sky, bg:T.skyL },
     { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
     { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
-    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants via WhatsApp before due date.", color:T.rose, bg:T.roseL },
+    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants before the due date. Never chase again.", color:T.rose, bg:T.roseL },
   ];
 
   const steps = [
