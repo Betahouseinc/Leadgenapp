@@ -4536,12 +4536,12 @@ function LandingPage({ onGetStarted }) {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ maxWidth:680, margin:"0 auto", padding:"60px 24px 48px", textAlign:"center" }}>
+      <section style={{ maxWidth:780, margin:"0 auto", padding:"56px 24px 48px", textAlign:"center" }}>
 
         {/* Centered Logo */}
-        <div className="land-hero" style={{ marginBottom:24 }}>
+        <div className="land-hero" style={{ marginBottom:28 }}>
           <img src="/logo-full.png" alt="RentAI"
-            style={{ height:80, width:"auto", margin:"0 auto", display:"block" }} />
+            style={{ height:"clamp(100px,20vw,180px)", width:"auto", margin:"0 auto", display:"block" }} />
         </div>
 
         {/* Subtitle */}
