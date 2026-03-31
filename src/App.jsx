@@ -390,6 +390,13 @@ function LoginScreen({ onLogin }) {
     if(!name.trim()) { setError("Please enter your name"); return; }
     setLoading(true); setError("");
     try {
+      // Verify session is active before inserting — RLS requires an auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if(!session) {
+        setError("Your session expired. Please go back and log in again.");
+        setLoading(false); setStep("phone"); return;
+      }
+
       if(role === "owner") {
         // Check if owner already exists (e.g. user hit back and retried)
         const { data: existing } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
@@ -397,28 +404,48 @@ function LoginScreen({ onLogin }) {
 
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ email, name:name.trim(), city })
+          .insert({ email, name:name.trim(), city: city.trim() || null })
           .select("*").single();
         if(insertErr) {
-          console.error("Owner insert error:", insertErr);
-          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
-          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
+          console.error("Owner insert error:", insertErr.code, insertErr.message, insertErr.details);
+          if(insertErr.code === "23505") {
+            // Race: row was created between our check and insert — just fetch it
+            const { data: race } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
+            if(race) { onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...race } }, email }); return; }
+            setError("This email is already registered. Try logging in.");
+          } else if(insertErr.code === "42501" || insertErr.message?.includes("row-level security")) {
+            setError("Account creation is currently restricted. Please contact support@rentai.co.in to get access.");
+          } else if(insertErr.code === "23502") {
+            setError(`A required field is missing (${insertErr.details || "unknown"}). Please contact support@rentai.co.in`);
+          } else {
+            setError(`Couldn't create your account (${insertErr.code || "error"}). Please email support@rentai.co.in`);
+          }
           setLoading(false); return;
         }
         onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
       } else {
-        // Tenant self-registration — no unit assigned yet
+        // Tenant self-registration — no unit assigned yet; owner links them later
         const { data: existing } = await supabase.from("tenants").select("*").eq("email", email).maybeSingle();
         if(existing) { onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...existing } }, email }); return; }
 
         const { data: tenant, error: insertErr } = await supabase
           .from("tenants")
-          .insert({ email, name:name.trim(), is_active:true })
+          .insert({ email, name:name.trim(), is_active:true, phone: null, owner_id: null, unit_id: null })
           .select("*").single();
         if(insertErr) {
-          console.error("Tenant insert error:", insertErr);
-          if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
-          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
+          console.error("Tenant insert error:", insertErr.code, insertErr.message, insertErr.details);
+          if(insertErr.code === "23505") {
+            const { data: race } = await supabase.from("tenants").select("*").eq("email", email).maybeSingle();
+            if(race) { onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...race } }, email }); return; }
+            setError("This email is already registered. Try logging in.");
+          } else if(insertErr.code === "42501" || insertErr.message?.includes("row-level security")) {
+            setError("Account creation is currently restricted. Please contact support@rentai.co.in to get access.");
+          } else if(insertErr.code === "23502") {
+            // owner_id or unit_id is NOT NULL — schema needs to allow null for self-registered tenants
+            setError("Schema error: tenant table requires owner_id to be set. Please contact support@rentai.co.in");
+          } else {
+            setError(`Couldn't create your account (${insertErr.code || "error"}). Please email support@rentai.co.in`);
+          }
           setLoading(false); return;
         }
         onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...tenant } }, email });
