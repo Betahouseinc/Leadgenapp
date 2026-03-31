@@ -390,6 +390,13 @@ function LoginScreen({ onLogin }) {
     if(!name.trim()) { setError("Please enter your name"); return; }
     setLoading(true); setError("");
     try {
+      // Verify session is active before inserting — RLS requires an auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if(!session) {
+        setError("Your session expired. Please go back and log in again.");
+        setLoading(false); setStep("phone"); return;
+      }
+
       if(role === "owner") {
         // Check if owner already exists (e.g. user hit back and retried)
         const { data: existing } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
