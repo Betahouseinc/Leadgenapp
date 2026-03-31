@@ -4298,8 +4298,8 @@ function LandingPage({ onGetStarted }) {
       {/* ── NAV ── */}
       <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
-        padding:"0 20px", height:58, display:"flex", alignItems:"center",
-        justifyContent:"space-between", maxWidth:960, margin:"0 auto" }}>
+        padding:"0 16px", height:56, display:"flex", alignItems:"center",
+        justifyContent:"space-between", width:"100%" }}>
         <div style={{ display:"flex", alignItems:"center", gap:9 }}>
           <div style={{ width:34, height:34, borderRadius:10,
             background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
@@ -4313,9 +4313,10 @@ function LandingPage({ onGetStarted }) {
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
           <button onClick={onGetStarted} className="ghost-btn"
-            style={{ padding:"8px 18px", borderRadius:10, fontSize:13, fontWeight:800,
-              border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2, cursor:"pointer" }}>
-            Login / Get Started →
+            style={{ padding:"7px 14px", borderRadius:10, fontSize:12, fontWeight:800,
+              border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2,
+              cursor:"pointer", whiteSpace:"nowrap" }}>
+            Login →
           </button>
         </div>
       </nav>
