@@ -404,7 +404,7 @@ function LoginScreen({ onLogin }) {
 
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ email, name:name.trim(), city: city.trim() || null })
+          .insert({ email, name:name.trim(), city: city.trim() || "", phone: "" })
           .select("*").single();
         if(insertErr) {
           console.error("Owner insert error:", insertErr.code, insertErr.message, insertErr.details);
