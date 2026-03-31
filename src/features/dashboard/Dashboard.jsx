@@ -2,6 +2,7 @@ import { GLOBAL_CSS } from "../../theme";
 import { mockUser } from "../../data/mockData";
 import { useDashboard } from "./hooks/useDashboard";
 import { ThemeProvider, useTheme } from "../../shared/contexts/ThemeContext";
+import ActionRequired  from "./components/ActionRequired";
 import DashboardHeader from "./components/DashboardHeader";
 import RentCard        from "./components/RentCard";
 import SummaryCards    from "./components/SummaryCards";
@@ -44,6 +45,12 @@ function DashboardInner() {
       <DashboardHeader user={mockUser} onLogout={handleLogout} />
 
       <main className="fu" style={{ flex: 1, padding: "18px 16px 48px" }}>
+        <ActionRequired
+          rentsWithStatus={rentsWithStatus}
+          onSendReminder={sendReminder}
+          ownerName={mockUser.name}
+        />
+
         <SectionLabel>NEXT ACTION</SectionLabel>
 
         {heroRent && (
