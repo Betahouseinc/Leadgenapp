@@ -3412,6 +3412,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
   const [units, setUnits] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [liveConnected, setLiveConnected] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [newAdmin, setNewAdmin] = useState({ email:"", name:"", role:"support" });
+  const [savingAdmin, setSavingAdmin] = useState(false);
 
   const deleteOwner = async (owner) => {
     setDeleting(true);
@@ -3456,6 +3459,8 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       setOwners(o||[]); setTenants(t||[]); setPayments(p||[]);
       setRequests(r||[]); setExpenses(e||[]); setNotes(n||[]);
       setUnits(u||[]);
+      const { data: admins } = await supabase.from("admin_phones").select("*").order("created_at", { ascending:false });
+      setAdminUsers(admins||[]);
     } catch(err) { console.error(err); }
     setLastRefresh(new Date());
     setLoading(false);
@@ -3521,6 +3526,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
     { id:"payments",  icon:"💰", label:"Payments"  },
     { id:"requests",  icon:"🔧", label:"Requests"  },
     { id:"expenses",  icon:"🧾", label:"Expenses"  },
+    { id:"admins",    icon:"🛡",  label:"Admins"    },
     { id:"cleanup",   icon:"🗑",  label:"Cleanup"   },
   ];
 
@@ -4219,6 +4225,110 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ADMINS TAB */}
+        {tab === "admins" && (
+          <div style={{ padding:"18px 16px" }} className="fu">
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>🛡 Admin Users</div>
+            <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
+              Manage who has access to this admin console.
+            </div>
+
+            {/* Add new admin form */}
+            <div style={{ background:T.panel, border:`1.5px solid ${T.border2}`,
+              borderRadius:14, padding:"14px 16px", marginBottom:20 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:T.muted, textTransform:"uppercase",
+                letterSpacing:.5, marginBottom:12 }}>+ Add Admin</div>
+              <input placeholder="Email address" value={newAdmin.email}
+                onChange={e => setNewAdmin(a => ({ ...a, email: e.target.value.trim() }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:8,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}/>
+              <input placeholder="Full name" value={newAdmin.name}
+                onChange={e => setNewAdmin(a => ({ ...a, name: e.target.value }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:8,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}/>
+              <select value={newAdmin.role}
+                onChange={e => setNewAdmin(a => ({ ...a, role: e.target.value }))}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:10, marginBottom:12,
+                  border:`1.5px solid ${T.border2}`, background:T.surface, color:T.ink,
+                  fontSize:13, fontFamily:"inherit", boxSizing:"border-box" }}>
+                <option value="super_admin">super_admin</option>
+                <option value="support">support</option>
+                <option value="viewer">viewer</option>
+              </select>
+              <button disabled={savingAdmin || !newAdmin.email || !newAdmin.name}
+                onClick={async () => {
+                  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAdmin.email)) {
+                    showToast("Enter a valid email"); return;
+                  }
+                  setSavingAdmin(true);
+                  const { error } = await supabase.from("admin_phones")
+                    .insert({ email: newAdmin.email, name: newAdmin.name.trim(),
+                      role: newAdmin.role, is_active: true });
+                  if(error) showToast("Error: " + error.message);
+                  else {
+                    showToast(`${newAdmin.name} added as ${newAdmin.role} ✓`);
+                    setNewAdmin({ email:"", name:"", role:"support" });
+                    loadAll();
+                  }
+                  setSavingAdmin(false);
+                }}
+                style={{ width:"100%", padding:"11px", borderRadius:10,
+                  background: (!newAdmin.email||!newAdmin.name) ? T.border : `linear-gradient(135deg,${T.plum},${T.sky})`,
+                  border:"none", color:"#fff", fontSize:13, fontWeight:800,
+                  cursor: (!newAdmin.email||!newAdmin.name) ? "not-allowed" : "pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                {savingAdmin ? <Spinner/> : "Add Admin"}
+              </button>
+            </div>
+
+            {/* Existing admins list */}
+            {adminUsers.map(a => (
+              <div key={a.id} style={{ background:T.card,
+                border:`1.5px solid ${a.is_active ? T.plum+"25" : T.border}`,
+                borderRadius:13, padding:"12px 14px", marginBottom:10,
+                opacity: a.is_active ? 1 : 0.55 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:11, flexShrink:0,
+                    background: a.is_active
+                      ? `linear-gradient(135deg,${T.plum},${T.sky})`
+                      : T.border,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:16, fontWeight:900, color:"#fff" }}>
+                    {(a.name||"?")[0].toUpperCase()}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{a.name}</div>
+                    <div style={{ fontSize:11, color:T.muted }}>{a.email}</div>
+                    <div style={{ display:"flex", gap:6, marginTop:4, alignItems:"center" }}>
+                      <Chip label={a.role} color={a.role==="super_admin" ? T.plum : a.role==="support" ? T.teal : T.muted}/>
+                      {!a.is_active && <Chip label="Inactive" color={T.rose}/>}
+                    </div>
+                  </div>
+                  <button onClick={async () => {
+                    await supabase.from("admin_phones")
+                      .update({ is_active: !a.is_active }).eq("id", a.id);
+                    showToast(a.is_active ? `${a.name} deactivated` : `${a.name} reactivated ✓`);
+                    loadAll();
+                  }}
+                    style={{ padding:"6px 12px", borderRadius:9, border:"none",
+                      background: a.is_active ? T.roseL : T.tealL,
+                      color: a.is_active ? T.rose : T.teal,
+                      fontSize:11, fontWeight:800, cursor:"pointer" }}>
+                    {a.is_active ? "Deactivate" : "Reactivate"}
+                  </button>
+                </div>
+              </div>
+            ))}
+            {adminUsers.length === 0 && (
+              <div style={{ textAlign:"center", color:T.muted, fontSize:13, marginTop:20 }}>
+                No admin users yet
+              </div>
+            )}
           </div>
         )}
 
