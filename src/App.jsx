@@ -87,7 +87,7 @@ const RentAiLogo = ({ height = 44, dark = false }) => (
 );
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: ${T.bg}; }
   button { cursor: pointer; font-family: inherit; }
@@ -449,9 +449,9 @@ function LoginScreen({ onLogin }) {
           {/* STEP: EMAIL */}
           {step === "phone" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Sign in to RentAI</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Welcome to RentAI</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                We'll send a 6-digit code to your email
+                Sign in or create your account — we'll send a 6-digit code to your email
               </div>
               <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
                 textTransform:"uppercase", marginBottom:8 }}>Email Address</div>
@@ -4464,9 +4464,6 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
 }
 
 const LANDING_CSS = `
-  @keyframes floatA { 0%,100%{transform:translateY(0px) rotate(-3deg)} 50%{transform:translateY(-12px) rotate(-3deg)} }
-  @keyframes floatB { 0%,100%{transform:translateY(0px) rotate(2deg)} 50%{transform:translateY(-8px) rotate(2deg)} }
-  @keyframes floatC { 0%,100%{transform:translateY(0px) rotate(-1deg)} 50%{transform:translateY(-14px) rotate(-1deg)} }
   @keyframes slideIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
   @keyframes badgePop { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
   @keyframes gradShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
@@ -4475,9 +4472,7 @@ const LANDING_CSS = `
   .land-sub  { animation: slideIn .6s .2s ease both; }
   .land-cta  { animation: slideIn .6s .3s ease both; }
   .land-cards{ animation: slideIn .6s .4s ease both; }
-  .float-a   { animation: floatA 4s ease-in-out infinite; }
-  .float-b   { animation: floatB 5s ease-in-out infinite; }
-  .float-c   { animation: floatC 3.5s ease-in-out infinite; }
+  .float-a, .float-b, .float-c { /* floating removed — static cards */ }
   .badge-pop { animation: badgePop .5s .8s ease both; }
   .grad-btn  { background-size:200% 200%; animation: gradShift 4s ease infinite; }
   .feat-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.10); }
@@ -4489,6 +4484,8 @@ const LANDING_CSS = `
   .ghost-btn:hover { background:${T.saffronL}; border-color:${T.saffron}; color:${T.saffron}; }
   .ghost-btn { transition: all .2s ease; }
 `;
+
+const BETA_FORM = "https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSOMa0ExM-c0ZpJVU1xOd6XD63Fs6pQA/viewform";
 
 function LandingPage({ onGetStarted }) {
   const [pricingYearly, setPricingYearly] = useState(true);
@@ -4515,22 +4512,22 @@ function LandingPage({ onGetStarted }) {
   ];
 
   return (
-    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
+    <div style={{ fontFamily:"'Montserrat','Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
       <style>{CSS}{LANDING_CSS}</style>
 
       {/* ── NAV ── */}
       <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
-        padding:"0 16px", height:56, display:"flex", alignItems:"center",
+        padding:"0 20px", height:60, display:"flex", alignItems:"center",
         justifyContent:"space-between", width:"100%" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:38 }} />
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <img src="/logo-full.png" alt="RentAI" style={{ height:44, width:"auto" }} />
           <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
             background:T.saffronL, padding:"2px 8px", borderRadius:20,
             border:`1px solid ${T.saffron}30` }}>BETA</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}>About</a>
+          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }} onClick={e=>{e.preventDefault();window.location.href="/about";}}>About</a>
           <button onClick={onGetStarted} className="ghost-btn"
             style={{ padding:"7px 14px", borderRadius:10, fontSize:12, fontWeight:800,
               border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2,
@@ -4553,11 +4550,12 @@ function LandingPage({ onGetStarted }) {
         {/* Headline */}
         <h1 className="land-hero" style={{ fontSize:"clamp(28px,7vw,52px)", fontWeight:900,
           color:T.ink, lineHeight:1.15, letterSpacing:-.5, marginBottom:18 }}>
-          Manage rent.{" "}
+          India's{" "}
           <span style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
             WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-            Effortlessly.
+            Smartest
           </span>
+          {" "}Rent Manager
         </h1>
 
         {/* Sub */}
@@ -4607,6 +4605,32 @@ function LandingPage({ onGetStarted }) {
               <div style={{ fontSize:28, marginBottom:8 }}>{c.emoji}</div>
               <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:3 }}>{c.label}</div>
               <div style={{ fontSize:11, color:T.muted, fontWeight:600 }}>{c.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PROPERTY GALLERY ── */}
+      <section style={{ padding:"0 0 52px" }}>
+        <div style={{ maxWidth:960, margin:"0 auto 18px", padding:"0 20px", textAlign:"center" }}>
+          <p style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:1.5, textTransform:"uppercase" }}>
+            Built for landlords managing properties like these
+          </p>
+        </div>
+        <div style={{ display:"flex", gap:14, overflowX:"auto", padding:"4px 24px 12px",
+          scrollbarWidth:"none", msOverflowStyle:"none" }}>
+          {[
+            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=480&q=80",
+            "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=480&q=80",
+            "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=480&q=80",
+            "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=480&q=80",
+            "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=480&q=80",
+          ].map((url, i) => (
+            <div key={i} style={{ flexShrink:0, width:220, height:160, borderRadius:18,
+              overflow:"hidden", boxShadow:"0 6px 20px rgba(0,0,0,.10)",
+              border:`1.5px solid ${T.border}` }}>
+              <img src={url} alt="property"
+                style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
             </div>
           ))}
         </div>
@@ -4761,7 +4785,8 @@ function LandingPage({ onGetStarted }) {
                   </div>
                 ))}
               </div>
-              <button style={{
+              <button onClick={()=> plan.name==="Free" ? onGetStarted() : window.open(BETA_FORM,"_blank")}
+                style={{
                 width:"100%", padding:"11px", borderRadius:12, fontSize:13,
                 fontWeight:900, border:"none", cursor:"pointer",
                 background:plan.highlight?`linear-gradient(135deg,${T.saffron},${T.saffronB})`
@@ -4784,7 +4809,8 @@ function LandingPage({ onGetStarted }) {
           <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
             Tech parks, commercial complexes, PG networks — we'll build a plan around you.
           </div>
-          <button style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
+          <button onClick={()=>window.location.href="mailto:support@rentai.co.in?subject=Enterprise Plan Enquiry"}
+            style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
             fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
             Contact Sales →
           </button>
@@ -4850,6 +4876,7 @@ function LandingPage({ onGetStarted }) {
             { label:"Data Protection", href:"/legal/data-protection" },
           ].map(l => (
             <a key={l.href} href={l.href}
+              onClick={e=>{e.preventDefault();window.location.href=l.href;}}
               style={{ fontSize:11, fontWeight:700, color:T.muted, textDecoration:"none" }}>
               {l.label}
             </a>
