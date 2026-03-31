@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 490 148">
+  <defs>
+    <linearGradient id="rKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#FFA040"/>
+      <stop offset="50%"  stop-color="#FF7700"/>
+      <stop offset="100%" stop-color="#C85200"/>
+    </linearGradient>
+  </defs>
+
+  <!-- R-Key: 3D shadow layer -->
+  <g fill="#7A2E00" transform="translate(5,6)">
+    <rect x="5" y="4" width="14" height="138" rx="3.5"/>
+    <rect x="5" y="4" width="47" height="13" rx="3.5"/>
+    <path d="M52 4 C52 4 90 4 90 34 C90 64 52 67 52 67 L52 55 C52 55 76 55 76 34 C76 13 52 17 52 17 Z"/>
+    <rect x="5" y="57" width="46" height="13" rx="3.5"/>
+    <rect x="43" y="66" width="13" height="76" rx="3"/>
+    <rect x="56" y="83" width="13" height="10" rx="2.5"/>
+    <rect x="56" y="103" width="13" height="10" rx="2.5"/>
+  </g>
+
+  <!-- R-Key: main orange body -->
+  <g fill="url(#rKeyGrad)">
+    <rect x="5" y="4" width="14" height="138" rx="3.5"/>
+    <rect x="5" y="4" width="47" height="13" rx="3.5"/>
+    <path d="M52 4 C52 4 90 4 90 34 C90 64 52 67 52 67 L52 55 C52 55 76 55 76 34 C76 13 52 17 52 17 Z"/>
+    <rect x="5" y="57" width="46" height="13" rx="3.5"/>
+    <rect x="43" y="66" width="13" height="76" rx="3"/>
+    <rect x="56" y="83" width="13" height="10" rx="2.5"/>
+    <rect x="56" y="103" width="13" height="10" rx="2.5"/>
+  </g>
+
+  <!-- R-Key: highlight -->
+  <rect x="5" y="4" width="5" height="138" rx="2" fill="rgba(255,255,255,0.18)"/>
+  <rect x="5" y="4" width="47" height="4"   rx="2" fill="rgba(255,255,255,0.18)"/>
+
+  <!-- "Rent" text -->
+  <text x="112" y="118"
+    font-family="'Arial Black','Franklin Gothic Heavy',sans-serif"
+    font-weight="900" font-size="105"
+    fill="#0A0D11">Rent</text>
+
+  <!-- Circuit node above "Ai" -->
+  <g fill="#FF7700" stroke="#FF7700" stroke-linecap="round">
+    <circle cx="398" cy="23" r="7" stroke="none"/>
+    <line x1="398" y1="16" x2="398" y2="3"   stroke-width="3"/><circle cx="398" cy="1"   r="4.5" stroke="none"/>
+    <line x1="403" y1="17" x2="415" y2="6"   stroke-width="3"/><circle cx="417" cy="4"   r="4.5" stroke="none"/>
+    <line x1="405" y1="23" x2="419" y2="23"  stroke-width="3"/><circle cx="421" cy="23"  r="4.5" stroke="none"/>
+    <line x1="403" y1="29" x2="415" y2="40"  stroke-width="3"/><circle cx="417" cy="42"  r="4.5" stroke="none"/>
+    <line x1="393" y1="17" x2="381" y2="6"   stroke-width="3"/><circle cx="379" cy="4"   r="4.5" stroke="none"/>
+  </g>
+
+  <!-- "Ai" text -->
+  <text x="364" y="118"
+    font-family="'Arial Black','Franklin Gothic Heavy',sans-serif"
+    font-weight="900" font-size="105"
+    fill="#FF7700">Ai</text>
+</svg>

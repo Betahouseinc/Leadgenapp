@@ -25,6 +25,67 @@ const T = {
   green:"#2E7D32", greenL:"#E8F5E9",
 };
 
+// ── RENTAI LOGO SVG COMPONENT ────────────────────────────────
+const RentAiLogo = ({ height = 44, dark = false }) => (
+  <svg viewBox="0 0 490 148" height={height} style={{ display:"block" }}>
+    <defs>
+      <linearGradient id="rKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stopColor="#FFA040"/>
+        <stop offset="50%"  stopColor="#FF7700"/>
+        <stop offset="100%" stopColor="#C85200"/>
+      </linearGradient>
+    </defs>
+
+    {/* ── R-Key: 3D shadow layer ── */}
+    <g fill="#7A2E00" transform="translate(5,6)">
+      <rect x="5" y="4" width="14" height="138" rx="3.5"/>
+      <rect x="5" y="4" width="47" height="13" rx="3.5"/>
+      <path d="M52 4 C52 4 90 4 90 34 C90 64 52 67 52 67 L52 55 C52 55 76 55 76 34 C76 13 52 17 52 17 Z"/>
+      <rect x="5" y="57" width="46" height="13" rx="3.5"/>
+      <rect x="43" y="66" width="13" height="76" rx="3"/>
+      <rect x="56" y="83" width="13" height="10" rx="2.5"/>
+      <rect x="56" y="103" width="13" height="10" rx="2.5"/>
+    </g>
+
+    {/* ── R-Key: main orange body ── */}
+    <g fill="url(#rKeyGrad)">
+      <rect x="5" y="4" width="14" height="138" rx="3.5"/>
+      <rect x="5" y="4" width="47" height="13" rx="3.5"/>
+      <path d="M52 4 C52 4 90 4 90 34 C90 64 52 67 52 67 L52 55 C52 55 76 55 76 34 C76 13 52 17 52 17 Z"/>
+      <rect x="5" y="57" width="46" height="13" rx="3.5"/>
+      <rect x="43" y="66" width="13" height="76" rx="3"/>
+      <rect x="56" y="83" width="13" height="10" rx="2.5"/>
+      <rect x="56" y="103" width="13" height="10" rx="2.5"/>
+    </g>
+
+    {/* ── R-Key: highlight streak ── */}
+    <rect x="5" y="4" width="5" height="138" rx="2" fill="rgba(255,255,255,0.18)"/>
+    <rect x="5" y="4" width="47" height="4"   rx="2" fill="rgba(255,255,255,0.18)"/>
+
+    {/* ── "Rent" text ── */}
+    <text x="112" y="118"
+      fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
+      fontWeight="900" fontSize="105"
+      fill={dark ? "#FFFFFF" : "#0A0D11"}>Rent</text>
+
+    {/* ── Circuit node above "Ai" ── */}
+    <g fill="#FF7700" stroke="#FF7700" strokeLinecap="round">
+      <circle cx="398" cy="23" r="7" stroke="none"/>
+      <line x1="398" y1="16" x2="398" y2="3"   strokeWidth="3"/><circle cx="398" cy="1"   r="4.5" stroke="none"/>
+      <line x1="403" y1="17" x2="415" y2="6"   strokeWidth="3"/><circle cx="417" cy="4"   r="4.5" stroke="none"/>
+      <line x1="405" y1="23" x2="419" y2="23"  strokeWidth="3"/><circle cx="421" cy="23"  r="4.5" stroke="none"/>
+      <line x1="403" y1="29" x2="415" y2="40"  strokeWidth="3"/><circle cx="417" cy="42"  r="4.5" stroke="none"/>
+      <line x1="393" y1="17" x2="381" y2="6"   strokeWidth="3"/><circle cx="379" cy="4"   r="4.5" stroke="none"/>
+    </g>
+
+    {/* ── "Ai" text ── */}
+    <text x="364" y="118"
+      fontFamily="'Arial Black','Franklin Gothic Heavy','Nunito',sans-serif"
+      fontWeight="900" fontSize="105"
+      fill="#FF7700">Ai</text>
+  </svg>
+);
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -419,12 +480,8 @@ function LoginScreen({ onLogin }) {
 
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:32 }}>
-          <div style={{ width:64, height:64, borderRadius:20,
-            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:32, margin:"0 auto 12px", boxShadow:`0 8px 24px ${T.saffron}35` }}>🔑</div>
-          <div style={{ fontSize:26, fontWeight:900, color:T.ink, letterSpacing:-.8 }}>RentAI</div>
-          <div style={{ fontSize:13, color:T.muted, marginTop:4 }}>AI-powered Rent Management</div>
+          <img src="/logo-full.png" alt="RentAI" style={{ width:"100%", maxWidth:220, margin:"0 auto 8px", display:"block" }} />
+          <div style={{ fontSize:12, color:T.muted, marginTop:4, lineHeight:1.4 }}>Your AI-Powered Rental Manager – Manage Rent, Tenants &amp; Properties in One Place</div>
         </div>
 
         <div style={{ background:T.surface, borderRadius:20, padding:28,
@@ -1078,22 +1135,17 @@ function OwnerDashboard({ owner, onLogout }) {
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:T.surface, borderBottom:`1.5px solid ${T.border}`,
+      <div style={{ background:"#1A1A1B",
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:30, height:30, borderRadius:9,
-            background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🔑</div>
-          <div>
-            <div style={{ fontWeight:900, fontSize:14, color:T.ink, letterSpacing:-.3 }}>RentAI</div>
-            <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} · Owner</div>
-          </div>
+          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{owner.name || owner.phone} · Owner</div>
         </div>
         <button onClick={onLogout}
-          style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
             borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:T.muted, cursor:"pointer" }}>Logout</button>
+            color:"rgba(255,255,255,.8)", cursor:"pointer" }}>Logout</button>
       </div>
 
       {/* Content */}
@@ -2375,22 +2427,17 @@ function TenantDashboard({ tenant, onLogout }) {
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:T.surface, borderBottom:`1.5px solid ${T.border}`,
+      <div style={{ background:"#1A1A1B",
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:30, height:30, borderRadius:9,
-            background:`linear-gradient(135deg,${T.teal},${T.tealB})`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🏠</div>
-          <div>
-            <div style={{ fontWeight:900, fontSize:14, color:T.ink, letterSpacing:-.3 }}>RentAI</div>
-            <div style={{ fontSize:9, color:T.muted }}>{tenant.name} · Tenant Portal</div>
-          </div>
+          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{tenant.name} · Tenant Portal</div>
         </div>
         <button onClick={onLogout}
-          style={{ background:T.panel, border:`1.5px solid ${T.border}`,
+          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
             borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
-            color:T.muted, cursor:"pointer" }}>Logout</button>
+            color:"rgba(255,255,255,.8)", cursor:"pointer" }}>Logout</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", paddingBottom:72 }}>
@@ -3044,20 +3091,16 @@ function AdminDashboard({ admin, onLogout }) {
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:`linear-gradient(135deg,${T.plum},#6D28D9)`,
+      <div style={{ background:"#1A1A1B",
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:30, height:30, borderRadius:9, background:"rgba(255,255,255,.2)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🛡</div>
-          <div>
-            <div style={{ fontWeight:900, fontSize:14, color:"#fff", letterSpacing:-.3 }}>RentAI Admin</div>
-            <div style={{ fontSize:9, color:"rgba(255,255,255,.7)" }}>{admin.name} · {admin.role}</div>
-          </div>
+          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{admin.name} · {admin.role}</div>
         </div>
         <button onClick={onLogout}
-          style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
-            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer" }}>
+          style={{ background:"rgba(255,255,255,.1)", border:"1px solid rgba(255,255,255,.2)",
+            borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"rgba(255,255,255,.8)", cursor:"pointer" }}>
           Logout
         </button>
       </div>
