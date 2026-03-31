@@ -294,11 +294,12 @@ function LoginScreen({ onLogin }) {
         email,
         options: { shouldCreateUser: true },
       });
-      if(authErr) { setError(authErr.message); setLoading(false); return; }
+      if(authErr) { setError("Couldn't send login code. Please check your email and try again."); setLoading(false); return; }
       setStep("otp");
       setResendTimer(30);
     } catch(e) {
-      setError("Error: " + (e?.message || "unknown"));
+      console.error("sendOtp error:", e);
+      setError("Something went wrong. Please try again.");
     }
     setLoading(false);
   };
@@ -356,7 +357,7 @@ function LoginScreen({ onLogin }) {
         if(insertErr) {
           console.error("Owner insert error:", insertErr);
           if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
-          else setError(insertErr.message || "Could not create account. Please try again.");
+          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
           setLoading(false); return;
         }
         onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
@@ -372,7 +373,7 @@ function LoginScreen({ onLogin }) {
         if(insertErr) {
           console.error("Tenant insert error:", insertErr);
           if(insertErr.code === "23505") setError("This email is already registered. Try logging in.");
-          else setError(insertErr.message || "Could not create account. Please try again.");
+          else setError("We couldn't create your account. Please try again or contact support@rentai.co.in");
           setLoading(false); return;
         }
         onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...tenant } }, email });
