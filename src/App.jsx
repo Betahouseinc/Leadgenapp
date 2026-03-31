@@ -4518,71 +4518,57 @@ function LandingPage({ onGetStarted }) {
       {/* ── NAV ── */}
       <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
-        padding:"0 20px", height:60, display:"flex", alignItems:"center",
-        justifyContent:"space-between", width:"100%" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <img src="/logo-full.png" alt="RentAI" style={{ height:44, width:"auto" }} />
+        padding:"0 24px", height:56, display:"flex", alignItems:"center",
+        justifyContent:"flex-end", width:"100%" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:16 }}>
           <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
             background:T.saffronL, padding:"2px 8px", borderRadius:20,
             border:`1px solid ${T.saffron}30` }}>BETA</span>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }} onClick={e=>{e.preventDefault();window.location.href="/about";}}>About</a>
-          <button onClick={onGetStarted} className="ghost-btn"
-            style={{ padding:"7px 14px", borderRadius:10, fontSize:12, fontWeight:800,
+          <a href="/about" style={{ fontSize:13, fontWeight:700, color:T.ink2, textDecoration:"none" }}
+            onClick={e=>{e.preventDefault();window.location.href="/about";}}>About</a>
+          <button onClick={onGetStarted}
+            style={{ padding:"7px 18px", borderRadius:10, fontSize:12, fontWeight:800,
               border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2,
-              cursor:"pointer", whiteSpace:"nowrap" }}>
+              cursor:"pointer" }}>
             Login →
           </button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ maxWidth:960, margin:"0 auto", padding:"56px 20px 40px", textAlign:"center" }}>
+      <section style={{ maxWidth:680, margin:"0 auto", padding:"60px 24px 48px", textAlign:"center" }}>
 
-        {/* Badge */}
-        <div className="badge-pop" style={{ display:"inline-flex", alignItems:"center", gap:7,
-          background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:30,
-          padding:"6px 16px", marginBottom:24, fontSize:12, fontWeight:800, color:T.teal }}>
-          <span>✨</span> Built for Indian landlords
+        {/* Centered Logo */}
+        <div className="land-hero" style={{ marginBottom:24 }}>
+          <img src="/logo-full.png" alt="RentAI"
+            style={{ height:80, width:"auto", margin:"0 auto", display:"block" }} />
         </div>
 
-        {/* Headline */}
-        <h1 className="land-hero" style={{ fontSize:"clamp(28px,7vw,52px)", fontWeight:900,
-          color:T.ink, lineHeight:1.15, letterSpacing:-.5, marginBottom:18 }}>
-          India's{" "}
-          <span style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-            Smartest
-          </span>
-          {" "}Rent Manager
-        </h1>
-
-        {/* Sub */}
-        <p className="land-sub" style={{ fontSize:"clamp(14px,3.5vw,18px)", color:T.ink2,
-          maxWidth:520, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
-          RentAI is your AI powered rental manager — collect rent, track expenses, manage tenants,
-          and handle maintenance — all in one place. No Excel. No chasing.
+        {/* Subtitle */}
+        <p className="land-sub" style={{ fontSize:"clamp(15px,3.5vw,19px)", color:T.ink2,
+          maxWidth:480, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
+          Your AI-Powered Rental Manager — collect rent, manage tenants &amp; track expenses in one place.
+          No Excel. No chasing.
         </p>
 
         {/* CTAs */}
-        <div className="land-cta" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+        <div className="land-cta" style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap", marginBottom:28 }}>
           <button onClick={onGetStarted} className="cta-btn grad-btn"
             style={{ padding:"14px 32px", borderRadius:14, fontSize:16, fontWeight:900,
               border:"none", color:"#fff", cursor:"pointer",
               background:`linear-gradient(135deg,${T.saffron},${T.saffronB},${T.amber})` }}>
             Get Started Free →
           </button>
-          <button onClick={onGetStarted} className="ghost-btn"
+          <button onClick={onGetStarted}
             style={{ padding:"14px 28px", borderRadius:14, fontSize:15, fontWeight:800,
               border:`2px solid ${T.border2}`, background:T.surface, color:T.ink2, cursor:"pointer" }}>
-            I'm a Tenant
+            Login →
           </button>
         </div>
 
-        {/* Social proof */}
-        <div style={{ marginTop:28, display:"flex", justifyContent:"center", gap:6, flexWrap:"wrap" }}>
-          {["🔒 Secure OTP login", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+        {/* Trust badges */}
+        <div style={{ display:"flex", justifyContent:"center", gap:8, flexWrap:"wrap" }}>
+          {["🔒 Secure OTP", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
             <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
               background:T.panel, border:`1px solid ${T.border}`,
               padding:"4px 12px", borderRadius:20 }}>{t}</span>
