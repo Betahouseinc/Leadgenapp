@@ -1217,12 +1217,12 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:"#1A1A1B",
+      <div style={{ background:"#FFFFFF", borderBottom:`1px solid ${T.border}`,
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <RentAiLogo height={36} dark={true} />
-          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{owner.name || owner.phone} · Owner</div>
+          <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
+          <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} · Owner</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -3061,12 +3061,12 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:"#1A1A1B",
+      <div style={{ background:"#FFFFFF", borderBottom:`1px solid ${T.border}`,
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <RentAiLogo height={36} dark={true} />
-          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{tenant.name} · Tenant Portal</div>
+          <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
+          <div style={{ fontSize:9, color:T.muted }}>{tenant.name} · Tenant Portal</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -3888,21 +3888,21 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       <style>{CSS}</style>
 
       {/* Top bar */}
-      <div style={{ background:"#1A1A1B",
+      <div style={{ background:"#FFFFFF", borderBottom:`1px solid ${T.border}`,
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <RentAiLogo height={36} dark={true} />
-          <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{admin.name} · {admin.role}</div>
+          <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
+          <div style={{ fontSize:9, color:T.muted }}>{admin.name} · {admin.role}</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
-            <div style={{ display:"flex", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)", borderRadius:20, padding:2 }}>
+            <div style={{ display:"flex", background:T.panel, border:`1px solid ${T.border}`, borderRadius:20, padding:2 }}>
               {availableRoles.map(r => (
                 <button key={r} onClick={() => onSwitchRole(r)}
                   style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
-                    background: r === activeRole ? "rgba(255,255,255,.35)" : "transparent",
-                    color: "#fff" }}>
+                    background: r === activeRole ? T.saffron : "transparent",
+                    color: r === activeRole ? "#fff" : T.ink2 }}>
                   {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
                 </button>
               ))}
@@ -3910,13 +3910,13 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
           )}
           <button onClick={onToggleTheme}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
-              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:"#fff", cursor:"pointer" }}>
+            style={{ background:T.panel, border:`1px solid ${T.border}`,
+              borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink, cursor:"pointer" }}>
             {isDark ? "☀️" : "🌙"}
           </button>
           <button onClick={onLogout}
-            style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.3)",
-              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:"#fff", cursor:"pointer" }}>
+            style={{ background:T.panel, border:`1px solid ${T.border}`,
+              borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700, color:T.ink2, cursor:"pointer" }}>
             Logout
           </button>
         </div>
