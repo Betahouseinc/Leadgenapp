@@ -1533,6 +1533,128 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               </>
             )}
 
+            {/* ── NET INCOME CARD ─────────────────────────────── */}
+            {(()=>{
+              const now       = new Date();
+              const mthIncome = payments
+                .filter(p => p.status === "paid" && (() => {
+                  const d = new Date(p.created_at);
+                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                })())
+                .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+              const mthExp = expenses
+                .filter(e => {
+                  const d = new Date(e.date || e.created_at);
+                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                })
+                .reduce((s, e) => s + Number(e.amount || 0), 0);
+
+              const net     = mthIncome - mthExp;
+              const isProfit = net >= 0;
+              const monthLabel = now.toLocaleString("en-IN", { month:"long", year:"numeric" });
+              const expPct  = mthIncome > 0 ? Math.round((mthExp / mthIncome) * 100) : 0;
+
+              return (
+                <div style={{ marginTop:18, borderRadius:16, overflow:"hidden",
+                  border:`1.5px solid ${isProfit ? T.teal : T.rose}40` }}>
+
+                  {/* Header */}
+                  <div style={{ background: isProfit
+                      ? `linear-gradient(135deg, ${T.teal}, ${T.tealB})`
+                      : `linear-gradient(135deg, #E05555, #FF4D4D)`,
+                    padding:"14px 16px 12px", position:"relative", overflow:"hidden" }}>
+                    <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
+                      borderRadius:"50%", background:"rgba(255,255,255,.08)", pointerEvents:"none" }}/>
+                    <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.75)",
+                      letterSpacing:.8, marginBottom:3 }}>NET INCOME · {monthLabel.toUpperCase()}</div>
+                    <div style={{ fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>
+                      {isProfit ? "+" : "-"}{fd(Math.abs(net))}
+                    </div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", marginTop:4, fontWeight:600 }}>
+                      {isProfit ? "✅ Profitable month" : "⚠️ Expenses exceed income"}
+                    </div>
+                  </div>
+
+                  {/* Breakdown rows */}
+                  <div style={{ background:T.card, padding:"0 16px" }}>
+
+                    {/* Income row */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ width:32, height:32, borderRadius:10, background:T.tealL,
+                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>💰</div>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Rent Collected</div>
+                          <div style={{ fontSize:10, color:T.muted }}>Payments received this month</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:16, fontWeight:900, color:T.teal }}>+{fd(mthIncome)}</div>
+                    </div>
+
+                    {/* Expenses row */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ width:32, height:32, borderRadius:10, background:T.roseL,
+                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🧾</div>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Total Expenses</div>
+                          <div style={{ fontSize:10, color:T.muted }}>
+                            {expPct > 0 ? `${expPct}% of income` : "No expenses logged"}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:16, fontWeight:900, color:T.rose }}>-{fd(mthExp)}</div>
+                    </div>
+
+                    {/* Net row */}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                      padding:"13px 0" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ width:32, height:32, borderRadius:10,
+                          background: isProfit ? T.tealL : T.roseL,
+                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
+                          {isProfit ? "📈" : "📉"}
+                        </div>
+                        <div>
+                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Net Profit</div>
+                          <div style={{ fontSize:10, color:T.muted }}>Income minus expenses</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:18, fontWeight:900,
+                        color: isProfit ? T.teal : T.rose, letterSpacing:-.5 }}>
+                        {isProfit ? "+" : "-"}{fd(Math.abs(net))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar — expense ratio */}
+                  {mthIncome > 0 && (
+                    <div style={{ background:T.panel, padding:"10px 16px 12px",
+                      borderTop:`1px solid ${T.border}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between",
+                        fontSize:10, fontWeight:700, color:T.muted, marginBottom:6 }}>
+                        <span>Expense ratio</span>
+                        <span style={{ color: expPct > 50 ? T.rose : expPct > 30 ? T.amber : T.teal }}>
+                          {expPct}%
+                        </span>
+                      </div>
+                      <div style={{ height:6, background:T.border, borderRadius:4, overflow:"hidden" }}>
+                        <div style={{
+                          height:"100%", borderRadius:4,
+                          width:`${Math.min(expPct, 100)}%`,
+                          background: expPct > 50 ? T.rose : expPct > 30 ? T.amber : T.teal,
+                          transition:"width .4s ease",
+                        }}/>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {units.length === 0 && (
               <div style={{ textAlign:"center", padding:"32px 20px", background:T.card,
                 border:`1.5px solid ${T.border}`, borderRadius:16, marginTop:8 }}>
