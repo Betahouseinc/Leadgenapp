@@ -1268,6 +1268,124 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               </button>
             </div>
 
+            {/* ── SMART INSIGHTS (top priority) ────────────────── */}
+            {(()=>{
+              const rentsWS = pendingPayments.map(p => {
+                const due = new Date(p.due_date || p.created_at);
+                due.setHours(0,0,0,0);
+                const diff = due - today;
+                const derivedStatus = diff === 0 ? "due" : diff < 0 ? "overdue" : "upcoming";
+                return { id:p.id, tenant:p.tenants?.name||"Unknown", unit:p.units?.unit_number||"",
+                  amount:Number(p.amount||0), dueDate:(p.due_date||p.created_at||"").slice(0,10),
+                  status:p.status, derivedStatus };
+              });
+              const unitsForInsights = units.map(u => ({
+                id:u.id, name:u.unit_number, lease_end:u.tenants?.[0]?.lease_end||null,
+                tenant_name:u.tenants?.[0]?.name||null, is_occupied:u.is_occupied,
+              }));
+              const insights = generateInsights({ rentsWithStatus:rentsWS, expenses, units:unitsForInsights });
+              if(insights.length === 0) return null;
+              const STYLE = {
+                warning:{ bg:"#FFF1F1", border:"#FF4D4D", dot:"#FF4D4D", textColor:"#7A0000" },
+                risk:   { bg:"#FFF8E6", border:"#F59E0B", dot:"#F59E0B", textColor:"#7A4500" },
+                info:   { bg:"#EFF6FF", border:"#3B82F6", dot:"#3B82F6", textColor:"#1E3A5F" },
+                success:{ bg:"#F0FDF4", border:"#22C55E", dot:"#22C55E", textColor:"#14532D" },
+              };
+              return (
+                <div style={{ marginBottom:18, background:T.card, border:`1.5px solid ${T.border}`,
+                  borderRadius:16, overflow:"hidden" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8,
+                    padding:"13px 16px 11px", borderBottom:`1px solid ${T.border}`, background:T.panel }}>
+                    <span style={{ fontSize:16 }}>🧠</span>
+                    <span style={{ fontSize:12, fontWeight:900, color:T.ink, letterSpacing:.3 }}>Smart Insights</span>
+                    <span style={{ marginLeft:"auto", fontSize:10, fontWeight:800, background:T.saffronL,
+                      color:T.saffron, padding:"2px 8px", borderRadius:20, border:`1px solid ${T.saffron}30` }}>
+                      {insights.length} insight{insights.length!==1?"s":""}
+                    </span>
+                  </div>
+                  <div style={{ padding:"10px 12px 12px" }}>
+                    {insights.map((ins, i) => {
+                      const s = STYLE[ins.type]||STYLE.info;
+                      return (
+                        <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10,
+                          padding:"10px 12px", borderRadius:12, background:s.bg,
+                          border:`1px solid ${s.border}25`, marginBottom:i<insights.length-1?8:0 }}>
+                          <span style={{ fontSize:15, flexShrink:0, marginTop:1 }}>{ins.icon}</span>
+                          <span style={{ fontSize:13, fontWeight:600, color:s.textColor, lineHeight:1.5 }}>{ins.text}</span>
+                          <span style={{ marginLeft:"auto", flexShrink:0, width:7, height:7,
+                            borderRadius:"50%", background:s.dot, marginTop:5 }}/>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── NET INCOME CARD ──────────────────────────────── */}
+            {(()=>{
+              const now = new Date();
+              const mthIncome = payments
+                .filter(p => p.status==="paid" && (()=>{ const d=new Date(p.created_at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); })())
+                .reduce((s,p)=>s+Number(p.amount||0),0);
+              const mthExp = expenses
+                .filter(e=>{ const d=new Date(e.date||e.created_at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); })
+                .reduce((s,e)=>s+Number(e.amount||0),0);
+              const net=mthIncome-mthExp; const isProfit=net>=0;
+              const monthLabel=now.toLocaleString("en-IN",{month:"long",year:"numeric"});
+              const expPct=mthIncome>0?Math.round((mthExp/mthIncome)*100):0;
+              return (
+                <div style={{ marginBottom:18, borderRadius:16, overflow:"hidden", border:`1.5px solid ${isProfit?T.teal:T.rose}40` }}>
+                  <div style={{ background:isProfit?`linear-gradient(135deg,${T.teal},${T.tealB})`:`linear-gradient(135deg,#E05555,#FF4D4D)`,
+                    padding:"14px 16px 12px", position:"relative", overflow:"hidden" }}>
+                    <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
+                      borderRadius:"50%", background:"rgba(255,255,255,.08)", pointerEvents:"none" }}/>
+                    <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.75)", letterSpacing:.8, marginBottom:3 }}>
+                      NET INCOME · {monthLabel.toUpperCase()}
+                    </div>
+                    <div style={{ fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>
+                      {isProfit?"+":"-"}{fd(Math.abs(net))}
+                    </div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", marginTop:4, fontWeight:600 }}>
+                      {isProfit?"✅ Profitable month":"⚠️ Expenses exceed income"}
+                    </div>
+                  </div>
+                  <div style={{ background:T.card, padding:"0 16px" }}>
+                    {[
+                      { icon:"💰", label:"Rent Collected", sub:"Payments received this month", val:`+${fd(mthIncome)}`, color:T.teal, bg:T.tealL, border:true },
+                      { icon:"🧾", label:"Total Expenses", sub:expPct>0?`${expPct}% of income`:"No expenses logged", val:`-${fd(mthExp)}`, color:T.rose, bg:T.roseL, border:true },
+                      { icon:isProfit?"📈":"📉", label:"Net Profit", sub:"Income minus expenses", val:`${isProfit?"+":"-"}${fd(Math.abs(net))}`, color:isProfit?T.teal:T.rose, bg:isProfit?T.tealL:T.roseL, border:false },
+                    ].map(row=>(
+                      <div key={row.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+                        padding:"13px 0", borderBottom:row.border?`1px solid ${T.border}`:"none" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <div style={{ width:32, height:32, borderRadius:10, background:row.bg,
+                            display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>{row.icon}</div>
+                          <div>
+                            <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{row.label}</div>
+                            <div style={{ fontSize:10, color:T.muted }}>{row.sub}</div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize:row.label==="Net Profit"?18:16, fontWeight:900, color:row.color, letterSpacing:-.5 }}>{row.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {mthIncome>0&&(
+                    <div style={{ background:T.panel, padding:"10px 16px 12px", borderTop:`1px solid ${T.border}` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:10, fontWeight:700, color:T.muted, marginBottom:6 }}>
+                        <span>Expense ratio</span>
+                        <span style={{ color:expPct>50?T.rose:expPct>30?T.amber:T.teal }}>{expPct}%</span>
+                      </div>
+                      <div style={{ height:6, background:T.border, borderRadius:4, overflow:"hidden" }}>
+                        <div style={{ height:"100%", borderRadius:4, width:`${Math.min(expPct,100)}%`,
+                          background:expPct>50?T.rose:expPct>30?T.amber:T.teal, transition:"width .4s ease" }}/>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* P&L Banner */}
             <div style={{ background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
               borderRadius:18, padding:20, marginBottom:18, color:"#fff",
@@ -1533,128 +1651,6 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               </>
             )}
 
-            {/* ── NET INCOME CARD ─────────────────────────────── */}
-            {(()=>{
-              const now       = new Date();
-              const mthIncome = payments
-                .filter(p => p.status === "paid" && (() => {
-                  const d = new Date(p.created_at);
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                })())
-                .reduce((s, p) => s + Number(p.amount || 0), 0);
-
-              const mthExp = expenses
-                .filter(e => {
-                  const d = new Date(e.date || e.created_at);
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-                })
-                .reduce((s, e) => s + Number(e.amount || 0), 0);
-
-              const net     = mthIncome - mthExp;
-              const isProfit = net >= 0;
-              const monthLabel = now.toLocaleString("en-IN", { month:"long", year:"numeric" });
-              const expPct  = mthIncome > 0 ? Math.round((mthExp / mthIncome) * 100) : 0;
-
-              return (
-                <div style={{ marginTop:18, borderRadius:16, overflow:"hidden",
-                  border:`1.5px solid ${isProfit ? T.teal : T.rose}40` }}>
-
-                  {/* Header */}
-                  <div style={{ background: isProfit
-                      ? `linear-gradient(135deg, ${T.teal}, ${T.tealB})`
-                      : `linear-gradient(135deg, #E05555, #FF4D4D)`,
-                    padding:"14px 16px 12px", position:"relative", overflow:"hidden" }}>
-                    <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
-                      borderRadius:"50%", background:"rgba(255,255,255,.08)", pointerEvents:"none" }}/>
-                    <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.75)",
-                      letterSpacing:.8, marginBottom:3 }}>NET INCOME · {monthLabel.toUpperCase()}</div>
-                    <div style={{ fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>
-                      {isProfit ? "+" : "-"}{fd(Math.abs(net))}
-                    </div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", marginTop:4, fontWeight:600 }}>
-                      {isProfit ? "✅ Profitable month" : "⚠️ Expenses exceed income"}
-                    </div>
-                  </div>
-
-                  {/* Breakdown rows */}
-                  <div style={{ background:T.card, padding:"0 16px" }}>
-
-                    {/* Income row */}
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                      padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <div style={{ width:32, height:32, borderRadius:10, background:T.tealL,
-                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>💰</div>
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Rent Collected</div>
-                          <div style={{ fontSize:10, color:T.muted }}>Payments received this month</div>
-                        </div>
-                      </div>
-                      <div style={{ fontSize:16, fontWeight:900, color:T.teal }}>+{fd(mthIncome)}</div>
-                    </div>
-
-                    {/* Expenses row */}
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                      padding:"13px 0", borderBottom:`1px solid ${T.border}` }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <div style={{ width:32, height:32, borderRadius:10, background:T.roseL,
-                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>🧾</div>
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Total Expenses</div>
-                          <div style={{ fontSize:10, color:T.muted }}>
-                            {expPct > 0 ? `${expPct}% of income` : "No expenses logged"}
-                          </div>
-                        </div>
-                      </div>
-                      <div style={{ fontSize:16, fontWeight:900, color:T.rose }}>-{fd(mthExp)}</div>
-                    </div>
-
-                    {/* Net row */}
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-                      padding:"13px 0" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <div style={{ width:32, height:32, borderRadius:10,
-                          background: isProfit ? T.tealL : T.roseL,
-                          display:"flex", alignItems:"center", justifyContent:"center", fontSize:15 }}>
-                          {isProfit ? "📈" : "📉"}
-                        </div>
-                        <div>
-                          <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>Net Profit</div>
-                          <div style={{ fontSize:10, color:T.muted }}>Income minus expenses</div>
-                        </div>
-                      </div>
-                      <div style={{ fontSize:18, fontWeight:900,
-                        color: isProfit ? T.teal : T.rose, letterSpacing:-.5 }}>
-                        {isProfit ? "+" : "-"}{fd(Math.abs(net))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress bar — expense ratio */}
-                  {mthIncome > 0 && (
-                    <div style={{ background:T.panel, padding:"10px 16px 12px",
-                      borderTop:`1px solid ${T.border}` }}>
-                      <div style={{ display:"flex", justifyContent:"space-between",
-                        fontSize:10, fontWeight:700, color:T.muted, marginBottom:6 }}>
-                        <span>Expense ratio</span>
-                        <span style={{ color: expPct > 50 ? T.rose : expPct > 30 ? T.amber : T.teal }}>
-                          {expPct}%
-                        </span>
-                      </div>
-                      <div style={{ height:6, background:T.border, borderRadius:4, overflow:"hidden" }}>
-                        <div style={{
-                          height:"100%", borderRadius:4,
-                          width:`${Math.min(expPct, 100)}%`,
-                          background: expPct > 50 ? T.rose : expPct > 30 ? T.amber : T.teal,
-                          transition:"width .4s ease",
-                        }}/>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
             {units.length === 0 && (
               <div style={{ textAlign:"center", padding:"32px 20px", background:T.card,
                 border:`1.5px solid ${T.border}`, borderRadius:16, marginTop:8 }}>
@@ -1799,104 +1795,6 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 </div>
               </div>
             )}
-
-            {/* LEASE EXPIRY ALERTS */}
-            {leaseAlerts.length > 0 && (
-              <div style={{ marginTop:18 }}>
-                <div style={{ fontWeight:800, fontSize:13, color:T.ink, marginBottom:10 }}>
-                  ⏰ Lease Alerts ({leaseAlerts.length})
-                </div>
-                {leaseAlerts.map(({ unit:u, tenant, daysLeft, color, label }) => (
-                  <div key={u.id} style={{ display:"flex", alignItems:"center", gap:10,
-                    marginBottom:9, padding:"10px 13px", background:T.card,
-                    border:`1.5px solid ${color}35`, borderRadius:13 }}>
-                    <div style={{ width:34, height:34, borderRadius:10,
-                      background:`${color}15`, display:"flex", alignItems:"center",
-                      justifyContent:"center", fontWeight:800, fontSize:11, color, flexShrink:0 }}>
-                      {(tenant.name||"?").split(" ").map(w=>w[0]).join("").slice(0,2)}
-                    </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{tenant.name}</div>
-                      <div style={{ fontSize:10, color:T.muted }}>{u.unit_number} · Lease ends {fmt(tenant.lease_end)}</div>
-                    </div>
-                    <div style={{ padding:"3px 9px", borderRadius:20,
-                      background:`${color}15`, border:`1px solid ${color}30`,
-                      fontSize:10, fontWeight:800, color }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ── SMART INSIGHTS ─────────────────────────────── */}
-            {(()=>{
-              const rentsWS = pendingPayments.map(p => {
-                const due = new Date(p.due_date || p.created_at);
-                due.setHours(0,0,0,0);
-                const diff = due - today;
-                const derivedStatus = diff === 0 ? "due" : diff < 0 ? "overdue" : "upcoming";
-                return {
-                  id:            p.id,
-                  tenant:        p.tenants?.name || "Unknown",
-                  unit:          p.units?.unit_number || "",
-                  amount:        Number(p.amount || 0),
-                  dueDate:       (p.due_date || p.created_at || "").slice(0,10),
-                  status:        p.status,
-                  derivedStatus,
-                };
-              });
-
-              const unitsForInsights = units.map(u => ({
-                id:          u.id,
-                name:        u.unit_number,
-                lease_end:   u.tenants?.[0]?.lease_end || null,
-                tenant_name: u.tenants?.[0]?.name || null,
-                is_occupied: u.is_occupied,
-              }));
-
-              const insights = generateInsights({ rentsWithStatus: rentsWS, expenses, units: unitsForInsights });
-              if(insights.length === 0) return null;
-
-              const STYLE = {
-                warning: { bg:"#FFF1F1", border:"#FF4D4D", dot:"#FF4D4D", textColor:"#7A0000" },
-                risk:    { bg:"#FFF8E6", border:"#F59E0B", dot:"#F59E0B", textColor:"#7A4500" },
-                info:    { bg:"#EFF6FF", border:"#3B82F6", dot:"#3B82F6", textColor:"#1E3A5F" },
-                success: { bg:"#F0FDF4", border:"#22C55E", dot:"#22C55E", textColor:"#14532D" },
-              };
-
-              return (
-                <div style={{ marginTop:18, background:T.card, border:`1.5px solid ${T.border}`,
-                  borderRadius:16, overflow:"hidden" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8,
-                    padding:"13px 16px 11px", borderBottom:`1px solid ${T.border}`, background:T.panel }}>
-                    <span style={{ fontSize:16 }}>🧠</span>
-                    <span style={{ fontSize:12, fontWeight:900, color:T.ink, letterSpacing:.3 }}>Smart Insights</span>
-                    <span style={{ marginLeft:"auto", fontSize:10, fontWeight:800,
-                      background:T.saffronL, color:T.saffron, padding:"2px 8px",
-                      borderRadius:20, border:`1px solid ${T.saffron}30` }}>
-                      {insights.length} insight{insights.length!==1?"s":""}
-                    </span>
-                  </div>
-                  <div style={{ padding:"10px 12px 12px" }}>
-                    {insights.map((ins, i) => {
-                      const s = STYLE[ins.type] || STYLE.info;
-                      return (
-                        <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:10,
-                          padding:"10px 12px", borderRadius:12, background:s.bg,
-                          border:`1px solid ${s.border}25`,
-                          marginBottom: i < insights.length-1 ? 8 : 0 }}>
-                          <span style={{ fontSize:15, flexShrink:0, marginTop:1 }}>{ins.icon}</span>
-                          <span style={{ fontSize:13, fontWeight:600, color:s.textColor, lineHeight:1.5 }}>
-                            {ins.text}
-                          </span>
-                          <span style={{ marginLeft:"auto", flexShrink:0, width:7, height:7,
-                            borderRadius:"50%", background:s.dot, marginTop:5 }}/>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* P&L FORECAST */}
             {units.length > 0 && (
