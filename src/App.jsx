@@ -404,7 +404,7 @@ function LoginScreen({ onLogin }) {
 
         const { data: owner, error: insertErr } = await supabase
           .from("owners")
-          .insert({ email, name:name.trim(), city: city.trim() || null })
+          .insert({ email, name:name.trim(), city: city.trim() || "", phone: "" })
           .select("*").single();
         if(insertErr) {
           console.error("Owner insert error:", insertErr.code, insertErr.message, insertErr.details);
@@ -1221,7 +1221,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <RentAiLogo height={36} dark={true} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{owner.name || owner.phone} · Owner</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -3065,7 +3065,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <RentAiLogo height={36} dark={true} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{tenant.name} · Tenant Portal</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
@@ -3892,7 +3892,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         padding:"11px 16px", display:"flex", alignItems:"center",
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <img src="/logo-full.png" alt="RentAI" style={{ maxHeight:54 }} />
+          <RentAiLogo height={36} dark={true} />
           <div style={{ fontSize:9, color:"rgba(255,255,255,.5)" }}>{admin.name} · {admin.role}</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
