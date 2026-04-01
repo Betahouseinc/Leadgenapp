@@ -4690,7 +4690,7 @@ function LandingPage({ onGetStarted }) {
 
         {/* Trust badges */}
         <div style={{ display:"flex", justifyContent:"center", gap:8, flexWrap:"wrap" }}>
-          {["🔒 Secure OTP", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+          {["ð Secure OTP", "ð¸ UPI ready", "ð± Mobile first", "ð®ð³ Made in India"].map(t => (
             <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
               background:T.panel, border:`1px solid ${T.border}`,
               padding:"4px 12px", borderRadius:20 }}>{t}</span>
