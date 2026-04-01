@@ -3,6 +3,7 @@ import { mockUser } from "../../data/mockData";
 import { useDashboard } from "./hooks/useDashboard";
 import { ThemeProvider, useTheme } from "../../shared/contexts/ThemeContext";
 import ActionRequired  from "./components/ActionRequired";
+import SmartInsights   from "./components/SmartInsights";
 import DashboardHeader from "./components/DashboardHeader";
 import RentCard        from "./components/RentCard";
 import SummaryCards    from "./components/SummaryCards";
@@ -64,6 +65,12 @@ function DashboardInner() {
 
         <SectionLabel>TODAY'S SUMMARY</SectionLabel>
         <SummaryCards {...summary} />
+
+        <SmartInsights
+          rentsWithStatus={rentsWithStatus}
+          expenses={[]}
+          units={[]}
+        />
 
         <Timeline rents={rentsWithStatus} />
       </main>
