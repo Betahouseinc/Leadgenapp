@@ -5093,5 +5093,6 @@ export default function App() {
   if(user?.type === "tenant") return <TenantDashboard tenant={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
   if(user?.type === "owner")  return <OwnerDashboard owner={user} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme}/>;
   if(showLanding) return <LandingPage onGetStarted={() => setShowLanding(false)}/>;
-  return <LoginScreen onLogin={handleLogin}/>;
+  return <LoginScreen onLogin={handleLogin}/>; 
+  export default App;
 }
