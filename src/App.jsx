@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { generateInsights } from "./utils/insights";
 import { createClient } from "@supabase/supabase-js";
 
-// ── SUPABASE CONFIG ──────────────────────────────────────────
-// Replace with your actual values from Supabase → Settings → API
+// ââ SUPABASE CONFIG ââââââââââââââââââââââââââââââââââââââââââ
+// Replace with your actual values from Supabase â Settings â API
 const SUPABASE_URL  = "https://xcjakihewzegzyumnyuw.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjamFraWhld3plZ3p5dW1ueXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcyNDIsImV4cCI6MjA4OTI2MzI0Mn0.HLwaK6PDdMap8SQ5ODz5XNSCKbCNnHkilO3HeuSVdyc";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ── TWILIO CONFIG (via Supabase Edge Function) ───────────────
+// ââ TWILIO CONFIG (via Supabase Edge Function) âââââââââââââââ
 // We'll call a Supabase Edge Function to send WhatsApp OTP
 // No Twilio keys exposed in frontend
 const SEND_OTP_FN = `${SUPABASE_URL}/functions/v1/send-otp`;
@@ -42,7 +42,7 @@ const DARK_T = {
 // Login screen and shared components always use light theme
 const T = LIGHT_T;
 
-// ── RENTAI LOGO SVG COMPONENT ────────────────────────────────
+// ââ RENTAI LOGO SVG COMPONENT ââââââââââââââââââââââââââââââââ
 const RentAiLogo = ({ height = 44, dark = false }) => (
   <svg viewBox="0 0 490 148" height={height} style={{ display:"block" }}>
     <defs>
@@ -102,10 +102,10 @@ const CSS = `
   .spin { animation: spin 1s linear infinite; }
 `;
 
-const fd = (n) => "₹" + Number(n||0).toLocaleString("en-IN");
-const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : "—";
+const fd = (n) => "â¹" + Number(n||0).toLocaleString("en-IN");
+const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" }) : "â";
 
-// ── REUSABLE COMPONENTS ──────────────────────────────────────
+// ââ REUSABLE COMPONENTS ââââââââââââââââââââââââââââââââââââââ
 const Chip = ({ label, color }) => (
   <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20,
     background:`${color}18`, color, border:`1px solid ${color}30` }}>{label}</span>
@@ -123,7 +123,7 @@ const Toast = ({ msg }) => msg ? (
     animation:"toastIn .25s ease", boxShadow:`0 8px 28px ${T.saffron}35` }}>{msg}</div>
 ) : null;
 
-// ── UPI PAY MODAL ────────────────────────────────────────────
+// ââ UPI PAY MODAL ââââââââââââââââââââââââââââââââââââââââââââ
 function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   const [step, setStep] = useState("choose"); // choose | confirm
   const [utr, setUtr] = useState("");
@@ -137,13 +137,13 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   const upiLink = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}`;
 
   const apps = [
-    { label:"Google Pay",   icon:"🟢", pkg:"com.google.android.apps.nbu.paisa.user",
+    { label:"Google Pay",   icon:"ð¢", pkg:"com.google.android.apps.nbu.paisa.user",
       url:`gpay://upi/pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}` },
-    { label:"PhonePe",      icon:"🟣", pkg:"com.phonepe.app",
+    { label:"PhonePe",      icon:"ð£", pkg:"com.phonepe.app",
       url:`phonepe://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}` },
-    { label:"Paytm",        icon:"🔵", pkg:"net.one97.paytm",
+    { label:"Paytm",        icon:"ðµ", pkg:"net.one97.paytm",
       url:`paytmmp://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=${note}` },
-    { label:"BHIM / Any UPI", icon:"🇮🇳", pkg:"",
+    { label:"BHIM / Any UPI", icon:"ð®ð³", pkg:"",
       url: upiLink },
   ];
 
@@ -182,14 +182,14 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
               Pay {fd(amount)}
             </div>
             <div style={{ fontSize:12, color:T.muted, marginBottom:20 }}>
-              {payment.type} · UPI ID: <span style={{ color:T.ink, fontWeight:700 }}>{upiId}</span>
+              {payment.type} Â· UPI ID: <span style={{ color:T.ink, fontWeight:700 }}>{upiId}</span>
             </div>
 
-            {/* QR placeholder — links to any UPI app */}
+            {/* QR placeholder â links to any UPI app */}
             <a href={upiLink} style={{ display:"block", textDecoration:"none" }}>
               <div style={{ background:T.panel, border:`2px dashed ${T.border2}`,
                 borderRadius:16, padding:"18px 12px", marginBottom:18, textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:6 }}>📲</div>
+                <div style={{ fontSize:48, marginBottom:6 }}>ð²</div>
                 <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>Tap to open UPI app</div>
                 <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>Opens your default UPI app</div>
               </div>
@@ -211,7 +211,7 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
             <button onClick={()=>setStep("confirm")}
               style={{ width:"100%", padding:"13px", background:T.teal, border:"none",
                 borderRadius:13, fontSize:14, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-              ✅ I've paid — Enter UTR →
+              â I've paid â Enter UTR â
             </button>
             <button onClick={onClose}
               style={{ width:"100%", marginTop:9, padding:"11px", background:"none",
@@ -234,7 +234,7 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
             <div style={{ background:T.tealL, border:`1px solid ${T.teal}25`,
               borderRadius:12, padding:"11px 13px", marginBottom:16,
               fontSize:12, color:T.teal, fontWeight:600 }}>
-              📍 Find UTR in your UPI app under "Transaction Details" or "Payment History"
+              ð Find UTR in your UPI app under "Transaction Details" or "Payment History"
             </div>
 
             <div style={{ fontSize:10, fontWeight:700, color:T.muted,
@@ -259,13 +259,13 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
                 border:"none", borderRadius:13, fontSize:14, fontWeight:800,
                 color:"#fff", cursor:"pointer", display:"flex",
                 alignItems:"center", justifyContent:"center", gap:8 }}>
-              {submitting ? <Spinner/> : "Submit for Verification →"}
+              {submitting ? <Spinner/> : "Submit for Verification â"}
             </button>
             <button onClick={()=>setStep("choose")}
               style={{ width:"100%", marginTop:9, padding:"11px", background:"none",
                 border:`1.5px solid ${T.border2}`, borderRadius:13, fontSize:13,
                 fontWeight:700, color:T.muted, cursor:"pointer" }}>
-              ← Back
+              â Back
             </button>
           </>
         )}
@@ -274,12 +274,12 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
   );
 }
 
-// ── PHONE INPUT COMPONENT ────────────────────────────────────
+// ââ PHONE INPUT COMPONENT ââââââââââââââââââââââââââââââââââââ
 const PhoneInput = ({ value, onChange, disabled }) => (
   <div style={{ display:"flex", border:`1.5px solid ${T.border2}`, borderRadius:12,
     overflow:"hidden", background:T.panel }}>
     <div style={{ padding:"12px 14px", background:T.surface, borderRight:`1px solid ${T.border2}`,
-      fontSize:14, fontWeight:700, color:T.ink2, whiteSpace:"nowrap" }}>🇮🇳 +91</div>
+      fontSize:14, fontWeight:700, color:T.ink2, whiteSpace:"nowrap" }}>ð®ð³ +91</div>
     <input
       type="tel" value={value} onChange={e => onChange(e.target.value.replace(/\D/g,"").slice(0,10))}
       placeholder="WhatsApp number" disabled={disabled}
@@ -289,7 +289,7 @@ const PhoneInput = ({ value, onChange, disabled }) => (
   </div>
 );
 
-// ── OTP INPUT COMPONENT ──────────────────────────────────────
+// ââ OTP INPUT COMPONENT ââââââââââââââââââââââââââââââââââââââ
 const OtpInput = ({ value, onChange }) => (
   <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
     {[0,1,2,3,4,5].map(i => (
@@ -311,9 +311,9 @@ const OtpInput = ({ value, onChange }) => (
   </div>
 );
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // LOGIN SCREEN
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function LoginScreen({ onLogin }) {
   const [step, setStep] = useState("phone");
   const [email, setEmail] = useState("");
@@ -370,14 +370,14 @@ function LoginScreen({ onLogin }) {
       ]);
 
       const roles = {};
-      if(adminRow) roles.admin  = { type:"admin",  email, name:adminRow.name, role:adminRow.role };
+      if(adminRow || isHardcodedAdmin) roles.admin = { type:"admin", email, name:adminRow?.name || "Support", role:adminRow?.role || "support" };
       if(ownerRow)  roles.owner  = { type:"owner",  ...ownerRow };
       if(tenantRow) roles.tenant = { type:"tenant", ...tenantRow };
 
       if(Object.keys(roles).length === 0) { setStep("role"); setLoading(false); return; }
 
       // Priority: admin > owner > tenant
-      const activeRole = adminRow ? "admin" : ownerRow ? "owner" : "tenant";
+      const activeRole = (adminRow || isHardcodedAdmin) ? "admin" : ownerRow ? "owner" : "tenant";
       onLogin({ activeRole, roles, email });
     } catch(e) {
       console.error("verifyOtp error:", e);
@@ -387,11 +387,14 @@ function LoginScreen({ onLogin }) {
   };
 
 
-  const createProfile = async () => {
+  const HARDCODED_ADMINS = ["support@rentai.co.in"];
+      const isHardcodedAdmin = HARDCODED_ADMINS.includes((email || "").toLowerCase());
+
+const createProfile = async () => {
     if(!name.trim()) { setError("Please enter your name"); return; }
     setLoading(true); setError("");
     try {
-      // Verify session is active before inserting — RLS requires an auth token
+      // Verify session is active before inserting â RLS requires an auth token
       const { data: { session } } = await supabase.auth.getSession();
       if(!session) {
         setError("Your session expired. Please go back and log in again.");
@@ -410,7 +413,7 @@ function LoginScreen({ onLogin }) {
         if(insertErr) {
           console.error("Owner insert error:", insertErr.code, insertErr.message, insertErr.details);
           if(insertErr.code === "23505") {
-            // Race: row was created between our check and insert — just fetch it
+            // Race: row was created between our check and insert â just fetch it
             const { data: race } = await supabase.from("owners").select("*").eq("email", email).maybeSingle();
             if(race) { onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...race } }, email }); return; }
             setError("This email is already registered. Try logging in.");
@@ -425,7 +428,7 @@ function LoginScreen({ onLogin }) {
         }
         onLogin({ activeRole:"owner", roles:{ owner:{ type:"owner", ...owner } }, email });
       } else {
-        // Tenant self-registration — no unit assigned yet; owner links them later
+        // Tenant self-registration â no unit assigned yet; owner links them later
         const { data: existing } = await supabase.from("tenants").select("*").eq("email", email).maybeSingle();
         if(existing) { onLogin({ activeRole:"tenant", roles:{ tenant:{ type:"tenant", ...existing } }, email }); return; }
 
@@ -442,7 +445,7 @@ function LoginScreen({ onLogin }) {
           } else if(insertErr.code === "42501" || insertErr.message?.includes("row-level security")) {
             setError("Account creation is currently restricted. Please contact support@rentai.co.in to get access.");
           } else if(insertErr.code === "23502") {
-            // owner_id or unit_id is NOT NULL — schema needs to allow null for self-registered tenants
+            // owner_id or unit_id is NOT NULL â schema needs to allow null for self-registered tenants
             setError("Schema error: tenant table requires owner_id to be set. Please contact support@rentai.co.in");
           } else {
             setError(`Couldn't create your account (${insertErr.code || "error"}). Please email support@rentai.co.in`);
@@ -468,7 +471,7 @@ function LoginScreen({ onLogin }) {
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:32 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ width:"100%", maxWidth:220, margin:"0 auto 8px", display:"block" }} />
-          <div style={{ fontSize:12, color:T.muted, marginTop:4, lineHeight:1.4 }}>Your AI-Powered Rental Manager – Manage Rent, Tenants &amp; Properties in One Place</div>
+          <div style={{ fontSize:12, color:T.muted, marginTop:4, lineHeight:1.4 }}>Your AI-Powered Rental Manager â Manage Rent, Tenants &amp; Properties in One Place</div>
         </div>
 
         <div style={{ background:T.surface, borderRadius:20, padding:28,
@@ -479,7 +482,7 @@ function LoginScreen({ onLogin }) {
             <>
               <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Welcome to RentAI</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>
-                Sign in or create your account — we'll send a 6-digit code to your email
+                Sign in or create your account â we'll send a 6-digit code to your email
               </div>
               <div style={{ fontSize:11, fontWeight:700, color:T.muted, letterSpacing:.5,
                 textTransform:"uppercase", marginBottom:8 }}>Email Address</div>
@@ -496,7 +499,7 @@ function LoginScreen({ onLogin }) {
                   background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                   border:"none", borderRadius:12, fontSize:15, fontWeight:800,
                   color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Send Login Code →"}
+                {loading ? <Spinner/> : "Send Login Code â"}
               </button>
 
               {/* Demo accounts */}
@@ -504,15 +507,15 @@ function LoginScreen({ onLogin }) {
                 border:`1.5px dashed ${T.border2}`, borderRadius:12 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:T.muted,
                   letterSpacing:.5, textTransform:"uppercase", marginBottom:6 }}>
-                  🧪 Try a Demo
+                  ð§ª Try a Demo
                 </div>
                 <div style={{ fontSize:11, color:T.muted, marginBottom:10, textAlign:"center" }}>
-                  See how RentAI works — no sign up needed
+                  See how RentAI works â no sign up needed
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
                   {[
-                    { label:"👤 Owner", email:"demo-owner@rentai.co.in", role:"owner", table:"owners" },
-                    { label:"🏠 Tenant", email:"demo-tenant@rentai.co.in", role:"tenant", table:"tenants" },
+                    { label:"ð¤ Owner", email:"demo-owner@rentai.co.in", role:"owner", table:"owners" },
+                    { label:"ð  Tenant", email:"demo-tenant@rentai.co.in", role:"tenant", table:"tenants" },
                   ].map(d => (
                     <button key={d.role} onClick={async () => {
                       setLoading(true); setError("");
@@ -534,7 +537,7 @@ function LoginScreen({ onLogin }) {
                   ))}
                 </div>
                 <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
-                  Auto-login · No OTP needed
+                  Auto-login Â· No OTP needed
                 </div>
               </div>
 
@@ -543,7 +546,7 @@ function LoginScreen({ onLogin }) {
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSOMa0ExM-c0ZpJVU1xOd6XD63Fs6pQA/viewform"
                   target="_blank" rel="noreferrer"
                   style={{ color:T.saffron, fontWeight:700, textDecoration:"none" }}>
-                  Request beta access →
+                  Request beta access â
                 </a>
               </div>
             </>
@@ -563,7 +566,7 @@ function LoginScreen({ onLogin }) {
               <div style={{ textAlign:"center", marginTop:10, padding:"9px 14px",
                 background:T.saffronL, border:`1px solid ${T.saffron}25`,
                 borderRadius:10, fontSize:12, color:T.ink2, lineHeight:1.6 }}>
-                📧 Enter the 6-digit code from your email. Check spam if you don't see it.
+                ð§ Enter the 6-digit code from your email. Check spam if you don't see it.
                 <br/>
                 <span style={{ fontSize:11, color:T.muted }}>
                   Need help? Email <a href="mailto:support@rentai.co.in"
@@ -579,7 +582,7 @@ function LoginScreen({ onLogin }) {
                   color:otp.length===6?"#fff":T.muted,
                   display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                   transition:"all .2s" }}>
-                {loading ? <Spinner/> : "Verify & Get Started →"}
+                {loading ? <Spinner/> : "Verify & Get Started â"}
               </button>
               <div style={{ textAlign:"center", marginTop:14, fontSize:12, color:T.muted }}>
                 {resendTimer > 0
@@ -597,11 +600,11 @@ function LoginScreen({ onLogin }) {
           {/* STEP: ROLE */}
           {step === "role" && (
             <>
-              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Welcome to RentAI! 🎉</div>
+              <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>Welcome to RentAI! ð</div>
               <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>Are you a property owner or a tenant?</div>
               <div style={{ display:"flex", gap:12, marginBottom:20 }}>
-                {[["owner","🏢","Property Owner","Manage flats & collect rent"],
-                  ["tenant","🏠","Tenant","View bills & pay rent"]].map(([v,icon,label,sub])=>(
+                {[["owner","ð¢","Property Owner","Manage flats & collect rent"],
+                  ["tenant","ð ","Tenant","View bills & pay rent"]].map(([v,icon,label,sub])=>(
                   <button key={v} onClick={()=>setRole(v)}
                     style={{ flex:1, padding:"16px 8px", borderRadius:14,
                       border:`2px solid ${role===v?T.saffron:T.border2}`,
@@ -616,7 +619,7 @@ function LoginScreen({ onLogin }) {
               <button onClick={()=>setStep("profile")}
                 style={{ width:"100%", padding:14, background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                   border:"none", borderRadius:12, fontSize:15, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                Continue as {role==="owner"?"Owner":"Tenant"} →
+                Continue as {role==="owner"?"Owner":"Tenant"} â
               </button>
             </>
           )}
@@ -625,9 +628,9 @@ function LoginScreen({ onLogin }) {
           {step === "profile" && (
             <>
               <div style={{ fontSize:18, fontWeight:900, color:T.ink, marginBottom:6 }}>
-                {role==="owner"?"Set up your account":"Almost there!"} 🎉
+                {role==="owner"?"Set up your account":"Almost there!"} ð
               </div>
-              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>Quick setup — takes 30 seconds</div>
+              <div style={{ fontSize:13, color:T.muted, marginBottom:24 }}>Quick setup â takes 30 seconds</div>
               {[
                 { label:"Your Name", key:"name", value:name, set:setName, placeholder:"e.g. Suresh Rao" },
                 ...(role==="owner"?[{ label:"City", key:"city", value:city, set:setCity, placeholder:"e.g. Bengaluru" }]:[]),
@@ -646,7 +649,7 @@ function LoginScreen({ onLogin }) {
                   background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                   border:"none", borderRadius:12, fontSize:15, fontWeight:800,
                   color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                {loading ? <Spinner/> : "Enter RentAI →"}
+                {loading ? <Spinner/> : "Enter RentAI â"}
               </button>
             </>
           )}
@@ -663,9 +666,9 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // ADD TENANT FORM
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
   const [form, setForm] = useState({
     name:"", phone:"", email:"", move_in_date:"", lease_end:"", notes:""
@@ -731,7 +734,7 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
       </div>
       {[
         { label:"Full Name *", key:"name", placeholder:"e.g. Ramesh Kumar", type:"text" },
-        { label:"WhatsApp Number", key:"phone", placeholder:"e.g. 9876543210", type:"tel" },
+        { label:"Phone Number", key:"phone", placeholder:"e.g. 9876543210", type:"tel" },
         { label:"Email", key:"email", placeholder:"e.g. ramesh@gmail.com", type:"email" },
         { label:"Move-in Date", key:"move_in_date", placeholder:"", type:"date" },
         { label:"Lease End Date", key:"lease_end", placeholder:"", type:"date" },
@@ -760,7 +763,7 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
       {error && <div style={{ color:T.rose, fontSize:12, marginBottom:10, fontWeight:600 }}>{error}</div>}
       <div style={{ background:T.tealL, border:`1px solid ${T.teal}25`, borderRadius:10,
         padding:"9px 12px", fontSize:12, color:T.teal, marginBottom:14, fontWeight:600 }}>
-        ✓ Unit will be marked occupied · First rent payment created automatically
+        â Unit will be marked occupied Â· First rent payment created automatically
       </div>
       <div style={{ display:"flex", gap:8 }}>
         <button onClick={onCancel}
@@ -772,16 +775,16 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
           style={{ flex:2, padding:"9px", background:T.saffron, border:"none",
             borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-          {saving ? <Spinner/> : "Save Tenant →"}
+          {saving ? <Spinner/> : "Save Tenant â"}
         </button>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // OWNER DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const downloadCSV = (filename, headers, rows) => {
   const csv = [headers, ...rows].map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(",")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type:"text/csv;charset=utf-8;" });
@@ -923,7 +926,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
           amount: unit.rent_amount,
           due_date: dueDate,
           status: "pending",
-          notes: `Auto-generated · ${monthLabel}`,
+          notes: `Auto-generated Â· ${monthLabel}`,
         });
       }
 
@@ -995,9 +998,9 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             status: "pending",
           });
         }
-        showToast("Unit + tenant added ✓");
+        showToast("Unit + tenant added â");
       } else {
-        showToast("Unit added ✓");
+        showToast("Unit added â");
       }
 
       setNewUnit({ unit_number:"", rent_amount:"", deposit:"", type:"flat", status:"vacant",
@@ -1018,7 +1021,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       paid_date: new Date().toISOString().split("T")[0],
     }).eq("id", paymentId);
 
-    showToast(isVerification ? "Payment verified ✓" : "Marked as paid ✓");
+    showToast(isVerification ? "Payment verified â" : "Marked as paid â");
 
     // If verifying, optionally open WhatsApp to notify tenant
     if(isVerification && payment?.tenants?.phone) {
@@ -1038,13 +1041,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       supabase.from("tenants").update({ is_active:false, unit_id:null }).eq("id", tenantId),
     ]);
     setSelUnit(null);
-    showToast("Unit marked as vacant ✓");
+    showToast("Unit marked as vacant â");
     loadData();
   };
 
   const resolveRequest = async (id) => {
     await supabase.from("maintenance_requests").update({ status:"resolved", resolved_at:new Date().toISOString() }).eq("id", id);
-    showToast("Marked as resolved ✓");
+    showToast("Marked as resolved â");
     loadData();
   };
 
@@ -1056,7 +1059,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const openReqs = requests.filter(r => r.status === "open").length;
   const firstName = (owner.name||"").split(" ")[0] || "there";
 
-  // ── LEASE TRACKING ───────────────────────────────────────────
+  // ââ LEASE TRACKING âââââââââââââââââââââââââââââââââââââââââââ
   const today = new Date();
   today.setHours(0,0,0,0);
 
@@ -1076,7 +1079,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
     };
   }).sort((a,b) => a.daysLeft - b.daysLeft);
 
-  // ── P&L FORECAST (6 months) ──────────────────────────────────
+  // ââ P&L FORECAST (6 months) ââââââââââââââââââââââââââââââââââ
   const pnlForecast = Array.from({length:6}, (_,i) => {
     const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
     const monthLabel = d.toLocaleString("en-IN", { month:"short", year:"2-digit" });
@@ -1120,14 +1123,14 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       if(insertErr) throw insertErr;
       setNewExp({ title:"", amount:"", category:"repair", unit_id:"", date:"", notes:"" });
       setShowAddExpense(false);
-      showToast("Expense saved ✓");
+      showToast("Expense saved â");
       loadData();
     } catch(e) {
       const msg = e?.message || "";
       if(msg.includes("relation") || msg.includes("does not exist")) {
-        showToast("⚠️ Run the expenses SQL migration in Supabase first");
+        showToast("â ï¸ Run the expenses SQL migration in Supabase first");
       } else if(msg.includes("violates")) {
-        showToast("⚠️ Check column values — " + msg.slice(0,60));
+        showToast("â ï¸ Check column values â " + msg.slice(0,60));
       } else {
         showToast("Failed to save: " + (msg.slice(0,60) || "unknown error"));
       }
@@ -1156,7 +1159,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       if(error) throw error;
       setNewProp({ name:"", address:"", city:"" });
       setShowAddProp(false);
-      showToast("Property added ✓");
+      showToast("Property added â");
       loadData();
     } catch(e) { showToast("Could not add property"); }
     setSavingProp(false);
@@ -1171,7 +1174,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
         .eq("id", owner.id);
       if(error) throw error;
       setEditProfile(false);
-      showToast("Profile updated ✓");
+      showToast("Profile updated â");
     } catch(e) { showToast("Could not update profile"); }
     setSavingProfile(false);
   };
@@ -1181,25 +1184,25 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const netIncome      = totalCollected - totalExpenses;
 
   const EXP_CATEGORIES = [
-    { value:"repair",      label:"🔧 Repair",        color: T.rose },
-    { value:"maintenance", label:"🛠 Maintenance",    color: T.amber },
-    { value:"cleaning",    label:"🧹 Cleaning",       color: T.sky },
-    { value:"utility",     label:"💡 Utility",        color: T.plum },
-    { value:"tax",         label:"📋 Tax / Legal",    color: T.ink2 },
-    { value:"insurance",   label:"🛡 Insurance",      color: T.teal },
-    { value:"renovation",  label:"🏗 Renovation",     color: T.saffron },
-    { value:"emi",         label:"🏦 Home Loan EMI",  color: "#7C3AED" },
-    { value:"other",       label:"📦 Other",          color: T.muted },
+    { value:"repair",      label:"ð§ Repair",        color: T.rose },
+    { value:"maintenance", label:"ð  Maintenance",    color: T.amber },
+    { value:"cleaning",    label:"ð§¹ Cleaning",       color: T.sky },
+    { value:"utility",     label:"ð¡ Utility",        color: T.plum },
+    { value:"tax",         label:"ð Tax / Legal",    color: T.ink2 },
+    { value:"insurance",   label:"ð¡ Insurance",      color: T.teal },
+    { value:"renovation",  label:"ð Renovation",     color: T.saffron },
+    { value:"emi",         label:"ð¦ Home Loan EMI",  color: "#7C3AED" },
+    { value:"other",       label:"ð¦ Other",          color: T.muted },
   ];
   const catMeta = (val) => EXP_CATEGORIES.find(c => c.value === val) || EXP_CATEGORIES[EXP_CATEGORIES.length-1];
 
   const tabs = [
-    { id:"dashboard",   icon:"📊", label:"Dashboard" },
-    { id:"properties",  icon:"🏢", label:"Properties" },
-    { id:"payments",    icon:"💰", label:"Payments" },
-    { id:"expenses",    icon:"🧾", label:"Expenses" },
-    { id:"reports",     icon:"📈", label:"Reports" },
-    { id:"profile",     icon:"👤", label:"Profile" },
+    { id:"dashboard",   icon:"ð", label:"Dashboard" },
+    { id:"properties",  icon:"ð¢", label:"Properties" },
+    { id:"payments",    icon:"ð°", label:"Payments" },
+    { id:"expenses",    icon:"ð§¾", label:"Expenses" },
+    { id:"reports",     icon:"ð", label:"Reports" },
+    { id:"profile",     icon:"ð¤", label:"Profile" },
   ];
 
   if(loading) return (
@@ -1207,7 +1210,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
       <style>{CSS}</style>
       <Spinner/>
-      <div style={{ fontSize:13, color:T.muted, fontWeight:600 }}>Loading your dashboard…</div>
+      <div style={{ fontSize:13, color:T.muted, fontWeight:600 }}>Loading your dashboardâ¦</div>
     </div>
   );
 
@@ -1223,7 +1226,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} · Owner</div>
+          <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} Â· Owner</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -1233,7 +1236,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
                     background: r === activeRole ? T.saffron : "transparent",
                     color: r === activeRole ? "#fff" : T.muted }}>
-                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                  {r === "owner" ? "ð¢ Owner" : r === "tenant" ? "ð  Tenant" : "âï¸ Admin"}
                 </button>
               ))}
             </div>
@@ -1242,7 +1245,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
               borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
-            {isDark ? "☀️" : "🌙"}
+            {isDark ? "âï¸" : "ð"}
           </button>
           <button onClick={onLogout}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
@@ -1259,16 +1262,16 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
           <div style={{ padding:"18px 16px" }} className="fu">
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
               <div style={{ fontSize:15, fontWeight:800, color:T.ink }}>
-                Good morning, {firstName}! 👋
+                Good morning, {firstName}! ð
               </div>
-              <button onClick={async()=>{ await autoGeneratePayments(); showToast("Payments refreshed ✓"); }}
+              <button onClick={async()=>{ await autoGeneratePayments(); showToast("Payments refreshed â"); }}
                 style={{ background:T.tealL, border:`1px solid ${T.teal}30`, borderRadius:9,
                   padding:"6px 12px", fontSize:11, fontWeight:700, color:T.teal, cursor:"pointer" }}>
-                🔄 Refresh
+                ð Refresh
               </button>
             </div>
 
-            {/* ── SMART INSIGHTS (top priority) ────────────────── */}
+            {/* ââ SMART INSIGHTS (top priority) ââââââââââââââââââ */}
             {(()=>{
               const rentsWS = pendingPayments.map(p => {
                 const due = new Date(p.due_date || p.created_at);
@@ -1296,7 +1299,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   borderRadius:16, overflow:"hidden" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8,
                     padding:"13px 16px 11px", borderBottom:`1px solid ${T.border}`, background:T.panel }}>
-                    <span style={{ fontSize:16 }}>🧠</span>
+                    <span style={{ fontSize:16 }}>ð§ </span>
                     <span style={{ fontSize:12, fontWeight:900, color:T.ink, letterSpacing:.3 }}>Smart Insights</span>
                     <span style={{ marginLeft:"auto", fontSize:10, fontWeight:800, background:T.saffronL,
                       color:T.saffron, padding:"2px 8px", borderRadius:20, border:`1px solid ${T.saffron}30` }}>
@@ -1322,7 +1325,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               );
             })()}
 
-            {/* ── NET INCOME CARD ──────────────────────────────── */}
+            {/* ââ NET INCOME CARD ââââââââââââââââââââââââââââââââ */}
             {(()=>{
               const now = new Date();
               const mthIncome = payments
@@ -1341,20 +1344,20 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
                       borderRadius:"50%", background:"rgba(255,255,255,.08)", pointerEvents:"none" }}/>
                     <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.75)", letterSpacing:.8, marginBottom:3 }}>
-                      NET INCOME · {monthLabel.toUpperCase()}
+                      NET INCOME Â· {monthLabel.toUpperCase()}
                     </div>
                     <div style={{ fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>
                       {isProfit?"+":"-"}{fd(Math.abs(net))}
                     </div>
                     <div style={{ fontSize:12, color:"rgba(255,255,255,.8)", marginTop:4, fontWeight:600 }}>
-                      {isProfit?"✅ Profitable month":"⚠️ Expenses exceed income"}
+                      {isProfit?"â Profitable month":"â ï¸ Expenses exceed income"}
                     </div>
                   </div>
                   <div style={{ background:T.card, padding:"0 16px" }}>
                     {[
-                      { icon:"💰", label:"Rent Collected", sub:"Payments received this month", val:`+${fd(mthIncome)}`, color:T.teal, bg:T.tealL, border:true },
-                      { icon:"🧾", label:"Total Expenses", sub:expPct>0?`${expPct}% of income`:"No expenses logged", val:`-${fd(mthExp)}`, color:T.rose, bg:T.roseL, border:true },
-                      { icon:isProfit?"📈":"📉", label:"Net Profit", sub:"Income minus expenses", val:`${isProfit?"+":"-"}${fd(Math.abs(net))}`, color:isProfit?T.teal:T.rose, bg:isProfit?T.tealL:T.roseL, border:false },
+                      { icon:"ð°", label:"Rent Collected", sub:"Payments received this month", val:`+${fd(mthIncome)}`, color:T.teal, bg:T.tealL, border:true },
+                      { icon:"ð§¾", label:"Total Expenses", sub:expPct>0?`${expPct}% of income`:"No expenses logged", val:`-${fd(mthExp)}`, color:T.rose, bg:T.roseL, border:true },
+                      { icon:isProfit?"ð":"ð", label:"Net Profit", sub:"Income minus expenses", val:`${isProfit?"+":"-"}${fd(Math.abs(net))}`, color:isProfit?T.teal:T.rose, bg:isProfit?T.tealL:T.roseL, border:false },
                     ].map(row=>(
                       <div key={row.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
                         padding:"13px 0", borderBottom:row.border?`1px solid ${T.border}`:"none" }}>
@@ -1403,7 +1406,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               </div>
             </div>
 
-            {/* Stats grid — expandable tiles */}
+            {/* Stats grid â expandable tiles */}
             {(()=>{
               const now = new Date();
               const mthExp = expenses.filter(e=>{ const d=new Date(e.date||e.created_at); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); }).reduce((s,e)=>s+Number(e.amount||0),0);
@@ -1411,12 +1414,12 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               return (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginBottom:18 }}>
               {[
-                { id:"occupied", icon:"🏡", label:"Occupied", value:`${occupied.length}/${units.length}`, sub:`${units.length-occupied.length} vacant`, color:T.teal, light:T.tealL },
-                { id:"pending", icon:"⚠️", label:"Rent Pending", value:pendingPayments.length, sub:fd(totalPending)+" due", color:T.rose, light:T.roseL },
-                { id:"requests", icon:"🔧", label:"Open Requests", value:openReqs, sub:"maintenance", color:T.sky, light:T.skyL },
-                { id:"units", icon:"📋", label:"Total Units", value:units.length, sub:"in portfolio", color:T.amber, light:T.amberL },
-                { id:"expenses", icon:"💸", label:"This Month Expenses", value:fd(mthExp), sub:"tracked spend", color:T.rose, light:T.roseL },
-                { id:"net", icon:"📈", label:"Net Income", value:fd(mthNet), sub:mthNet>=0?"positive":"negative", color:mthNet>=0?T.teal:T.rose, light:mthNet>=0?T.tealL:T.roseL },
+                { id:"occupied", icon:"ð¡", label:"Occupied", value:`${occupied.length}/${units.length}`, sub:`${units.length-occupied.length} vacant`, color:T.teal, light:T.tealL },
+                { id:"pending", icon:"â ï¸", label:"Rent Pending", value:pendingPayments.length, sub:fd(totalPending)+" due", color:T.rose, light:T.roseL },
+                { id:"requests", icon:"ð§", label:"Open Requests", value:openReqs, sub:"maintenance", color:T.sky, light:T.skyL },
+                { id:"units", icon:"ð", label:"Total Units", value:units.length, sub:"in portfolio", color:T.amber, light:T.amberL },
+                { id:"expenses", icon:"ð¸", label:"This Month Expenses", value:fd(mthExp), sub:"tracked spend", color:T.rose, light:T.roseL },
+                { id:"net", icon:"ð", label:"Net Income", value:fd(mthNet), sub:mthNet>=0?"positive":"negative", color:mthNet>=0?T.teal:T.rose, light:mthNet>=0?T.tealL:T.roseL },
               ].map(s => (
                 <div key={s.id} onClick={()=>setExpandedTile(expandedTile===s.id?null:s.id)}
                   style={{ background:T.card,
@@ -1432,7 +1435,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       <div style={{ fontSize:11, fontWeight:700, color:T.ink2, marginTop:1 }}>{s.label}</div>
                       <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{s.sub}</div>
                     </div>
-                    <div style={{ fontSize:12, color:T.muted }}>{expandedTile===s.id?"▲":"▼"}</div>
+                    <div style={{ fontSize:12, color:T.muted }}>{expandedTile===s.id?"â²":"â¼"}</div>
                   </div>
 
                   {/* Expanded content */}
@@ -1457,7 +1460,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                   </div>
                                   <div style={{ flex:1 }}>
                                     <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{t?.name||"No tenant"}</div>
-                                    <div style={{ fontSize:10, color:T.muted }}>{u.unit_number} · {fd(u.rent_amount)}/mo</div>
+                                    <div style={{ fontSize:10, color:T.muted }}>{u.unit_number} Â· {fd(u.rent_amount)}/mo</div>
                                   </div>
                                   {t?.lease_end && (()=>{
                                     const d = Math.ceil((new Date(t.lease_end)-today)/(1000*60*60*24));
@@ -1472,7 +1475,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       {/* PENDING tile */}
                       {s.id === "pending" && (
                         pendingPayments.length === 0
-                          ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>No pending payments 🎉</div>
+                          ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>No pending payments ð</div>
                           : <>
                               {pendingPayments.slice(0,6).map(p => (
                                 <div key={p.id} style={{ display:"flex", alignItems:"center", gap:9,
@@ -1480,13 +1483,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                   borderRadius:10, border:`1px solid ${T.rose}20` }}>
                                   <div style={{ flex:1 }}>
                                     <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{p.tenants?.name||"Tenant"}</div>
-                                    <div style={{ fontSize:10, color:T.muted }}>{p.units?.unit_number} · {p.type} · Due {fmt(p.due_date)}</div>
+                                    <div style={{ fontSize:10, color:T.muted }}>{p.units?.unit_number} Â· {p.type} Â· Due {fmt(p.due_date)}</div>
                                   </div>
                                   <div style={{ fontSize:13, fontWeight:900, color:T.rose }}>{fd(p.amount)}</div>
                                   <button onClick={()=>markPaid(p.id)}
                                     style={{ background:T.teal, border:"none", borderRadius:7,
                                       padding:"4px 9px", fontSize:10, fontWeight:700,
-                                      color:"#fff", cursor:"pointer", flexShrink:0 }}>✓</button>
+                                      color:"#fff", cursor:"pointer", flexShrink:0 }}>â</button>
                                 </div>
                               ))}
                               <button onClick={()=>{
@@ -1501,7 +1504,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                               }} style={{ width:"100%", padding:"8px", background:"#25D366",
                                 border:"none", borderRadius:9, fontSize:12, fontWeight:800,
                                 color:"#fff", cursor:"pointer", marginTop:4 }}>
-                                📱 Remind All ({pendingPayments.length})
+                                ð± Remind All ({pendingPayments.length})
                               </button>
                             </>
                       )}
@@ -1509,20 +1512,20 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       {/* REQUESTS tile */}
                       {s.id === "requests" && (
                         requests.filter(r=>r.status==="open").length === 0
-                          ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>No open requests 🎉</div>
+                          ? <div style={{ fontSize:12, color:T.muted, textAlign:"center", padding:"8px 0" }}>No open requests ð</div>
                           : requests.filter(r=>r.status==="open").map(r => (
                               <div key={r.id} style={{ display:"flex", alignItems:"center", gap:9,
                                 marginBottom:8, padding:"8px 10px", background:T.skyL,
                                 borderRadius:10, border:`1px solid ${T.sky}20` }}>
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{r.title}</div>
-                                  <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} · {fmt(r.created_at)}</div>
+                                  <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} Â· {fmt(r.created_at)}</div>
                                 </div>
                                 <Chip label={r.priority} color={r.priority==="high"?T.rose:r.priority==="medium"?T.amber:T.teal}/>
                                 <button onClick={()=>resolveRequest(r.id)}
                                   style={{ background:T.teal, border:"none", borderRadius:7,
                                     padding:"4px 9px", fontSize:10, fontWeight:700,
-                                    color:"#fff", cursor:"pointer", flexShrink:0 }}>✓</button>
+                                    color:"#fff", cursor:"pointer", flexShrink:0 }}>â</button>
                               </div>
                             ))
                       )}
@@ -1538,7 +1541,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                 borderRadius:10, border:`1px solid ${u.is_occupied?T.teal+"20":T.border}` }}>
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{u.unit_number}</div>
-                                  <div style={{ fontSize:10, color:T.muted }}>{fd(u.rent_amount)}/mo · {u.type}</div>
+                                  <div style={{ fontSize:10, color:T.muted }}>{fd(u.rent_amount)}/mo Â· {u.type}</div>
                                 </div>
                                 <Chip label={u.is_occupied?"Occupied":"Vacant"} color={u.is_occupied?T.teal:T.rose}/>
                               </div>
@@ -1551,7 +1554,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             </div>
               ); })()}
 
-            {/* Revenue vs Expenses — last 6 months */}
+            {/* Revenue vs Expenses â last 6 months */}
             {(()=>{
               const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
               const now2 = new Date();
@@ -1567,7 +1570,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               const maxVal = Math.max(1, ...bars.flatMap(b=>[b.rev,b.exp]));
               return (
                 <div style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:14, padding:16, marginBottom:18 }}>
-                  <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:14 }}>Revenue vs Expenses — Last 6 Months</div>
+                  <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:14 }}>Revenue vs Expenses â Last 6 Months</div>
                   <div style={{ display:"flex", alignItems:"flex-end", gap:6, height:80, marginBottom:8 }}>
                     {bars.map((b,i) => (
                       <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
@@ -1606,12 +1609,12 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     }).filter(Boolean);
                     if(msgs.length === 0) { showToast("No phone numbers saved for pending tenants"); return; }
                     msgs.forEach((url, i) => setTimeout(()=>window.open(url,"_blank"), i*500));
-                    showToast(`Opening WhatsApp for ${msgs.length} tenants…`);
+                    showToast(`Opening WhatsApp for ${msgs.length} tenantsâ¦`);
                   }}
                     style={{ background:"#25D366", border:"none", borderRadius:8,
                       padding:"6px 12px", fontSize:11, fontWeight:700,
                       color:"#fff", cursor:"pointer" }}>
-                    📱 Remind All
+                    ð± Remind All
                   </button>
                 </div>
                 {pendingPayments.slice(0,5).map(p => (
@@ -1632,7 +1635,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                         {p.status==="verification_pending" && <Chip label="Verify!" color={T.amber}/>}
                       </div>
                       <div style={{ fontSize:10, color:T.muted }}>
-                        {p.units?.unit_number} · {p.type} · {fd(p.amount)}
+                        {p.units?.unit_number} Â· {p.type} Â· {fd(p.amount)}
                       </div>
                       {p.utr_number && (
                         <div style={{ fontSize:10, color:T.amber, fontWeight:700 }}>UTR: {p.utr_number}</div>
@@ -1644,7 +1647,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                         borderRadius:8, padding:"5px 10px", fontSize:11,
                         fontWeight:700, color:p.status==="verification_pending"?"#fff":T.teal,
                         cursor:"pointer", flexShrink:0 }}>
-                      {p.status==="verification_pending"?"✅ Verify":"✓ Paid"}
+                      {p.status==="verification_pending"?"â Verify":"â Paid"}
                     </button>
                   </div>
                 ))}
@@ -1654,7 +1657,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             {units.length === 0 && (
               <div style={{ textAlign:"center", padding:"32px 20px", background:T.card,
                 border:`1.5px solid ${T.border}`, borderRadius:16, marginTop:8 }}>
-                <div style={{ fontSize:36, marginBottom:12 }}>🏠</div>
+                <div style={{ fontSize:36, marginBottom:12 }}>ð </div>
                 <div style={{ fontSize:15, fontWeight:800, color:T.ink, marginBottom:6 }}>Add your first unit</div>
                 <div style={{ fontSize:13, color:T.muted, marginBottom:16 }}>
                   Start by adding a flat or room to track rent
@@ -1671,7 +1674,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             {leaseAlerts.length > 0 && (
               <div style={{ marginTop:18 }}>
                 <div style={{ fontWeight:800, fontSize:13, color:T.ink, marginBottom:10 }}>
-                  🗓 Lease Alerts
+                  ð Lease Alerts
                 </div>
                 {leaseAlerts.map(({ unit:u, tenant, daysLeft, color, label }) => (
                   <div key={u.id} style={{ display:"flex", alignItems:"center", gap:10,
@@ -1680,11 +1683,11 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     <div style={{ width:36, height:36, borderRadius:10,
                       background:`${color}15`, display:"flex", alignItems:"center",
                       justifyContent:"center", fontSize:16, flexShrink:0 }}>
-                      {daysLeft <= 15 ? "🔴" : daysLeft <= 30 ? "🟡" : "🔵"}
+                      {daysLeft <= 15 ? "ð´" : daysLeft <= 30 ? "ð¡" : "ðµ"}
                     </div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>
-                        {u.unit_number} · {tenant.name}
+                        {u.unit_number} Â· {tenant.name}
                       </div>
                       <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>
                         Lease ends {fmt(tenant.lease_end)}
@@ -1707,7 +1710,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ background:T.card, border:`1.5px solid ${T.border}`,
                 borderRadius:16, padding:16, marginTop:18 }}>
                 <div style={{ fontWeight:800, fontSize:13, color:T.ink, marginBottom:4 }}>
-                  📈 6-Month Revenue Forecast
+                  ð 6-Month Revenue Forecast
                 </div>
                 <div style={{ fontSize:11, color:T.muted, marginBottom:14 }}>
                   Based on current occupancy and lease end dates
@@ -1788,7 +1791,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     6-month forecast total: {fd(pnlForecast.reduce((s,m)=>s+m.expected,0))}
                     {leaseAlerts.length > 0 && (
                       <span style={{ color:T.amber, marginLeft:8 }}>
-                        ⚠ {leaseAlerts.length} lease{leaseAlerts.length>1?"s":""} expiring
+                        â  {leaseAlerts.length} lease{leaseAlerts.length>1?"s":""} expiring
                       </span>
                     )}
                   </div>
@@ -1801,10 +1804,10 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ marginTop:18, background:T.card, border:`1.5px solid ${T.border}`,
                 borderRadius:16, padding:16 }}>
                 <div style={{ fontWeight:800, fontSize:13, color:T.ink, marginBottom:4 }}>
-                  📈 Revenue Forecast
+                  ð Revenue Forecast
                 </div>
                 <div style={{ fontSize:11, color:T.muted, marginBottom:14 }}>
-                  Based on current leases · 6-month outlook
+                  Based on current leases Â· 6-month outlook
                 </div>
 
                 {/* Bar chart */}
@@ -1857,7 +1860,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   {[
                     { label:"This Month", val:fd(pnlForecast[0]?.expected||0), sub:"expected", color:T.saffron },
                     { label:"Next 3 Months", val:fd(pnlForecast.slice(1,4).reduce((s,m)=>s+m.expected,0)), sub:"forecast", color:T.teal },
-                    { label:"Annual Run Rate", val:"₹"+((totalExpected*12)/100000).toFixed(1)+"L", sub:"at full occupancy", color:T.plum },
+                    { label:"Annual Run Rate", val:"â¹"+((totalExpected*12)/100000).toFixed(1)+"L", sub:"at full occupancy", color:T.plum },
                   ].map(s => (
                     <div key={s.label} style={{ background:T.panel, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
                       <div style={{ fontSize:13, fontWeight:900, color:s.color, letterSpacing:-.5 }}>{s.val}</div>
@@ -1871,23 +1874,23 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 {leaseAlerts.length > 0 && (
                   <div style={{ marginTop:12, background:T.amberL, border:`1px solid ${T.amber}30`,
                     borderRadius:10, padding:"9px 12px", fontSize:12, color:T.amber, fontWeight:600 }}>
-                    ⚠️ {leaseAlerts.length} lease{leaseAlerts.length>1?"s":""} expiring soon —
+                    â ï¸ {leaseAlerts.length} lease{leaseAlerts.length>1?"s":""} expiring soon â
                     forecast may change if not renewed
                   </div>
                 )}
               </div>
             )}
 
-            {/* ── REFER & EARN ── */}
+            {/* ââ REFER & EARN ââ */}
             {(() => {
               const refCode = (owner.name || "").replace(/\s+/g,"").toUpperCase().slice(0,6) + (owner.id||"").toString().slice(-4).toUpperCase();
               const refLink = `https://rentai.co.in?ref=${refCode}`;
-              const refMsg  = `Hey! I use RentAI to manage my rental properties. Try it free → ${refLink}`;
+              const refMsg  = `Hey! I use RentAI to manage my rental properties. Try it free â ${refLink}`;
               return (
                 <div style={{ background:`linear-gradient(135deg,${T.plum}15,${T.plum}08)`,
                   border:`1.5px solid ${T.plum}30`, borderRadius:16, padding:16, marginTop:8 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                    <span style={{ fontSize:22 }}>🎁</span>
+                    <span style={{ fontSize:22 }}>ð</span>
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.plum }}>Refer & Earn</div>
                       <div style={{ fontSize:11, color:T.ink2 }}>Get 1 month free for every 2 owners you refer</div>
@@ -1900,7 +1903,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     <button onClick={()=>navigator.clipboard.writeText(refLink)}
                       style={{ background:"none", border:"none", fontSize:11, color:T.muted,
                         fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                      📋 Copy link
+                      ð Copy link
                     </button>
                   </div>
                   <div style={{ display:"flex", gap:8 }}>
@@ -1909,26 +1912,26 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       style={{ flex:1, padding:"8px 0", background:"#25D366", borderRadius:9,
                         fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none",
                         textAlign:"center" }}>
-                      💬 Share on WhatsApp
+                      ð¬ Share on WhatsApp
                     </a>
                     <button onClick={()=>navigator.clipboard.writeText(refLink)}
                       style={{ flex:1, padding:"8px 0", background:T.plumL, border:`1px solid ${T.plum}30`,
                         borderRadius:9, fontSize:11, fontWeight:800, color:T.plum, cursor:"pointer" }}>
-                      🔗 Copy referral link
+                      ð Copy referral link
                     </button>
                   </div>
                 </div>
               );
             })()}
 
-            {/* ── TRACK MY OWN RENT ── */}
+            {/* ââ TRACK MY OWN RENT ââ */}
             {!availableRoles.includes("tenant") ? (
               <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:16, marginTop:8 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                  <span style={{ fontSize:22 }}>🏠</span>
+                  <span style={{ fontSize:22 }}>ð </span>
                   <div>
                     <div style={{ fontSize:13, fontWeight:800, color:T.teal }}>Also Renting Somewhere?</div>
-                    <div style={{ fontSize:11, color:T.ink2 }}>Track your own rent — even if your landlord isn't on RentAI</div>
+                    <div style={{ fontSize:11, color:T.ink2 }}>Track your own rent â even if your landlord isn't on RentAI</div>
                   </div>
                 </div>
                 <button onClick={() => setSelfTenantModal(true)}
@@ -1941,13 +1944,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ background:T.tealL, border:`1.5px solid ${T.teal}30`, borderRadius:16, padding:"12px 16px", marginTop:8,
                 display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontSize:18 }}>🏠</span>
+                  <span style={{ fontSize:18 }}>ð </span>
                   <div style={{ fontSize:12, fontWeight:700, color:T.teal }}>You have a tenant profile</div>
                 </div>
                 <button onClick={() => onSwitchRole("tenant")}
                   style={{ padding:"6px 14px", background:T.teal, borderRadius:8,
                     fontSize:11, fontWeight:800, color:"#fff", border:"none", cursor:"pointer" }}>
-                  Switch →
+                  Switch â
                 </button>
               </div>
             )}
@@ -1964,7 +1967,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <button onClick={()=>setShowAddProp(v=>!v)}
                   style={{ background:showAddProp?T.panel:T.surface, border:`1.5px solid ${T.border2}`, borderRadius:10,
                     padding:"7px 12px", fontSize:12, fontWeight:800, color:T.ink2, cursor:"pointer" }}>
-                  {showAddProp ? "✕" : "🏢 + Property"}
+                  {showAddProp ? "â" : "ð¢ + Property"}
                 </button>
                 <button onClick={()=>{setShowAddUnit(true);setShowAddProp(false);}}
                   style={{ background:T.saffron, border:"none", borderRadius:10,
@@ -1999,7 +2002,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   <button onClick={addProperty} disabled={savingProp}
                     style={{ flex:2, padding:"10px", background:T.saffron, border:"none", borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                    {savingProp ? <Spinner/> : "Save Property →"}
+                    {savingProp ? <Spinner/> : "Save Property â"}
                   </button>
                 </div>
               </div>
@@ -2013,7 +2016,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   return (
                     <div key={pr.id} style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:12, padding:"8px 14px" }}>
                       <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{pr.name}</div>
-                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} · {pr.city||pr.address||""}</div>
+                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} Â· {pr.city||pr.address||""}</div>
                     </div>
                   );
                 })}
@@ -2029,7 +2032,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
 
                 {/* Occupied / Vacant toggle */}
                 <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-                  {[["vacant","🔓 Vacant"],["occupied","👤 Occupied"]].map(([v,l])=>(
+                  {[["vacant","ð Vacant"],["occupied","ð¤ Occupied"]].map(([v,l])=>(
                     <button key={v} onClick={()=>setNewUnit(p=>({...p,status:v}))}
                       style={{ flex:1, padding:"10px 8px", borderRadius:10,
                         border:`2px solid ${(newUnit.status||"vacant")===v?T.saffron:T.border2}`,
@@ -2042,8 +2045,8 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 {/* Unit details */}
                 {[
                   { label:"Unit Number *", key:"unit_number", placeholder:"e.g. Flat 1A, Room 3" },
-                  { label:"Monthly Rent (₹) *", key:"rent_amount", placeholder:"e.g. 10000", type:"number" },
-                  { label:"Security Deposit (₹)", key:"deposit", placeholder:"e.g. 30000", type:"number" },
+                  { label:"Monthly Rent (â¹) *", key:"rent_amount", placeholder:"e.g. 10000", type:"number" },
+                  { label:"Security Deposit (â¹)", key:"deposit", placeholder:"e.g. 30000", type:"number" },
                 ].map(f => (
                   <div key={f.key} style={{ marginBottom:12 }}>
                     <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5,
@@ -2061,7 +2064,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5,
                     textTransform:"uppercase", marginBottom:6 }}>Type</div>
                   <div style={{ display:"flex", gap:8 }}>
-                    {[["flat","🏠 Flat"],["room","🛏 Room"],["studio","🏙 Studio"],["shop","🏪 Shop"]].map(([v,l])=>(
+                    {[["flat","ð  Flat"],["room","ð Room"],["studio","ð Studio"],["shop","ðª Shop"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setNewUnit(p=>({...p,type:v}))}
                         style={{ flex:1, padding:"7px 4px", borderRadius:9,
                           border:`1.5px solid ${newUnit.type===v?T.saffron:T.border2}`,
@@ -2072,16 +2075,16 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   </div>
                 </div>
 
-                {/* Tenant details — only shown if Occupied */}
+                {/* Tenant details â only shown if Occupied */}
                 {(newUnit.status||"vacant") === "occupied" && (
                   <div style={{ background:T.tealL, border:`1px solid ${T.teal}25`,
                     borderRadius:12, padding:14, marginBottom:14 }}>
                     <div style={{ fontSize:11, fontWeight:800, color:T.teal, marginBottom:12 }}>
-                      👤 Tenant Details
+                      ð¤ Tenant Details
                     </div>
                     {[
                       { label:"Tenant Name *", key:"tenant_name", placeholder:"e.g. Ramesh Kumar" },
-                      { label:"WhatsApp Number", key:"tenant_phone", placeholder:"e.g. 9876543210" },
+                      { label:"Phone Number", key:"tenant_phone", placeholder:"e.g. 9876543210" },
                       { label:"Email", key:"tenant_email", placeholder:"e.g. ramesh@gmail.com" },
                       { label:"Move-in Date", key:"tenant_move_in", type:"date" },
                       { label:"Lease End Date", key:"tenant_lease_end", type:"date" },
@@ -2110,16 +2113,16 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     style={{ flex:2, padding:10, background:T.saffron, border:"none",
                       borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                    {saving ? <Spinner/> : (newUnit.status||"vacant")==="occupied" ? "Save Unit + Tenant →" : "Save Unit →"}
+                    {saving ? <Spinner/> : (newUnit.status||"vacant")==="occupied" ? "Save Unit + Tenant â" : "Save Unit â"}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Units list — grouped by property */}
+            {/* Units list â grouped by property */}
             {units.length === 0 && !showAddUnit && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>🏠</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>ð </div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No units yet</div>
                 <div style={{ fontSize:12, marginTop:4 }}>Add your first flat or room above</div>
               </div>
@@ -2135,7 +2138,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div key={pr?.id||"none-"+gi}>
                   {pr && (
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, marginTop:gi>0?18:0 }}>
-                      <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>🏢 {pr.name}</div>
+                      <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>ð¢ {pr.name}</div>
                       {pr.city && <span style={{ fontSize:11, color:T.muted }}>{pr.city}</span>}
                       <div style={{ flex:1, height:1, background:T.border, marginLeft:4 }}/>
                       <div style={{ fontSize:10, color:T.muted }}>{items.length} unit{items.length!==1?"s":""}</div>
@@ -2149,7 +2152,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   border:`1.5px solid ${isOpen?T.saffron:u.is_occupied?T.teal+"35":T.border}`,
                   borderRadius:14, marginBottom:11, overflow:"hidden" }}>
 
-                  {/* Unit header — always visible */}
+                  {/* Unit header â always visible */}
                   <div onClick={()=>setSelUnit(isOpen?null:u)}
                     style={{ padding:13, cursor:"pointer", display:"flex",
                       justifyContent:"space-between", alignItems:"start" }}>
@@ -2160,7 +2163,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       </div>
                       {tenant && (
                         <div style={{ fontSize:12, fontWeight:700, color:T.ink2, marginBottom:2 }}>
-                          👤 {tenant.name}
+                          ð¤ {tenant.name}
                         </div>
                       )}
                       {tenant?.lease_end && (()=>{
@@ -2170,15 +2173,15 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                         return (
                           <div style={{ fontSize:10, fontWeight:700, color,
                             marginBottom:2 }}>
-                            🗓 Lease: {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
+                            ð Lease: {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
                           </div>
                         );
                       })()}
                       <div style={{ fontSize:13, fontWeight:900, color:T.saffron }}>{fd(u.rent_amount)}/mo
-                        {u.deposit && <span style={{ fontSize:10, color:T.muted, fontWeight:600 }}> · Deposit {fd(u.deposit)}</span>}
+                        {u.deposit && <span style={{ fontSize:10, color:T.muted, fontWeight:600 }}> Â· Deposit {fd(u.deposit)}</span>}
                       </div>
                     </div>
-                    <div style={{ fontSize:16, color:T.muted, marginLeft:8 }}>{isOpen?"▲":"▼"}</div>
+                    <div style={{ fontSize:16, color:T.muted, marginLeft:8 }}>{isOpen?"â²":"â¼"}</div>
                   </div>
 
                   {/* Expanded detail */}
@@ -2191,11 +2194,11 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                             <div style={{ background:T.surface, borderRadius:12, padding:14,
                               marginBottom:12, border:`1.5px solid ${T.saffron}40` }}>
                               <div style={{ fontSize:12, fontWeight:800, color:T.saffron, marginBottom:12 }}>
-                                ✏️ Edit Tenant
+                                âï¸ Edit Tenant
                               </div>
                               {[
                                 { label:"Name *", key:"name", type:"text", placeholder:"Tenant name" },
-                                { label:"WhatsApp", key:"phone", type:"tel", placeholder:"e.g. +919876543210" },
+                                { label:"Phone", key:"phone", type:"tel", placeholder:"e.g. 9876543210" },
                                 { label:"Email", key:"email", type:"email", placeholder:"email@example.com" },
                                 { label:"Move-in Date", key:"move_in_date", type:"date" },
                                 { label:"Lease End Date", key:"lease_end", type:"date" },
@@ -2228,13 +2231,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                     lease_end: editTenant.lease_end || null,
                                   }).eq("id", tenant.id);
                                   setEditTenant(null);
-                                  showToast("Tenant updated ✓");
+                                  showToast("Tenant updated â");
                                   loadData();
                                 }}
                                   style={{ flex:2, padding:"8px", background:T.saffron,
                                     border:"none", borderRadius:9, fontSize:12,
                                     fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                                  Save Changes ✓
+                                  Save Changes â
                                 </button>
                               </div>
                             </div>
@@ -2244,18 +2247,18 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                               <div style={{ background:T.surface, borderRadius:12, padding:14, marginBottom:12,
                                 border:`1px solid ${T.border}` }}>
                                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                                  <div style={{ fontSize:12, fontWeight:800, color:T.teal }}>👤 Tenant Details</div>
+                                  <div style={{ fontSize:12, fontWeight:800, color:T.teal }}>ð¤ Tenant Details</div>
                                   <button onClick={()=>setEditTenant({...tenant})}
                                     style={{ background:T.saffronL, border:`1px solid ${T.saffron}30`,
                                       borderRadius:7, padding:"4px 10px", fontSize:11,
                                       fontWeight:700, color:T.saffron, cursor:"pointer" }}>
-                                    ✏️ Edit
+                                    âï¸ Edit
                                   </button>
                                 </div>
                                 {[
                                   ["Name", tenant.name],
-                                  ["Phone", tenant.phone || "—"],
-                                  ["Email", tenant.email || "—"],
+                                  ["Phone", tenant.phone || "â"],
+                                  ["Email", tenant.email || "â"],
                                   ["Move-in", fmt(tenant.move_in_date)],
                                   ["Lease ends", fmt(tenant.lease_end)],
                                 ].map(([l,v]) => (
@@ -2275,7 +2278,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                     <div style={{ marginTop:8, padding:"6px 10px",
                                       background:`${color}12`, border:`1px solid ${color}30`,
                                       borderRadius:8, fontSize:11, fontWeight:700, color }}>
-                                      📅 {label}
+                                      ð {label}
                                     </div>
                                   );
                                 })()}
@@ -2285,19 +2288,19 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                   style={{ flex:1, padding:"8px", background:T.roseL,
                                     border:`1px solid ${T.rose}30`, borderRadius:9,
                                     fontSize:12, fontWeight:700, color:T.rose, cursor:"pointer" }}>
-                                  🚪 Vacated
+                                  ðª Vacated
                                 </button>
                                 <button onClick={async()=>{
                                   const newEnd = prompt("New lease end date (YYYY-MM-DD):", tenant.lease_end || "");
                                   if(!newEnd) return;
                                   await supabase.from("tenants").update({ lease_end:newEnd }).eq("id", tenant.id);
-                                  showToast("Lease renewed ✓");
+                                  showToast("Lease renewed â");
                                   loadData();
                                 }}
                                   style={{ flex:1, padding:"8px", background:T.skyL,
                                     border:`1px solid ${T.sky}30`, borderRadius:9,
                                     fontSize:12, fontWeight:700, color:T.sky, cursor:"pointer" }}>
-                                  🔄 Renew
+                                  ð Renew
                                 </button>
                                 <button onClick={()=>{
                                   const wa = tenant.phone?.replace(/\D/g,"");
@@ -2306,7 +2309,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                                 }} style={{ flex:1, padding:"8px", background:"#25D366",
                                   border:"none", borderRadius:9, fontSize:12,
                                   fontWeight:700, color:"#fff", cursor:"pointer" }}>
-                                  📱 WA
+                                  ð± WA
                                 </button>
                               </div>
                             </>
@@ -2315,7 +2318,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       ) : (
                         /* Add tenant form */
                         <AddTenantForm unitId={u.id} ownerId={owner.id}
-                          onSaved={()=>{ setSelUnit(null); loadData(); showToast("Tenant added ✓"); }}
+                          onSaved={()=>{ setSelUnit(null); loadData(); showToast("Tenant added â"); }}
                           onCancel={()=>setSelUnit(null)}/>
                       )}
                     </div>
@@ -2337,7 +2340,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               {verifyCount > 0 && (
                 <div style={{ background:T.amber, borderRadius:20, padding:"3px 10px",
                   fontSize:11, fontWeight:800, color:"#fff" }}>
-                  {verifyCount} to verify ⚡
+                  {verifyCount} to verify â¡
                 </div>
               )}
             </div>
@@ -2347,13 +2350,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ background:T.amberL, border:`1.5px solid ${T.amber}40`,
                 borderRadius:14, padding:"12px 14px", marginBottom:16,
                 display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ fontSize:22 }}>🔔</div>
+                <div style={{ fontSize:22 }}>ð</div>
                 <div>
                   <div style={{ fontSize:13, fontWeight:800, color:T.amber }}>
                     {verifyCount} payment{verifyCount>1?"s":""} awaiting your verification
                   </div>
                   <div style={{ fontSize:11, color:T.ink2, marginTop:2 }}>
-                    Tenants have submitted UTR numbers — review and confirm below
+                    Tenants have submitted UTR numbers â review and confirm below
                   </div>
                 </div>
               </div>
@@ -2361,7 +2364,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
 
             {payments.length === 0 && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>💰</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>ð°</div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No payments yet</div>
                 <div style={{ fontSize:12, marginTop:4 }}>Payments will appear here once tenants are added</div>
               </div>
@@ -2373,10 +2376,10 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:4 }}>
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>
-                      {p.tenants?.name || "Tenant"} · {p.units?.unit_number}
+                      {p.tenants?.name || "Tenant"} Â· {p.units?.unit_number}
                     </div>
                     <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>
-                      {p.type} · Due: {fmt(p.due_date)}
+                      {p.type} Â· Due: {fmt(p.due_date)}
                     </div>
                     {p.paid_date && (
                       <div style={{ fontSize:11, color:T.teal, marginTop:1 }}>
@@ -2405,7 +2408,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       background:`linear-gradient(135deg,${T.amber},#F5B830)`,
                       border:"none", borderRadius:9, fontSize:13, fontWeight:800,
                       color:"#fff", cursor:"pointer" }}>
-                    ✅ Verify & Mark as Paid
+                    â Verify & Mark as Paid
                   </button>
                 )}
                 {p.status === "pending" && (
@@ -2413,7 +2416,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     style={{ width:"100%", marginTop:8, padding:"7px", background:T.tealL,
                       border:`1px solid ${T.teal}30`, borderRadius:8, fontSize:12,
                       fontWeight:700, color:T.teal, cursor:"pointer" }}>
-                    ✓ Mark as Paid
+                    â Mark as Paid
                   </button>
                 )}
               </div>
@@ -2431,16 +2434,16 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <button onClick={()=>setShowAddExpense(v=>!v)}
                 style={{ background:T.saffron, border:"none", borderRadius:10,
                   padding:"7px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                {showAddExpense ? "✕ Cancel" : "+ Add Expense"}
+                {showAddExpense ? "â Cancel" : "+ Add Expense"}
               </button>
             </div>
 
             {/* Summary cards */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:18 }}>
               {[
-                { label:"Total Spent", value:fd(totalExpenses), color:T.rose, icon:"💸" },
-                { label:"Income", value:fd(totalCollected), color:T.teal, icon:"💰" },
-                { label:"Net", value:fd(netIncome), color:netIncome>=0?T.teal:T.rose, icon:"📈" },
+                { label:"Total Spent", value:fd(totalExpenses), color:T.rose, icon:"ð¸" },
+                { label:"Income", value:fd(totalCollected), color:T.teal, icon:"ð°" },
+                { label:"Net", value:fd(netIncome), color:netIncome>=0?T.teal:T.rose, icon:"ð" },
               ].map(s => (
                 <div key={s.label} style={{ background:T.card, border:`1.5px solid ${s.color}25`,
                   borderRadius:13, padding:"11px 10px", textAlign:"center" }}>
@@ -2491,7 +2494,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:11 }}>
                   <div>
                     <div style={{ fontSize:10, fontWeight:700, color:T.muted, letterSpacing:.5,
-                      textTransform:"uppercase", marginBottom:5 }}>Amount (₹) *</div>
+                      textTransform:"uppercase", marginBottom:5 }}>Amount (â¹) *</div>
                     <input type="number" value={newExp.amount}
                       onChange={e=>setNewExp(p=>({...p,amount:e.target.value}))}
                       placeholder="e.g. 2500"
@@ -2519,7 +2522,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     style={{ width:"100%", background:T.panel, border:`1.5px solid ${T.border2}`,
                       color:T.ink, borderRadius:10, padding:"10px 13px", fontSize:13,
                       fontWeight:600, boxSizing:"border-box", appearance:"none" }}>
-                    <option value="">— Whole property / general —</option>
+                    <option value="">â Whole property / general â</option>
                     {units.map(u => (
                       <option key={u.id} value={u.id}>{u.unit_number}</option>
                     ))}
@@ -2543,7 +2546,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   style={{ width:"100%", padding:"11px", background:T.saffron, border:"none",
                     borderRadius:11, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
                     display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                  {savingExp ? <Spinner/> : "Save Expense →"}
+                  {savingExp ? <Spinner/> : "Save Expense â"}
                 </button>
               </div>
             )}
@@ -2559,7 +2562,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ background:T.card, border:`1.5px solid ${T.border}`,
                   borderRadius:16, padding:16, marginBottom:18 }}>
                   <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:14 }}>
-                    📊 Breakdown by Category
+                    ð Breakdown by Category
                   </div>
                   {byCategory.map(c => (
                     <div key={c.value} style={{ marginBottom:10 }}>
@@ -2581,7 +2584,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             {/* Expense list */}
             {expenses.length === 0 && !showAddExpense && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>🧾</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>ð§¾</div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No expenses yet</div>
                 <div style={{ fontSize:12, marginTop:4 }}>Track repairs, maintenance and other costs</div>
               </div>
@@ -2603,7 +2606,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                         <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{exp.title}</div>
                         <div style={{ fontSize:10, color:T.muted, marginTop:2 }}>
                           {fmt(exp.date)}
-                          {exp.units?.unit_number && ` · ${exp.units.unit_number}`}
+                          {exp.units?.unit_number && ` Â· ${exp.units.unit_number}`}
                         </div>
                         {exp.notes && (
                           <div style={{ fontSize:11, color:T.ink2, marginTop:4, lineHeight:1.5 }}>{exp.notes}</div>
@@ -2611,13 +2614,13 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       </div>
                     </div>
                     <div style={{ textAlign:"right", marginLeft:10 }}>
-                      <div style={{ fontSize:14, fontWeight:900, color:T.rose }}>−{fd(exp.amount)}</div>
+                      <div style={{ fontSize:14, fontWeight:900, color:T.rose }}>â{fd(exp.amount)}</div>
                       <Chip label={cat.value} color={cat.color}/>
                       <button onClick={()=>deleteExpense(exp.id)}
                         style={{ display:"block", marginTop:6, marginLeft:"auto",
                           background:"none", border:"none", fontSize:13,
                           color:T.muted, cursor:"pointer", padding:0 }}>
-                        🗑
+                        ð
                       </button>
                     </div>
                   </div>
@@ -2670,7 +2673,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
 
           const exportSummaryCSV = () => downloadCSV(
             `RentAI_YearlySummary_${selectedYear}.csv`,
-            ["Month","Expected (₹)","Collected (₹)","Expenses (₹)","Net (₹)"],
+            ["Month","Expected (â¹)","Collected (â¹)","Expenses (â¹)","Net (â¹)"],
             monthly.map(m=>[m.label, m.expected, m.collected, m.expTotal, m.net])
           );
 
@@ -2714,15 +2717,15 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     <div style={{ fontSize:11, fontWeight:800, color:T.ink2 }}>{m.label}</div>
                     <div style={{ textAlign:"right" }}>
                       <div style={{ fontSize:9, color:T.muted }}>Collected</div>
-                      <div style={{ fontSize:11, fontWeight:700, color:T.green }}>{m.collected>0?fd(m.collected):"—"}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:T.green }}>{m.collected>0?fd(m.collected):"â"}</div>
                     </div>
                     <div style={{ textAlign:"right" }}>
                       <div style={{ fontSize:9, color:T.muted }}>Expenses</div>
-                      <div style={{ fontSize:11, fontWeight:700, color:m.expTotal>0?T.rose:T.muted }}>{m.expTotal>0?fd(m.expTotal):"—"}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:m.expTotal>0?T.rose:T.muted }}>{m.expTotal>0?fd(m.expTotal):"â"}</div>
                     </div>
                     <div style={{ textAlign:"right" }}>
                       <div style={{ fontSize:9, color:T.muted }}>Net</div>
-                      <div style={{ fontSize:11, fontWeight:800, color:m.net>=0?T.teal:T.rose }}>{m.hasData?fd(m.net):"—"}</div>
+                      <div style={{ fontSize:11, fontWeight:800, color:m.net>=0?T.teal:T.rose }}>{m.hasData?fd(m.net):"â"}</div>
                     </div>
                   </div>
                 ))}
@@ -2732,24 +2735,24 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:.5, marginBottom:8 }}>EXPORT AS CSV (EXCEL)</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {[
-                  { label:"📥 Yearly Summary", fn: exportSummaryCSV },
-                  { label:"📥 All Payments",   fn: exportPaymentsCSV },
-                  { label:"📥 All Expenses",   fn: exportExpensesCSV },
+                  { label:"ð¥ Yearly Summary", fn: exportSummaryCSV },
+                  { label:"ð¥ All Payments",   fn: exportPaymentsCSV },
+                  { label:"ð¥ All Expenses",   fn: exportExpensesCSV },
                 ].map(b=>(
                   <button key={b.label} onClick={b.fn}
                     style={{ width:"100%", padding:"11px 16px", background:T.surface,
                       border:`1.5px solid ${T.border2}`, borderRadius:11,
                       fontSize:13, fontWeight:700, color:T.ink, textAlign:"left", cursor:"pointer" }}>
                     {b.label}
-                    <span style={{ float:"right", fontSize:10, color:T.muted }}>→ .csv</span>
+                    <span style={{ float:"right", fontSize:10, color:T.muted }}>â .csv</span>
                   </button>
                 ))}
                 <button onClick={()=>window.print()}
                   style={{ width:"100%", padding:"11px 16px", background:T.saffronL,
                     border:`1.5px solid ${T.saffron}30`, borderRadius:11,
                     fontSize:13, fontWeight:700, color:T.saffron, textAlign:"left", cursor:"pointer" }}>
-                  🖨️ Print / Save as PDF
-                  <span style={{ float:"right", fontSize:10, color:T.saffron, opacity:.7 }}>→ .pdf</span>
+                  ð¨ï¸ Print / Save as PDF
+                  <span style={{ float:"right", fontSize:10, color:T.saffron, opacity:.7 }}>â .pdf</span>
                 </button>
               </div>
             </div>
@@ -2764,7 +2767,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             {requests.length === 0 && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>🔧</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>ð§</div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No requests yet</div>
                 <div style={{ fontSize:12, marginTop:4 }}>Tenant requests will appear here</div>
               </div>
@@ -2776,7 +2779,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{r.title}</div>
                     <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>
-                      {r.units?.unit_number} · {fmt(r.created_at)}
+                      {r.units?.unit_number} Â· {fmt(r.created_at)}
                     </div>
                   </div>
                   <Chip label={r.status} color={r.status==="resolved"?T.teal:r.status==="in_progress"?T.amber:T.rose}/>
@@ -2789,7 +2792,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     style={{ marginTop:8, background:T.tealL, border:`1px solid ${T.teal}30`,
                       borderRadius:8, padding:"5px 12px", fontSize:12,
                       fontWeight:700, color:T.teal, cursor:"pointer" }}>
-                    ✓ Mark Resolved
+                    â Mark Resolved
                   </button>
                 )}
               </div>
@@ -2816,16 +2819,16 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div>
                 <div style={{ fontSize:18, fontWeight:900 }}>{owner.name||"Owner"}</div>
                 <div style={{ fontSize:12, opacity:.85 }}>{owner.email}</div>
-                {owner.city && <div style={{ fontSize:11, opacity:.75, marginTop:2 }}>📍 {owner.city}</div>}
+                {owner.city && <div style={{ fontSize:11, opacity:.75, marginTop:2 }}>ð {owner.city}</div>}
               </div>
             </div>
 
             {/* Account stats */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:18 }}>
               {[
-                { icon:"🏢", label:"Properties", value:properties.length },
-                { icon:"🏡", label:"Units", value:units.length },
-                { icon:"👤", label:"Tenants", value:units.filter(u=>u.is_occupied).length },
+                { icon:"ð¢", label:"Properties", value:properties.length },
+                { icon:"ð¡", label:"Units", value:units.length },
+                { icon:"ð¤", label:"Tenants", value:units.filter(u=>u.is_occupied).length },
               ].map(s => (
                 <div key={s.label} style={{ background:T.card, border:`1.5px solid ${T.border}`,
                   borderRadius:13, padding:"12px 10px", textAlign:"center" }}>
@@ -2844,7 +2847,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   style={{ background:editProfile?T.panel:T.saffronL, border:`1px solid ${editProfile?T.border2:T.saffron}30`,
                     borderRadius:8, padding:"5px 12px", fontSize:11, fontWeight:700,
                     color:editProfile?T.muted:T.saffron, cursor:"pointer" }}>
-                  {editProfile ? "Cancel" : "✏️ Edit"}
+                  {editProfile ? "Cancel" : "âï¸ Edit"}
                 </button>
               </div>
               {editProfile ? (
@@ -2869,7 +2872,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                     style={{ width:"100%", padding:"11px", background:T.saffron, border:"none",
                       borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer",
                       display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                    {savingProfile ? <Spinner/> : "Save Changes →"}
+                    {savingProfile ? <Spinner/> : "Save Changes â"}
                   </button>
                 </>
               ) : (
@@ -2877,8 +2880,8 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                   {[
                     { label:"Name", value:owner.name },
                     { label:"Email", value:owner.email },
-                    { label:"Phone", value:owner.phone||"—" },
-                    { label:"City", value:owner.city||"—" },
+                    { label:"Phone", value:owner.phone||"â" },
+                    { label:"City", value:owner.city||"â" },
                   ].map(r => (
                     <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                       padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
@@ -2895,7 +2898,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <div style={{ fontSize:13, fontWeight:800, color:T.ink, marginBottom:12 }}>Preferences</div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                 padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
-                <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>{isDark?"🌙 Dark Mode":"☀️ Light Mode"}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:T.ink2 }}>{isDark?"ð Dark Mode":"âï¸ Light Mode"}</div>
                 <button onClick={onToggleTheme}
                   style={{ background:isDark?T.panel:T.saffronL, border:`1px solid ${T.border2}`,
                     borderRadius:20, padding:"5px 14px", fontSize:11, fontWeight:700,
@@ -2911,7 +2914,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
                       <button key={r} onClick={()=>onSwitchRole(r)}
                         style={{ background:T.tealL, border:`1px solid ${T.teal}30`, borderRadius:8,
                           padding:"5px 12px", fontSize:11, fontWeight:700, color:T.teal, cursor:"pointer" }}>
-                        {r.charAt(0).toUpperCase()+r.slice(1)} →
+                        {r.charAt(0).toUpperCase()+r.slice(1)} â
                       </button>
                     ))}
                   </div>
@@ -2924,7 +2927,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               style={{ width:"100%", padding:"13px", background:T.roseL,
                 border:`1.5px solid ${T.rose}30`, borderRadius:14, fontSize:14,
                 fontWeight:800, color:T.rose, cursor:"pointer" }}>
-              🚪 Log Out
+              ðª Log Out
             </button>
           </div>
         )}
@@ -2974,8 +2977,8 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             {[
               { key:"property_address", label:"Property Address *", placeholder:"e.g. Flat 4B, Green Heights, Mumbai" },
-              { key:"monthly_rent",     label:"Monthly Rent (₹) *", placeholder:"e.g. 18000",  type:"number" },
-              { key:"rent_due_day",     label:"Rent Due Day (1–31)", placeholder:"e.g. 1",      type:"number" },
+              { key:"monthly_rent",     label:"Monthly Rent (â¹) *", placeholder:"e.g. 18000",  type:"number" },
+              { key:"rent_due_day",     label:"Rent Due Day (1â31)", placeholder:"e.g. 1",      type:"number" },
               { key:"landlord_name",    label:"Landlord Name",       placeholder:"e.g. Rajesh Sharma" },
               { key:"landlord_phone",   label:"Landlord Phone",      placeholder:"e.g. 9876543210" },
             ].map(f => (
@@ -2998,7 +3001,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
               <button onClick={createSelfTenant} disabled={selfTenantLoading}
                 style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
                   borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                {selfTenantLoading ? "Creating…" : "Create & Switch →"}
+                {selfTenantLoading ? "Creatingâ¦" : "Create & Switch â"}
               </button>
             </div>
           </div>
@@ -3010,9 +3013,9 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   );
 }
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // TENANT DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "tenant", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const isSelfManaged = !!tenant.self_managed;
@@ -3050,7 +3053,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
       setPayments(p || []);
       setLogPayModal(false);
       setLogPayForm({ amount: tenant.monthly_rent ? String(tenant.monthly_rent) : "", paid_date: new Date().toISOString().split("T")[0], notes:"" });
-      showToast("Payment logged ✓");
+      showToast("Payment logged â");
     } catch(e) { showToast("Failed to log payment. Try again."); }
     setLogPayLoading(false);
   };
@@ -3091,7 +3094,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
         status: "open",
       });
       setNewReq({ title:"", description:"", priority:"medium" });
-      showToast("Request submitted ✓");
+      showToast("Request submitted â");
       const { data: r } = await supabase.from("maintenance_requests")
         .select("*, units(unit_number)").eq("tenant_id", tenant.id)
         .order("created_at", { ascending:false });
@@ -3113,15 +3116,15 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
   const generateReceipt = (p) => {
     const lines = [
       "RENTAI PAYMENT RECEIPT",
-      "─────────────────────────",
+      "âââââââââââââââââââââââââ",
       `Tenant: ${tenant.name}`,
-      `Unit: ${unit?.unit_number || "—"}`,
+      `Unit: ${unit?.unit_number || "â"}`,
       `Type: ${p.type}`,
       `Amount: ${fd(p.amount)}`,
       `Due Date: ${fmt(p.due_date)}`,
       `Paid Date: ${fmt(p.paid_date)}`,
       `Status: ${p.status.toUpperCase()}`,
-      "─────────────────────────",
+      "âââââââââââââââââââââââââ",
       "Powered by RentAI",
     ].join("\n");
     const blob = new Blob([lines], { type:"text/plain" });
@@ -3129,13 +3132,13 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
     const a = document.createElement("a");
     a.href = url; a.download = `RentAI_Receipt_${p.type}_${p.due_date}.txt`;
     a.click(); URL.revokeObjectURL(url);
-    showToast("Receipt downloaded ✓");
+    showToast("Receipt downloaded â");
   };
 
   const tabs = [
-    { id:"home", icon:"🏠", label:"Home" },
-    { id:"payments", icon:"💳", label:"Payments" },
-    { id:"requests", icon:"🔧", label:"Requests" },
+    { id:"home", icon:"ð ", label:"Home" },
+    { id:"payments", icon:"ð³", label:"Payments" },
+    { id:"requests", icon:"ð§", label:"Requests" },
   ];
 
   if(loading) return (
@@ -3143,7 +3146,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
       minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:14 }}>
       <style>{CSS}</style>
       <Spinner/>
-      <div style={{ fontSize:13, color:T.muted, fontWeight:600 }}>Loading your portal…</div>
+      <div style={{ fontSize:13, color:T.muted, fontWeight:600 }}>Loading your portalâ¦</div>
     </div>
   );
 
@@ -3158,7 +3161,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{tenant.name} · Tenant Portal</div>
+          <div style={{ fontSize:9, color:T.muted }}>{tenant.name} Â· Tenant Portal</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -3168,7 +3171,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                   style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
                     background: r === activeRole ? T.teal : "transparent",
                     color: r === activeRole ? "#fff" : T.muted }}>
-                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                  {r === "owner" ? "ð¢ Owner" : r === "tenant" ? "ð  Tenant" : "âï¸ Admin"}
                 </button>
               ))}
             </div>
@@ -3177,7 +3180,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
               borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink2, cursor:"pointer" }}>
-            {isDark ? "☀️" : "🌙"}
+            {isDark ? "âï¸" : "ð"}
           </button>
           <button onClick={onLogout}
             style={{ background:T.panel, border:`1.5px solid ${T.border}`,
@@ -3192,7 +3195,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
         {tab === "home" && (
           <div style={{ padding:"18px 16px" }} className="fu">
             <div style={{ fontSize:15, fontWeight:800, color:T.ink, marginBottom:14 }}>
-              Hi {firstName}! 👋
+              Hi {firstName}! ð
             </div>
 
             {/* Unit / property info */}
@@ -3226,7 +3229,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                       style={{ flex:1, padding:"8px 0", background:"rgba(255,255,255,.2)",
                         border:"1.5px solid rgba(255,255,255,.4)", borderRadius:9,
                         fontSize:11, fontWeight:800, color:"#fff", textDecoration:"none", textAlign:"center" }}>
-                      💬 Invite Landlord
+                      ð¬ Invite Landlord
                     </a>
                   )}
                 </div>
@@ -3280,7 +3283,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                         <div style={{ fontSize:18, fontWeight:900,
                           color:p.status==="verification_pending"?T.amber:T.rose }}>{fd(p.amount)}</div>
                         {p.status==="verification_pending" && (
-                          <Chip label="Verifying…" color={T.amber}/>
+                          <Chip label="Verifyingâ¦" color={T.amber}/>
                         )}
                       </div>
                     </div>
@@ -3290,14 +3293,14 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                           background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
                           border:"none", borderRadius:9, fontSize:13, fontWeight:800,
                           color:"#fff", textAlign:"center", cursor:"pointer" }}>
-                        💳 Pay {fd(p.amount)} via UPI
+                        ð³ Pay {fd(p.amount)} via UPI
                       </button>
                     )}
                     {p.status === "verification_pending" && (
                       <div style={{ padding:"8px 12px", background:T.amberL,
                         borderRadius:9, fontSize:12, fontWeight:700, color:T.amber,
                         textAlign:"center" }}>
-                        ⏳ Payment submitted · Waiting for landlord to verify
+                        â³ Payment submitted Â· Waiting for landlord to verify
                       </div>
                     )}
                   </div>
@@ -3308,7 +3311,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
             {pending.length === 0 && (
               <div style={{ background:T.tealL, border:`1px solid ${T.teal}25`,
                 borderRadius:14, padding:"20px 16px", textAlign:"center", marginTop:8 }}>
-                <div style={{ fontSize:24, marginBottom:8 }}>✅</div>
+                <div style={{ fontSize:24, marginBottom:8 }}>â</div>
                 <div style={{ fontSize:14, fontWeight:800, color:T.teal }}>All caught up!</div>
                 <div style={{ fontSize:12, color:T.muted, marginTop:4 }}>No pending bills</div>
               </div>
@@ -3317,10 +3320,10 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
             {/* Tenancy details */}
             <div style={{ background:T.card, border:`1.5px solid ${T.border}`,
               borderRadius:14, padding:16, marginTop:18 }}>
-              <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:12 }}>📋 Tenancy Details</div>
+              <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:12 }}>ð Tenancy Details</div>
               {[
                 ["Name", tenant.name],
-                ["Phone", tenant.phone || "—"],
+                ["Phone", tenant.phone || "â"],
                 ["Move-in", fmt(tenant.move_in_date)],
                 ["Lease ends", fmt(tenant.lease_end)],
               ].map(([l,v]) => (
@@ -3340,7 +3343,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
 
             {payments.length === 0 && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>💳</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>ð³</div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No payments yet</div>
               </div>
             )}
@@ -3372,14 +3375,14 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                       style={{ flex:2, padding:"7px", background:T.saffron, border:"none",
                         borderRadius:8, fontSize:12, fontWeight:700, color:"#fff",
                         textAlign:"center", cursor:"pointer" }}>
-                      💳 Pay via UPI
+                      ð³ Pay via UPI
                     </button>
                   )}
                   {p.status === "verification_pending" && (
                     <div style={{ flex:2, padding:"7px", background:T.amberL,
                       border:`1px solid ${T.amber}30`, borderRadius:8,
                       fontSize:11, fontWeight:700, color:T.amber, textAlign:"center" }}>
-                      ⏳ Awaiting landlord verification
+                      â³ Awaiting landlord verification
                     </div>
                   )}
                   {p.status === "paid" && (
@@ -3387,7 +3390,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                       style={{ flex:1, padding:"7px", background:T.tealL,
                         border:`1px solid ${T.teal}30`, borderRadius:8,
                         fontSize:12, fontWeight:700, color:T.teal, cursor:"pointer" }}>
-                      ⬇ Receipt
+                      â¬ Receipt
                     </button>
                   )}
                 </div>
@@ -3418,7 +3421,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                   fontWeight:600, marginBottom:10, boxSizing:"border-box",
                   resize:"none", fontFamily:"inherit" }}/>
               <div style={{ display:"flex", gap:7, marginBottom:12 }}>
-                {[["low","🟢 Low"],["medium","🟡 Medium"],["high","🔴 High"]].map(([v,l])=>(
+                {[["low","ð¢ Low"],["medium","ð¡ Medium"],["high","ð´ High"]].map(([v,l])=>(
                   <button key={v} onClick={()=>setNewReq(p=>({...p,priority:v}))}
                     style={{ flex:1, padding:"7px 4px", borderRadius:9,
                       border:`1.5px solid ${newReq.priority===v?T.saffron:T.border2}`,
@@ -3431,7 +3434,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                 style={{ width:"100%", padding:"10px", background:T.saffron, border:"none",
                   borderRadius:10, fontSize:13, fontWeight:800, color:"#fff",
                   cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                {submitting ? <Spinner/> : "Submit Request →"}
+                {submitting ? <Spinner/> : "Submit Request â"}
               </button>
             </div>
 
@@ -3486,7 +3489,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
           onClose={()=>setUpiModal(null)}
           onPaid={()=>{
             setUpiModal(null);
-            showToast("Payment submitted ✓ Awaiting landlord verification");
+            showToast("Payment submitted â Awaiting landlord verification");
             reloadPayments();
           }}
         />
@@ -3502,7 +3505,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
             <div style={{ fontWeight:900, fontSize:15, color:T.ink, marginBottom:4 }}>Log Rent Payment</div>
             <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>Record a payment you've already made.</div>
             {[
-              { key:"amount",    label:"Amount (₹) *",  placeholder:"e.g. 18000", type:"number" },
+              { key:"amount",    label:"Amount (â¹) *",  placeholder:"e.g. 18000", type:"number" },
               { key:"paid_date", label:"Date Paid *",    type:"date" },
               { key:"notes",     label:"Notes",          placeholder:"e.g. Paid via GPay" },
             ].map(f => (
@@ -3525,7 +3528,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
               <button onClick={logPayment} disabled={logPayLoading}
                 style={{ flex:2, padding:"11px 0", background:T.teal, border:"none",
                   borderRadius:10, fontSize:13, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                {logPayLoading ? "Saving…" : "Save Payment ✓"}
+                {logPayLoading ? "Savingâ¦" : "Save Payment â"}
               </button>
             </div>
           </div>
@@ -3535,9 +3538,9 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
   );
 }
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // ADMIN DASHBOARD
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles = [], activeRole = "admin", onSwitchRole }) {
   const T = isDark ? DARK_T : LIGHT_T;
   const [tab, setTab]           = useState("overview");
@@ -3569,7 +3572,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
   const deleteOwner = async (owner) => {
     setDeleting(true);
     try {
-      // Delete in order: payments → expenses → maintenance_requests → tenants → units → properties → owner
+      // Delete in order: payments â expenses â maintenance_requests â tenants â units â properties â owner
       const { data: ownerUnits } = await supabase.from("units").select("id").eq("owner_id", owner.id);
       const unitIds = (ownerUnits||[]).map(u=>u.id);
 
@@ -3586,7 +3589,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
 
       setConfirmDelete(null);
       setSelOwner(null);
-      showToast(`${owner.name} deleted ✓`);
+      showToast(`${owner.name} deleted â`);
       loadAll();
     } catch(e) {
       showToast("Delete failed: " + (e?.message||"unknown"));
@@ -3618,7 +3621,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Supabase Realtime — live updates
+  // Supabase Realtime â live updates
   useEffect(() => {
     const channel = supabase.channel("admin-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "payments" },   () => loadAll())
@@ -3644,7 +3647,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         note:        newNote.trim(),
       });
       setNewNote("");
-      showToast("Note added ✓");
+      showToast("Note added â");
       const { data: n } = await supabase.from("support_notes").select("*").order("created_at", { ascending:false });
       setNotes(n||[]);
     } catch(e) { showToast("Failed to save note"); }
@@ -3669,61 +3672,61 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
   const notesFor = (type, id) => notes.filter(n => n.entity_type === type && n.entity_id === id);
 
   const ATABS = [
-    { id:"overview",  icon:"📊", label:"Overview"  },
-    { id:"activity",  icon:"⚡", label:"Activity"  },
-    { id:"owners",    icon:"🏢", label:"Owners"    },
-    { id:"tenants",   icon:"👥", label:"Tenants"   },
-    { id:"payments",  icon:"💰", label:"Payments"  },
-    { id:"requests",  icon:"🔧", label:"Requests"  },
-    { id:"expenses",  icon:"🧾", label:"Expenses"  },
-    { id:"admins",    icon:"🛡",  label:"Admins"    },
-    { id:"cleanup",   icon:"🗑",  label:"Cleanup"   },
+    { id:"overview",  icon:"ð", label:"Overview"  },
+    { id:"activity",  icon:"â¡", label:"Activity"  },
+    { id:"owners",    icon:"ð¢", label:"Owners"    },
+    { id:"tenants",   icon:"ð¥", label:"Tenants"   },
+    { id:"payments",  icon:"ð°", label:"Payments"  },
+    { id:"requests",  icon:"ð§", label:"Requests"  },
+    { id:"expenses",  icon:"ð§¾", label:"Expenses"  },
+    { id:"admins",    icon:"ð¡",  label:"Admins"    },
+    { id:"cleanup",   icon:"ð",  label:"Cleanup"   },
   ];
 
   // Build unified activity feed from all data
   const activityFeed = [
     ...owners.map(o => ({
       id: "owner-" + o.id, ts: o.created_at,
-      icon: "🏢", color: T.saffron, bg: T.saffronL,
+      icon: "ð¢", color: T.saffron, bg: T.saffronL,
       title: "New owner joined",
-      desc: `${o.name}${o.city ? " · " + o.city : ""}`,
+      desc: `${o.name}${o.city ? " Â· " + o.city : ""}`,
     })),
     ...tenants.map(t => ({
       id: "tenant-" + t.id, ts: t.created_at,
-      icon: "👤", color: T.teal, bg: T.tealL,
+      icon: "ð¤", color: T.teal, bg: T.tealL,
       title: "New tenant added",
-      desc: `${t.name}${t.units?.unit_number ? " → Unit " + t.units.unit_number : ""}`,
+      desc: `${t.name}${t.units?.unit_number ? " â Unit " + t.units.unit_number : ""}`,
     })),
     ...payments.map(p => {
       const statusMap = {
-        paid: { icon:"💰", color: T.teal, bg: T.tealL, title:"Payment received" },
-        verification_pending: { icon:"⚡", color: T.amber, bg: T.amberL, title:"Payment pending verification" },
-        pending: { icon:"⏳", color: T.rose, bg: T.roseL, title:"Payment bill created" },
+        paid: { icon:"ð°", color: T.teal, bg: T.tealL, title:"Payment received" },
+        verification_pending: { icon:"â¡", color: T.amber, bg: T.amberL, title:"Payment pending verification" },
+        pending: { icon:"â³", color: T.rose, bg: T.roseL, title:"Payment bill created" },
       };
       const s = statusMap[p.status] || statusMap.pending;
       return {
         id: "pay-" + p.id, ts: p.created_at,
         icon: s.icon, color: s.color, bg: s.bg,
         title: s.title,
-        desc: `${fd(p.amount)}${p.tenants?.name ? " · " + p.tenants.name : ""}${p.units?.unit_number ? " · Unit " + p.units.unit_number : ""}`,
+        desc: `${fd(p.amount)}${p.tenants?.name ? " Â· " + p.tenants.name : ""}${p.units?.unit_number ? " Â· Unit " + p.units.unit_number : ""}`,
       };
     }),
     ...requests.map(r => ({
       id: "req-" + r.id, ts: r.created_at,
-      icon: r.status === "resolved" ? "✅" : "🔧",
+      icon: r.status === "resolved" ? "â" : "ð§",
       color: r.status === "resolved" ? T.teal : T.sky, bg: r.status === "resolved" ? T.tealL : T.skyL,
       title: r.status === "resolved" ? "Request resolved" : "Maintenance request opened",
-      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " · " + r.tenants.name : ""}`,
+      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " Â· " + r.tenants.name : ""}`,
     })),
     ...expenses.map(e => ({
       id: "exp-" + e.id, ts: e.date || e.created_at,
-      icon: "🧾", color: T.rose, bg: T.roseL,
+      icon: "ð§¾", color: T.rose, bg: T.roseL,
       title: "Expense logged",
-      desc: `${fd(e.amount)} · ${e.title || e.category}${e.owners?.name ? " · " + e.owners.name : ""}`,
+      desc: `${fd(e.amount)} Â· ${e.title || e.category}${e.owners?.name ? " Â· " + e.owners.name : ""}`,
     })),
   ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
-  // ── Detail panel for owner ──────────────────────────────────
+  // ââ Detail panel for owner ââââââââââââââââââââââââââââââââââ
   const OwnerPanel = ({ owner }) => {
     const ownerNotes    = notesFor("owner", owner.id);
     const ownerPayments = payments.filter(p => p.owner_id === owner.id);
@@ -3760,14 +3763,14 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:16, fontWeight:900, color:T.ink }}>{owner.name}</div>
-              <div style={{ fontSize:12, color:T.muted }}>{owner.phone} · {owner.city||"—"}</div>
+              <div style={{ fontSize:12, color:T.muted }}>{owner.phone} Â· {owner.city||"â"}</div>
               <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(owner.created_at)}</div>
             </div>
             <button onClick={()=>setConfirmDelete(owner)}
               style={{ background:T.roseL, border:`1px solid ${T.rose}30`,
                 borderRadius:9, padding:"6px 12px", fontSize:11,
                 fontWeight:800, color:T.rose, cursor:"pointer" }}>
-              🗑 Delete
+              ð Delete
             </button>
           </div>
 
@@ -3808,11 +3811,11 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ background:T.roseL, border:`1px solid ${T.rose}25`,
                   borderRadius:11, padding:"10px 13px", marginBottom:12 }}>
                   <div style={{ fontSize:12, fontWeight:800, color:T.rose, marginBottom:6 }}>
-                    🔧 {ownerRequests.filter(r=>r.status==="open").length} Open Maintenance Request(s)
+                    ð§ {ownerRequests.filter(r=>r.status==="open").length} Open Maintenance Request(s)
                   </div>
                   {ownerRequests.filter(r=>r.status==="open").map(r=>(
                     <div key={r.id} style={{ fontSize:11, color:T.ink, marginBottom:3 }}>
-                      • {r.title} — <span style={{ color:T.muted }}>{r.units?.unit_number}</span>
+                      â¢ {r.title} â <span style={{ color:T.muted }}>{r.units?.unit_number}</span>
                     </div>
                   ))}
                 </div>
@@ -3830,9 +3833,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{u.unit_number}</div>
-                      <div style={{ fontSize:11, color:T.muted }}>{fd(u.rent_amount)}/mo · {u.type}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{fd(u.rent_amount)}/mo Â· {u.type}</div>
                       {u.tenants?.[0] && (
-                        <div style={{ fontSize:11, color:T.teal, marginTop:2 }}>👤 {u.tenants[0].name}</div>
+                        <div style={{ fontSize:11, color:T.teal, marginTop:2 }}>ð¤ {u.tenants[0].name}</div>
                       )}
                     </div>
                     <Chip label={u.is_occupied?"Occupied":"Vacant"} color={u.is_occupied?T.teal:T.rose}/>
@@ -3851,9 +3854,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>
-                        {p.tenants?.name||"—"} · {p.units?.unit_number||"—"}
+                        {p.tenants?.name||"â"} Â· {p.units?.unit_number||"â"}
                       </div>
-                      <div style={{ fontSize:10, color:T.muted }}>{p.type} · {fmt(p.due_date)}</div>
+                      <div style={{ fontSize:10, color:T.muted }}>{p.type} Â· {fmt(p.due_date)}</div>
                       {p.utr_number && <div style={{ fontSize:10, color:T.amber }}>UTR: {p.utr_number}</div>}
                     </div>
                     <div style={{ textAlign:"right" }}>
@@ -3876,7 +3879,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start" }}>
                     <div>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{r.title}</div>
-                      <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} · {fmt(r.created_at)}</div>
+                      <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} Â· {fmt(r.created_at)}</div>
                     </div>
                     <Chip label={r.status} color={r.status==="resolved"?T.teal:r.status==="in_progress"?T.amber:T.rose}/>
                   </div>
@@ -3894,18 +3897,18 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 <div key={n.id} style={{ background:T.panel, borderRadius:10, padding:"9px 12px",
                   marginBottom:8, border:`1px solid ${T.border}` }}>
                   <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
-                  <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} · {fmt(n.created_at)}</div>
+                  <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} Â· {fmt(n.created_at)}</div>
                 </div>
               ))}
               <div style={{ display:"flex", gap:8, marginTop:8 }}>
                 <input value={newNote} onChange={e=>setNewNote(e.target.value)}
-                  placeholder="Add a support note…"
+                  placeholder="Add a support noteâ¦"
                   style={{ flex:1, background:T.panel, border:`1.5px solid ${T.border2}`,
                     color:T.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontWeight:600 }}/>
                 <button onClick={()=>addNote("owner", owner.id)} disabled={savingNote||!newNote.trim()}
                   style={{ background:T.saffron, border:"none", borderRadius:10,
                     padding:"9px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-                  {savingNote ? "…" : "Save"}
+                  {savingNote ? "â¦" : "Save"}
                 </button>
               </div>
             </>
@@ -3915,7 +3918,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
     );
   };
 
-  // ── Detail panel for tenant ─────────────────────────────────
+  // ââ Detail panel for tenant âââââââââââââââââââââââââââââââââ
   const TenantPanel = ({ tenant }) => {
     const tNotes = notesFor("tenant", tenant.id);
     return (
@@ -3934,29 +3937,29 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             <div>
               <div style={{ fontSize:16, fontWeight:900, color:T.ink }}>{tenant.name}</div>
-              <div style={{ fontSize:12, color:T.muted }}>{tenant.phone||"—"} · {tenant.units?.unit_number||"No unit"}</div>
+              <div style={{ fontSize:12, color:T.muted }}>{tenant.phone||"â"} Â· {tenant.units?.unit_number||"No unit"}</div>
               <div style={{ fontSize:10, color:T.muted }}>
-                {tenant.is_active ? "🟢 Active" : "🔴 Inactive"} · Joined {fmt(tenant.created_at)}
+                {tenant.is_active ? "ð¢ Active" : "ð´ Inactive"} Â· Joined {fmt(tenant.created_at)}
               </div>
             </div>
           </div>
-          <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:10 }}>🗒 Support Notes</div>
+          <div style={{ fontSize:12, fontWeight:800, color:T.ink, marginBottom:10 }}>ð Support Notes</div>
           {tNotes.length === 0 && <div style={{ fontSize:12, color:T.muted, marginBottom:12 }}>No notes yet</div>}
           {tNotes.map(n=>(
             <div key={n.id} style={{ background:T.panel, borderRadius:10, padding:"9px 12px", marginBottom:8, border:`1px solid ${T.border}` }}>
               <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
-              <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} · {fmt(n.created_at)}</div>
+              <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} Â· {fmt(n.created_at)}</div>
             </div>
           ))}
           <div style={{ display:"flex", gap:8, marginTop:8 }}>
             <input value={newNote} onChange={e=>setNewNote(e.target.value)}
-              placeholder="Add a support note…"
+              placeholder="Add a support noteâ¦"
               style={{ flex:1, background:T.panel, border:`1.5px solid ${T.border2}`,
                 color:T.ink, borderRadius:10, padding:"9px 12px", fontSize:12, fontWeight:600 }}/>
             <button onClick={()=>addNote("tenant", tenant.id)} disabled={savingNote||!newNote.trim()}
               style={{ background:T.teal, border:"none", borderRadius:10,
                 padding:"9px 14px", fontSize:12, fontWeight:800, color:"#fff", cursor:"pointer" }}>
-              {savingNote ? "…" : "Save"}
+              {savingNote ? "â¦" : "Save"}
             </button>
           </div>
         </div>
@@ -3970,7 +3973,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       flexDirection:"column", gap:14 }}>
       <style>{CSS}</style>
       <Spinner/>
-      <div style={{ fontSize:13, color:T.muted }}>Loading admin data…</div>
+      <div style={{ fontSize:13, color:T.muted }}>Loading admin dataâ¦</div>
     </div>
   );
 
@@ -3985,7 +3988,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{admin.name} · {admin.role}</div>
+          <div style={{ fontSize:9, color:T.muted }}>{admin.name} Â· {admin.role}</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -3995,7 +3998,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   style={{ padding:"3px 10px", borderRadius:16, fontSize:10, fontWeight:800, border:"none", cursor:"pointer",
                     background: r === activeRole ? T.saffron : "transparent",
                     color: r === activeRole ? "#fff" : T.ink2 }}>
-                  {r === "owner" ? "🏢 Owner" : r === "tenant" ? "🏠 Tenant" : "⚙️ Admin"}
+                  {r === "owner" ? "ð¢ Owner" : r === "tenant" ? "ð  Tenant" : "âï¸ Admin"}
                 </button>
               ))}
             </div>
@@ -4004,7 +4007,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             style={{ background:T.panel, border:`1px solid ${T.border}`,
               borderRadius:8, padding:"5px 10px", fontSize:14, lineHeight:1, color:T.ink, cursor:"pointer" }}>
-            {isDark ? "☀️" : "🌙"}
+            {isDark ? "âï¸" : "ð"}
           </button>
           <button onClick={onLogout}
             style={{ background:T.panel, border:`1px solid ${T.border}`,
@@ -4018,7 +4021,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       <div style={{ padding:"12px 16px 0", background:T.surface,
         borderBottom:`1px solid ${T.border}` }}>
         <input value={search} onChange={e=>setSearch(e.target.value)}
-          placeholder="🔍 Search owners, tenants, phone…"
+          placeholder="ð Search owners, tenants, phoneâ¦"
           style={{ width:"100%", background:T.panel, border:`1.5px solid ${T.border2}`,
             color:T.ink, borderRadius:11, padding:"9px 14px", fontSize:13,
             fontWeight:600, boxSizing:"border-box" }}/>
@@ -4053,17 +4056,17 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   animationName: liveConnected ? "pulse" : "none" }}/>
                 <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }`}</style>
                 <span style={{ fontSize:10, fontWeight:700, color: liveConnected ? T.teal : T.muted }}>
-                  {liveConnected ? "LIVE" : "connecting…"}
+                  {liveConnected ? "LIVE" : "connectingâ¦"}
                 </span>
                 {lastRefresh && (
                   <span style={{ fontSize:10, color:T.muted }}>
-                    · {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                    Â· {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
                   </span>
                 )}
                 <button onClick={loadAll}
                   style={{ background:T.panel, border:`1px solid ${T.border2}`, borderRadius:7,
                     padding:"3px 9px", fontSize:10, fontWeight:700, color:T.muted, cursor:"pointer" }}>
-                  ↻
+                  â»
                 </button>
               </div>
             </div>
@@ -4082,17 +4085,17 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   border:`1.5px solid ${T.plum}20`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
                   <div style={{ fontSize:11, fontWeight:800, color:T.plum, marginBottom:10,
                     textTransform:"uppercase", letterSpacing:.5 }}>
-                    📅 Today — {new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"short" })}
+                    ð Today â {new Date().toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"short" })}
                   </div>
                   {hasActivity ? (
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
                       {[
-                        { label:"New Owners",    v: todayOwners.length,   color:T.saffron, icon:"🏢" },
-                        { label:"New Tenants",   v: todayTenants.length,  color:T.teal,    icon:"👤" },
-                        { label:"Payments In",   v: todayPayments.length, color:T.teal,    icon:"💰" },
-                        { label:"Verify Queue",  v: todayVerify.length,   color:T.amber,   icon:"⚡" },
-                        { label:"Requests",      v: todayRequests.length, color:T.sky,     icon:"🔧" },
-                        { label:"Collected",     v: fd(todayPayments.reduce((s,p)=>s+Number(p.amount),0)), color:T.teal, icon:"₹" },
+                        { label:"New Owners",    v: todayOwners.length,   color:T.saffron, icon:"ð¢" },
+                        { label:"New Tenants",   v: todayTenants.length,  color:T.teal,    icon:"ð¤" },
+                        { label:"Payments In",   v: todayPayments.length, color:T.teal,    icon:"ð°" },
+                        { label:"Verify Queue",  v: todayVerify.length,   color:T.amber,   icon:"â¡" },
+                        { label:"Requests",      v: todayRequests.length, color:T.sky,     icon:"ð§" },
+                        { label:"Collected",     v: fd(todayPayments.reduce((s,p)=>s+Number(p.amount),0)), color:T.teal, icon:"â¹" },
                       ].map(s => (
                         <div key={s.label} style={{ textAlign:"center" }}>
                           <div style={{ fontSize:16, fontWeight:900, color:s.color }}>{s.v}</div>
@@ -4114,14 +4117,14 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
               textTransform:"uppercase", letterSpacing:.5 }}>All Time</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:18 }}>
               {[
-                { label:"Property Owners",    v: activeOwners,       icon:"🏢", color:T.saffron },
-                { label:"Active Tenants",     v: activeTenants,      icon:"👥", color:T.teal },
-                { label:"Total Collected",    v: fd(totalPayments),  icon:"💰", color:T.teal },
-                { label:"Pending Bills",      v: pendingCount,       icon:"⏳", color:T.rose },
-                { label:"Verify Queue",       v: verifyCount,        icon:"⚡", color:T.amber },
-                { label:"Open Requests",      v: openRequests,       icon:"🔧", color:T.sky },
-                { label:"Total Expenses",     v: fd(totalExpenses),  icon:"💸", color:T.rose },
-                { label:"Support Notes",      v: notes.length,       icon:"🗒",  color:T.plum },
+                { label:"Property Owners",    v: activeOwners,       icon:"ð¢", color:T.saffron },
+                { label:"Active Tenants",     v: activeTenants,      icon:"ð¥", color:T.teal },
+                { label:"Total Collected",    v: fd(totalPayments),  icon:"ð°", color:T.teal },
+                { label:"Pending Bills",      v: pendingCount,       icon:"â³", color:T.rose },
+                { label:"Verify Queue",       v: verifyCount,        icon:"â¡", color:T.amber },
+                { label:"Open Requests",      v: openRequests,       icon:"ð§", color:T.sky },
+                { label:"Total Expenses",     v: fd(totalExpenses),  icon:"ð¸", color:T.rose },
+                { label:"Support Notes",      v: notes.length,       icon:"ð",  color:T.plum },
               ].map(s => (
                 <div key={s.label} style={{ background:T.card, border:`1.5px solid ${s.color}20`,
                   borderRadius:14, padding:"13px 14px" }}>
@@ -4140,7 +4143,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div key={n.id} style={{ background:T.card, border:`1.5px solid ${T.plum}20`,
                     borderRadius:12, padding:"10px 13px", marginBottom:8 }}>
                     <div style={{ fontSize:11, fontWeight:800, color:T.plum, marginBottom:4 }}>
-                      {n.entity_type === "owner" ? "🏢 Owner" : "👤 Tenant"} · {n.admin_name}
+                      {n.entity_type === "owner" ? "ð¢ Owner" : "ð¤ Tenant"} Â· {n.admin_name}
                     </div>
                     <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
                     <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{fmt(n.created_at)}</div>
@@ -4205,7 +4208,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     </div>
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{o.name}</div>
-                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} · {o.city||"—"}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} Â· {o.city||"â"}</div>
                       <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(o.created_at)}</div>
                     </div>
                   </div>
@@ -4213,7 +4216,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     {notesFor("owner",o.id).length > 0 && (
                       <Chip label={`${notesFor("owner",o.id).length} notes`} color={T.plum}/>
                     )}
-                    <span style={{ fontSize:18, color:T.muted }}>›</span>
+                    <span style={{ fontSize:18, color:T.muted }}>âº</span>
                   </div>
                 </div>
               </div>
@@ -4242,7 +4245,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{t.name}</div>
                       <div style={{ fontSize:11, color:T.muted }}>
-                        {t.phone||"No phone"} · {t.units?.unit_number||"No unit"}
+                        {t.phone||"No phone"} Â· {t.units?.unit_number||"No unit"}
                       </div>
                       <div style={{ fontSize:10, color:t.is_active?T.teal:T.rose, fontWeight:700 }}>
                         {t.is_active ? "Active" : "Inactive"}
@@ -4253,7 +4256,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     {notesFor("tenant",t.id).length > 0 && (
                       <Chip label={`${notesFor("tenant",t.id).length} notes`} color={T.plum}/>
                     )}
-                    <span style={{ fontSize:18, color:T.muted }}>›</span>
+                    <span style={{ fontSize:18, color:T.muted }}>âº</span>
                   </div>
                 </div>
               </div>
@@ -4291,16 +4294,16 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start" }}>
                   <div>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>
-                      {p.tenants?.name||"—"} · {p.units?.unit_number||"—"}
+                      {p.tenants?.name||"â"} Â· {p.units?.unit_number||"â"}
                     </div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {p.type} · Due {fmt(p.due_date)}
-                      {p.paid_date && ` · Paid ${fmt(p.paid_date)}`}
+                      {p.type} Â· Due {fmt(p.due_date)}
+                      {p.paid_date && ` Â· Paid ${fmt(p.paid_date)}`}
                     </div>
                     {p.utr_number && (
                       <div style={{ fontSize:10, color:T.amber, fontWeight:700 }}>UTR: {p.utr_number}</div>
                     )}
-                    <div style={{ fontSize:10, color:T.muted }}>Owner: {p.owners?.name||"—"}</div>
+                    <div style={{ fontSize:10, color:T.muted }}>Owner: {p.owners?.name||"â"}</div>
                   </div>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ fontSize:14, fontWeight:900, color:T.ink }}>{fd(p.amount)}</div>
@@ -4329,7 +4332,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{r.title}</div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {r.tenants?.name||"—"} · {r.units?.unit_number||"—"} · {fmt(r.created_at)}
+                      {r.tenants?.name||"â"} Â· {r.units?.unit_number||"â"} Â· {fmt(r.created_at)}
                     </div>
                     {r.description && (
                       <div style={{ fontSize:11, color:T.ink2, marginTop:4, lineHeight:1.5 }}>{r.description}</div>
@@ -4349,7 +4352,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         {tab === "expenses" && (
           <div style={{ padding:"18px 16px" }} className="fu">
             <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:14 }}>
-              All Expenses ({expenses.length}) · {fd(totalExpenses)} total
+              All Expenses ({expenses.length}) Â· {fd(totalExpenses)} total
             </div>
             {expenses.filter(e =>
               !filterStr || e.title?.toLowerCase().includes(filterStr) ||
@@ -4361,13 +4364,13 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{e.title}</div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {e.category} · {fmt(e.date)}
-                      {e.units?.unit_number && ` · ${e.units.unit_number}`}
+                      {e.category} Â· {fmt(e.date)}
+                      {e.units?.unit_number && ` Â· ${e.units.unit_number}`}
                     </div>
-                    <div style={{ fontSize:10, color:T.muted }}>Owner: {e.owners?.name||"—"}</div>
+                    <div style={{ fontSize:10, color:T.muted }}>Owner: {e.owners?.name||"â"}</div>
                     {e.notes && <div style={{ fontSize:11, color:T.ink2, marginTop:3 }}>{e.notes}</div>}
                   </div>
-                  <div style={{ fontSize:14, fontWeight:900, color:T.rose }}>−{fd(e.amount)}</div>
+                  <div style={{ fontSize:14, fontWeight:900, color:T.rose }}>â{fd(e.amount)}</div>
                 </div>
               </div>
             ))}
@@ -4377,7 +4380,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         {/* ADMINS TAB */}
         {tab === "admins" && (
           <div style={{ padding:"18px 16px" }} className="fu">
-            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>🛡 Admin Users</div>
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:4 }}>ð¡ Admin Users</div>
             <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
               Manage who has access to this admin console.
             </div>
@@ -4417,7 +4420,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                       role: newAdmin.role, is_active: true });
                   if(error) showToast("Error: " + error.message);
                   else {
-                    showToast(`${newAdmin.name} added as ${newAdmin.role} ✓`);
+                    showToast(`${newAdmin.name} added as ${newAdmin.role} â`);
                     setNewAdmin({ email:"", name:"", role:"support" });
                     loadAll();
                   }
@@ -4458,7 +4461,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <button onClick={async () => {
                     await supabase.from("admin_phones")
                       .update({ is_active: !a.is_active }).eq("id", a.id);
-                    showToast(a.is_active ? `${a.name} deactivated` : `${a.name} reactivated ✓`);
+                    showToast(a.is_active ? `${a.name} deactivated` : `${a.name} reactivated â`);
                     loadAll();
                   }}
                     style={{ padding:"6px 12px", borderRadius:9, border:"none",
@@ -4481,7 +4484,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         {/* CLEANUP TAB */}
         {tab === "cleanup" && (
           <div style={{ padding:"18px 16px" }} className="fu">
-            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:6 }}>🗑 Account Cleanup</div>
+            <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:6 }}>ð Account Cleanup</div>
             <div style={{ fontSize:12, color:T.muted, marginBottom:18 }}>
               Delete test or inactive accounts and all their associated data permanently.
             </div>
@@ -4490,7 +4493,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             <div style={{ background:T.roseL, border:`1.5px solid ${T.rose}30`,
               borderRadius:13, padding:"12px 14px", marginBottom:18 }}>
               <div style={{ fontSize:12, fontWeight:800, color:T.rose, marginBottom:4 }}>
-                ⚠️ Irreversible Action
+                â ï¸ Irreversible Action
               </div>
               <div style={{ fontSize:11, color:T.ink2, lineHeight:1.6 }}>
                 Deleting an owner removes all their units, tenants, payments, expenses and maintenance requests permanently. This cannot be undone.
@@ -4513,9 +4516,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                         <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{o.name}</div>
                         {isTestAccount && <Chip label="No data" color={T.rose}/>}
                       </div>
-                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} · {o.city||"—"}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} Â· {o.city||"â"}</div>
                       <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>
-                        {oUnits.length} units · {oTenants.length} active tenants · {oPayments.length} payments
+                        {oUnits.length} units Â· {oTenants.length} active tenants Â· {oPayments.length} payments
                       </div>
                       <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(o.created_at)}</div>
                     </div>
@@ -4523,7 +4526,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                       style={{ background:T.roseL, border:`1px solid ${T.rose}30`,
                         borderRadius:9, padding:"6px 12px", fontSize:11,
                         fontWeight:800, color:T.rose, cursor:"pointer", flexShrink:0 }}>
-                      🗑 Delete
+                      ð Delete
                     </button>
                   </div>
                 </div>
@@ -4532,7 +4535,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
 
             {owners.length === 0 && (
               <div style={{ textAlign:"center", padding:"40px 20px", color:T.muted }}>
-                <div style={{ fontSize:32, marginBottom:10 }}>✅</div>
+                <div style={{ fontSize:32, marginBottom:10 }}>â</div>
                 <div style={{ fontSize:14, fontWeight:700 }}>No accounts to clean up</div>
               </div>
             )}
@@ -4548,7 +4551,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
           <div className="fu" style={{ background:T.surface, borderRadius:20,
             padding:24, width:"100%", maxWidth:400,
             boxShadow:"0 8px 40px rgba(0,0,0,.25)" }}>
-            <div style={{ fontSize:32, textAlign:"center", marginBottom:12 }}>⚠️</div>
+            <div style={{ fontSize:32, textAlign:"center", marginBottom:12 }}>â ï¸</div>
             <div style={{ fontSize:16, fontWeight:900, color:T.ink, textAlign:"center", marginBottom:8 }}>
               Delete {confirmDelete.name}?
             </div>
@@ -4591,7 +4594,7 @@ const LANDING_CSS = `
   .land-sub  { animation: slideIn .6s .2s ease both; }
   .land-cta  { animation: slideIn .6s .3s ease both; }
   .land-cards{ animation: slideIn .6s .4s ease both; }
-  .float-a, .float-b, .float-c { /* floating removed — static cards */ }
+  .float-a, .float-b, .float-c { /* floating removed â static cards */ }
   .badge-pop { animation: badgePop .5s .8s ease both; }
   .grad-btn  { background-size:200% 200%; animation: gradShift 4s ease infinite; }
   .feat-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.10); }
@@ -4609,22 +4612,22 @@ const BETA_FORM = "https://docs.google.com/forms/d/e/1FAIpQLScd2tgV61wlCkJMfnQSO
 function LandingPage({ onGetStarted }) {
   const [pricingYearly, setPricingYearly] = useState(true);
   const features = [
-    { icon:"🏠", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance — no spreadsheets.", color:T.saffron, bg:T.saffronL },
-    { icon:"💸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
-    { icon:"📧", title:"Email OTP Login", desc:"No passwords. Landlords and tenants login with a secure 6-digit code sent to their email.", color:T.sky, bg:T.skyL },
-    { icon:"📋", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
-    { icon:"📊", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
-    { icon:"🔔", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants before the due date. Never chase again.", color:T.rose, bg:T.roseL },
+    { icon:"ð ", title:"Property Management", desc:"Track all your units, occupancy, and rent status at a glance â no spreadsheets.", color:T.saffron, bg:T.saffronL },
+    { icon:"ð¸", title:"UPI Rent Collection", desc:"Tenants pay via GPay, PhonePe or any UPI app. UTR auto-verified instantly.", color:T.teal, bg:T.tealL },
+    { icon:"ð§", title:"Email OTP Login", desc:"No passwords. Landlords and tenants login with a secure 6-digit code sent to their email.", color:T.sky, bg:T.skyL },
+    { icon:"ð", title:"Maintenance Requests", desc:"Tenants raise issues, owners track & close them. Full audit trail kept.", color:T.plum, bg:T.plumL },
+    { icon:"ð", title:"Expense Tracking", desc:"Log repairs, taxes, and other expenses per property. Know your true P&L.", color:T.amber, bg:T.amberL },
+    { icon:"ð", title:"Smart Reminders", desc:"Automatic rent reminders sent to tenants before the due date. Never chase again.", color:T.rose, bg:T.roseL },
   ];
 
   const steps = [
-    { n:"1", title:"Sign up with Email", desc:"Enter your email, get a 6-digit code — you're in within 30 seconds." },
+    { n:"1", title:"Sign up with Email", desc:"Enter your email, get a 6-digit code â you're in within 30 seconds." },
     { n:"2", title:"Add your properties & units", desc:"Set rent amounts, due dates, and invite your tenants." },
     { n:"3", title:"Collect rent effortlessly", desc:"Tenants pay via UPI. You see it confirmed in real time." },
   ];
 
   const stats = [
-    { value:"₹0", label:"Setup cost" },
+    { value:"â¹0", label:"Setup cost" },
     { value:"30s", label:"To get started" },
     { value:"100%", label:"UPI compatible" },
     { value:"24/7", label:"Access anywhere" },
@@ -4634,7 +4637,7 @@ function LandingPage({ onGetStarted }) {
     <div style={{ fontFamily:"'Montserrat','Nunito','Segoe UI',sans-serif", background:T.bg, minHeight:"100vh" }}>
       <style>{CSS}{LANDING_CSS}</style>
 
-      {/* ── NAV ── */}
+      {/* ââ NAV ââ */}
       <nav style={{ position:"sticky", top:0, zIndex:100, background:`${T.surface}EE`,
         backdropFilter:"blur(12px)", borderBottom:`1px solid ${T.border}`,
         padding:"0 24px", height:56, display:"flex", alignItems:"center",
@@ -4649,12 +4652,12 @@ function LandingPage({ onGetStarted }) {
             style={{ padding:"7px 18px", borderRadius:10, fontSize:12, fontWeight:800,
               border:`1.5px solid ${T.border2}`, background:"transparent", color:T.ink2,
               cursor:"pointer" }}>
-            Login →
+            Login â
           </button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
+      {/* ââ HERO ââ */}
       <section style={{ maxWidth:780, margin:"0 auto", padding:"56px 24px 48px", textAlign:"center" }}>
 
         {/* Centered Logo */}
@@ -4666,7 +4669,7 @@ function LandingPage({ onGetStarted }) {
         {/* Subtitle */}
         <p className="land-sub" style={{ fontSize:"clamp(15px,3.5vw,19px)", color:T.ink2,
           maxWidth:480, margin:"0 auto 36px", lineHeight:1.7, fontWeight:500 }}>
-          Your AI-Powered Rental Manager — collect rent, manage tenants &amp; track expenses in one place.
+          Your AI-Powered Rental Manager â collect rent, manage tenants &amp; track expenses in one place.
           No Excel. No chasing.
         </p>
 
@@ -4676,18 +4679,18 @@ function LandingPage({ onGetStarted }) {
             style={{ padding:"14px 32px", borderRadius:14, fontSize:16, fontWeight:900,
               border:"none", color:"#fff", cursor:"pointer",
               background:`linear-gradient(135deg,${T.saffron},${T.saffronB},${T.amber})` }}>
-            Get Started Free →
+            Get Started Free â
           </button>
           <button onClick={onGetStarted}
             style={{ padding:"14px 28px", borderRadius:14, fontSize:15, fontWeight:800,
               border:`2px solid ${T.border2}`, background:T.surface, color:T.ink2, cursor:"pointer" }}>
-            Login →
+            Login â
           </button>
         </div>
 
         {/* Trust badges */}
         <div style={{ display:"flex", justifyContent:"center", gap:8, flexWrap:"wrap" }}>
-          {["🔒 Secure OTP", "💸 UPI ready", "📱 Mobile first", "🇮🇳 Made in India"].map(t => (
+          {["ð Secure OTP", "ð¸ UPI ready", "ð± Mobile first", "ð®ð³ Made in India"].map(t => (
             <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
               background:T.panel, border:`1px solid ${T.border}`,
               padding:"4px 12px", borderRadius:20 }}>{t}</span>
@@ -4695,13 +4698,13 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── FLOATING CARDS (visual) ── */}
+      {/* ââ FLOATING CARDS (visual) ââ */}
       <section style={{ maxWidth:960, margin:"0 auto", padding:"8px 20px 48px" }}>
         <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
           {[
-            { cls:"float-a", emoji:"🏠", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
-            { cls:"float-b", emoji:"✅", label:"Payment received!", sub:"₹18,500 via GPay · UTR confirmed", color:T.teal, bg:T.tealL },
-            { cls:"float-c", emoji:"🔧", label:"Maintenance request", sub:"Water leakage – Unit 4B", color:T.sky, bg:T.skyL },
+            { cls:"float-a", emoji:"ð ", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
+            { cls:"float-b", emoji:"â", label:"Payment received!", sub:"â¹18,500 via GPay Â· UTR confirmed", color:T.teal, bg:T.tealL },
+            { cls:"float-c", emoji:"ð§", label:"Maintenance request", sub:"Water leakage â Unit 4B", color:T.sky, bg:T.skyL },
           ].map(c => (
             <div key={c.label} className={c.cls}
               style={{ background:T.card, border:`2px solid ${c.color}25`,
@@ -4715,7 +4718,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── PROPERTY GALLERY ── */}
+      {/* ââ PROPERTY GALLERY ââ */}
       <section style={{ padding:"0 0 52px" }}>
         <div style={{ maxWidth:960, margin:"0 auto 18px", padding:"0 20px", textAlign:"center" }}>
           <p style={{ fontSize:11, fontWeight:800, color:T.muted, letterSpacing:1.5, textTransform:"uppercase" }}>
@@ -4741,7 +4744,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── STATS STRIP ── */}
+      {/* ââ STATS STRIP ââ */}
       <section style={{ background:T.ink, padding:"28px 20px" }}>
         <div style={{ maxWidth:960, margin:"0 auto", display:"flex",
           justifyContent:"space-around", flexWrap:"wrap", gap:20 }}>
@@ -4754,7 +4757,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* ââ FEATURES ââ */}
       <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
         <div style={{ textAlign:"center", marginBottom:40 }}>
           <h2 className="land-h2" style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900,
@@ -4783,7 +4786,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
+      {/* ââ HOW IT WORKS ââ */}
       <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`,
         borderBottom:`1px solid ${T.border}`, padding:"56px 20px" }}>
         <div style={{ maxWidth:680, margin:"0 auto", textAlign:"center" }}>
@@ -4810,7 +4813,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
+      {/* ââ PRICING ââ */}
       <section style={{ maxWidth:960, margin:"0 auto", padding:"60px 20px 48px" }}>
         <div style={{ textAlign:"center", marginBottom:38 }}>
           <h2 style={{ fontSize:"clamp(22px,5vw,36px)", fontWeight:900, color:T.ink,
@@ -4843,13 +4846,13 @@ function LandingPage({ onGetStarted }) {
         {/* Pricing cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:16 }}>
           {[
-            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
+            { name:"Free", monthly:"â¹0", yearly:"â¹0", desc:"Perfect to get started",
               features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
               cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
-            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
+            { name:"Basic", monthly:"â¹999/mo", yearly:"â¹9,999/yr", desc:"For small landlords",
               features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
               cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
-            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+            { name:"Growth", monthly:"â¹4,999/mo", yearly:"â¹49,999/yr", desc:"Most Popular",
               highlight:true,
               features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
               cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
@@ -4870,7 +4873,7 @@ function LandingPage({ onGetStarted }) {
                 <div style={{ fontSize:10, fontWeight:800, color:T.saffron,
                   background:`${T.saffron}22`, border:`1px solid ${T.saffron}40`,
                   borderRadius:20, padding:"3px 12px", alignSelf:"flex-start",
-                  marginBottom:10 }}>⭐ MOST POPULAR</div>
+                  marginBottom:10 }}>â­ MOST POPULAR</div>
               )}
               <div style={{ fontSize:17, fontWeight:900,
                 color:plan.highlight?"#fff":T.ink, marginBottom:4 }}>{plan.name}</div>
@@ -4884,13 +4887,13 @@ function LandingPage({ onGetStarted }) {
                 {plan.features.map(f => (
                   <div key={f} style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <span style={{ fontSize:12, color:plan.highlight?T.teal:T.teal,
-                      fontWeight:800 }}>✓</span>
+                      fontWeight:800 }}>â</span>
                     <span style={{ fontSize:12, fontWeight:600,
                       color:plan.highlight?"#E8E4DC":T.ink2 }}>{f}</span>
                   </div>
                 ))}
               </div>
-              <button onClick={()=> plan.name==="Free" ? onGetStarted() : window.open(BETA_FORM,"_blank")}
+              <button onClick={()=> plan.name==="Free" ? onGetStarted() : plan.name==="Business" ? window.open("mailto:support@rentai.co.in","_blank") : window.open(BETA_FORM,"_blank")}
                 style={{
                 width:"100%", padding:"11px", borderRadius:12, fontSize:13,
                 fontWeight:900, border:"none", cursor:"pointer",
@@ -4909,24 +4912,24 @@ function LandingPage({ onGetStarted }) {
         <div style={{ textAlign:"center", marginTop:40, padding:"24px",
           background:T.panel, borderRadius:16, border:`1.5px solid ${T.border}` }}>
           <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:6 }}>
-            🏢 Managing a large portfolio?
+            ð¢ Managing a large portfolio?
           </div>
           <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
-            Tech parks, commercial complexes, PG networks — we'll build a plan around you.
+            Tech parks, commercial complexes, PG networks â we'll build a plan around you.
           </div>
           <button onClick={()=>window.location.href="mailto:support@rentai.co.in?subject=Enterprise Plan Enquiry"}
             style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
             fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
-            Contact Sales →
+            Contact Sales â
           </button>
         </div>
       </section>
 
-      {/* ── BOTTOM CTA ── */}
+      {/* ââ BOTTOM CTA ââ */}
       <section style={{ maxWidth:960, margin:"0 auto", padding:"64px 20px", textAlign:"center" }}>
         <div style={{ background:`linear-gradient(135deg,${T.saffronL},${T.tealL})`,
           border:`2px solid ${T.saffron}20`, borderRadius:24, padding:"48px 28px" }}>
-          <div style={{ fontSize:40, marginBottom:16 }}>🏡</div>
+          <div style={{ fontSize:40, marginBottom:16 }}>ð¡</div>
           <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
             letterSpacing:-.3, marginBottom:12 }}>
             Start managing smarter today
@@ -4940,19 +4943,19 @@ function LandingPage({ onGetStarted }) {
               border:"none", color:"#fff", cursor:"pointer",
               background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
               boxShadow:`0 8px 28px ${T.saffron}40` }}>
-            Get Started — It's Free →
+            Get Started â It's Free â
           </button>
         </div>
       </section>
 
-      {/* ── SHARE SECTION ── */}
+      {/* ââ SHARE SECTION ââ */}
       <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`, padding:"28px 20px", textAlign:"center" }}>
-        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI 🏡</div>
+        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI ð¡</div>
         <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>Help fellow property owners manage rent effortlessly</div>
         <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
           {[
-            { label:"WhatsApp", icon:"💬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI — AI-powered rent management for Indian landlords 🏡 https://rentai.co.in")}` },
-            { label:"Twitter / X", icon:"𝕏", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India — built for Indian landlords 🇮🇳 https://rentai.co.in")}` },
+            { label:"WhatsApp", icon:"ð¬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI â AI-powered rent management for Indian landlords ð¡ https://rentai.co.in")}` },
+            { label:"Twitter / X", icon:"ð", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India â built for Indian landlords ð®ð³ https://rentai.co.in")}` },
             { label:"LinkedIn", icon:"in", color:"#0A66C2", url:`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://rentai.co.in")}` },
           ].map(s => (
             <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
@@ -4966,12 +4969,12 @@ function LandingPage({ onGetStarted }) {
             style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
               background:T.surface, border:`1.5px solid ${T.border2}`, color:T.ink2,
               borderRadius:10, fontSize:12, fontWeight:800, cursor:"pointer" }}>
-            🔗 Copy Link
+            ð Copy Link
           </button>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* ââ FOOTER ââ */}
       <footer style={{ borderTop:`1px solid ${T.border}`, padding:"24px 20px", textAlign:"center" }}>
         <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:12 }}>
           {[
@@ -4988,7 +4991,7 @@ function LandingPage({ onGetStarted }) {
           ))}
         </div>
         <div style={{ color:T.muted, fontSize:11, fontWeight:700 }}>
-          © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+          Â© {new Date().getFullYear()} RentAI Â· Built for Indian property owners Â· ð®ð³
         </div>
       </footer>
     </div>
@@ -4996,9 +4999,9 @@ function LandingPage({ onGetStarted }) {
 }
 
 
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // ROOT APP
-// ══════════════════════════════════════════════════════════════
+// ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -5023,7 +5026,7 @@ export default function App() {
           setChecking(false);
           return;
         }
-        // New multi-role format — restore directly from stored session
+        // New multi-role format â restore directly from stored session
         if(parsed.roles) {
           setUser(parsed);
           setShowLanding(false);
