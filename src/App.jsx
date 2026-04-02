@@ -4846,22 +4846,232 @@ function LandingPage({ onGetStarted }) {
         {/* Pricing cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))", gap:16 }}>
           {[
-            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"For individual landlords",
-              features:["1 Unit","Basic rent tracking","Expense tracking","Email OTP login"],
+            { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
+              features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
               cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
-            { name:"Starter", monthly:"₹500/mo", yearly:"₹5,000/yr", desc:"Small landlords managing a few properties",
-              features:["Up to 3 Units","UPI rent collection","Tenant management","WhatsApp reminders"],
-              cta:"Start Free Trial", sub:"15-day free trial", color:"#22863A", bg:"#F0FFF4" },
-            { name:"Growth", monthly:"₹1,000/mo", yearly:"₹10,000/yr", desc:"Growing landlords with multiple properties",
-              features:["Up to 5 Units","Multi-unit support","AI insights","Profit tracking"],
-              cta:"Start Free Trial", sub:"15-day free trial", color:T.accent, bg:T.surface, popular:true },
-            { name:"Pro", monthly:"₹1,500/mo", yearly:"₹15,000/yr", desc:"Advanced automation + insights + AI features",
-              features:["Up to 10 Units","Dedicated support","Custom automation","Advanced AI analytics"],
-              cta:"Start Free Trial", sub:"15-day free trial", color:"#6F42C1", bg:"#FAF0FF" },
-            { name:"Business", monthly:"₹2,500+/mo", yearly:"Custom", desc:"Property managers & agencies",
-              features:["10+ Units","Custom integrations","Priority support","Custom automation"],
-              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.muted, bg:T.panel }
-          ]
+            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
+              features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
+            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+              highlight:true,
+              features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
+            { name:"Pro", monthly:"Custom", yearly:"Custom", desc:"For 10+ properties",
+              features:["10+ Properties","Dedicated support","Custom automation","Advanced AI analytics","Custom integrations"],
+              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.teal, bg:T.tealL },
+          ].map((plan,i) => (
+            <div key={plan.name} style={{
+              background:plan.highlight?T.ink:T.card,
+              border:plan.highlight?`2px solid ${T.saffron}`:`1.5px solid ${T.border}`,
+              borderRadius:20, padding:"24px 20px",
+              transform:plan.highlight?"scale(1.04)":"none",
+              boxShadow:plan.highlight?`0 16px 48px ${T.saffron}25`:"none",
+              transition:"transform .2s, box-shadow .2s",
+              display:"flex", flexDirection:"column"
+            }}>
+              {plan.highlight && (
+                <div style={{ fontSize:10, fontWeight:800, color:T.saffron,
+                  background:`${T.saffron}22`, border:`1px solid ${T.saffron}40`,
+                  borderRadius:20, padding:"3px 12px", alignSelf:"flex-start",
+                  marginBottom:10 }}>⭐ MOST POPULAR</div>
+              )}
+              <div style={{ fontSize:17, fontWeight:900,
+                color:plan.highlight?"#fff":T.ink, marginBottom:4 }}>{plan.name}</div>
+              <div style={{ fontSize:12, fontWeight:600,
+                color:plan.highlight?T.subtle:T.muted, marginBottom:16 }}>{plan.desc}</div>
+              <div style={{ fontSize:26, fontWeight:900,
+                color:plan.highlight?T.saffron:plan.color, marginBottom:20 }}>
+                {pricingYearly ? plan.yearly : plan.monthly}
+              </div>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:12, color:plan.highlight?T.teal:T.teal,
+                      fontWeight:800 }}>✓</span>
+                    <span style={{ fontSize:12, fontWeight:600,
+                      color:plan.highlight?"#E8E4DC":T.ink2 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={()=> plan.name==="Free" ? onGetStarted() : plan.name==="Business" ? window.open("mailto:support@rentai.co.in","_blank") : window.open(BETA_FORM,"_blank")}
+                style={{
+                width:"100%", padding:"11px", borderRadius:12, fontSize:13,
+                fontWeight:900, border:"none", cursor:"pointer",
+                background:plan.highlight?`linear-gradient(135deg,${T.saffron},${T.saffronB})`
+                  :plan.name==="Free"?T.panel:`${plan.color}18`,
+                color:plan.highlight?"#fff":plan.name==="Free"?T.ink2:plan.color,
+                border:plan.highlight?"none":`1.5px solid ${plan.color}30`,
+              }}>{plan.cta}</button>
+              <div style={{ fontSize:11, color:plan.highlight?T.subtle:T.muted,
+                fontWeight:600, textAlign:"center", marginTop:8 }}>{plan.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enterprise callout */}
+        <div style={{ textAlign:"center", marginTop:40, padding:"24px",
+          background:T.panel, borderRadius:16, border:`1.5px solid ${T.border}` }}>
+          <div style={{ fontSize:15, fontWeight:900, color:T.ink, marginBottom:6 }}>
+            🏢 Managing a large portfolio?
+          </div>
+          <div style={{ fontSize:13, color:T.ink2, fontWeight:500, marginBottom:16 }}>
+            Tech parks, commercial complexes, PG networks — we'll build a plan around you.
+          </div>
+          <button onClick={()=>window.location.href="mailto:support@rentai.co.in?subject=Enterprise Plan Enquiry"}
+            style={{ padding:"10px 28px", borderRadius:12, fontSize:13,
+            fontWeight:800, background:T.ink, color:"#fff", border:"none", cursor:"pointer" }}>
+            Contact Sales →
+          </button>
+        </div>
+      </section>
+
+      {/* ── BOTTOM CTA ── */}
+      <section style={{ maxWidth:960, margin:"0 auto", padding:"64px 20px", textAlign:"center" }}>
+        <div style={{ background:`linear-gradient(135deg,${T.saffronL},${T.tealL})`,
+          border:`2px solid ${T.saffron}20`, borderRadius:24, padding:"48px 28px" }}>
+          <div style={{ fontSize:40, marginBottom:16 }}>🏡</div>
+          <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
+            letterSpacing:-.3, marginBottom:12 }}>
+            Start managing smarter today
+          </h2>
+          <p style={{ fontSize:14, color:T.ink2, fontWeight:600,
+            maxWidth:400, margin:"0 auto 28px", lineHeight:1.7 }}>
+            Join landlords across India who've switched from WhatsApp chaos to RentAI's clean dashboard.
+          </p>
+          <button onClick={onGetStarted} className="cta-btn"
+            style={{ padding:"15px 36px", borderRadius:14, fontSize:16, fontWeight:900,
+              border:"none", color:"#fff", cursor:"pointer",
+              background:`linear-gradient(135deg,${T.saffron},${T.saffronB})`,
+              boxShadow:`0 8px 28px ${T.saffron}40` }}>
+            Get Started — It's Free →
+          </button>
+        </div>
+      </section>
+
+      {/* ── SHARE SECTION ── */}
+      <section style={{ background:T.panel, borderTop:`1px solid ${T.border}`, padding:"28px 20px", textAlign:"center" }}>
+        <div style={{ fontSize:14, fontWeight:800, color:T.ink, marginBottom:6 }}>Know a landlord? Share RentAI 🏡</div>
+        <div style={{ fontSize:12, color:T.muted, marginBottom:16 }}>Help fellow property owners manage rent effortlessly</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+          {[
+            { label:"WhatsApp", icon:"💬", color:"#25D366", url:`https://wa.me/?text=${encodeURIComponent("Check out RentAI — AI-powered rent management for Indian landlords 🏡 https://rentai.co.in")}` },
+            { label:"Twitter / X", icon:"𝕏", color:"#000000", url:`https://twitter.com/intent/tweet?text=${encodeURIComponent("Managing rent just got easier! Check out @RentAI_India — built for Indian landlords 🇮🇳 https://rentai.co.in")}` },
+            { label:"LinkedIn", icon:"in", color:"#0A66C2", url:`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://rentai.co.in")}` },
+          ].map(s => (
+            <a key={s.label} href={s.url} target="_blank" rel="noreferrer"
+              style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+                background:s.color, color:"#fff", borderRadius:10, fontSize:12, fontWeight:800,
+                textDecoration:"none", letterSpacing:.2 }}>
+              <span style={{ fontWeight:900 }}>{s.icon}</span> {s.label}
+            </a>
+          ))}
+          <button onClick={()=>{ navigator.clipboard.writeText("https://rentai.co.in"); }}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px",
+              background:T.surface, border:`1.5px solid ${T.border2}`, color:T.ink2,
+              borderRadius:10, fontSize:12, fontWeight:800, cursor:"pointer" }}>
+            🔗 Copy Link
+          </button>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop:`1px solid ${T.border}`, padding:"24px 20px", textAlign:"center" }}>
+        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap", marginBottom:12 }}>
+          {[
+            { label:"Privacy Policy", href:"/legal/privacy" },
+            { label:"Terms of Use", href:"/legal/terms" },
+            { label:"Security", href:"/legal/security" },
+            { label:"Data Protection", href:"/legal/data-protection" },
+          ].map(l => (
+            <a key={l.href} href={l.href}
+              onClick={e=>{e.preventDefault();window.location.href=l.href;}}
+              style={{ fontSize:11, fontWeight:700, color:T.muted, textDecoration:"none" }}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <div style={{ color:T.muted, fontSize:11, fontWeight:700 }}>
+          © {new Date().getFullYear()} RentAI · Built for Indian property owners · 🇮🇳
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// ROOT APP
+// ══════════════════════════════════════════════════════════════
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("rentai_theme") === "dark");
+
+  const toggleTheme = () => setIsDark(d => {
+    localStorage.setItem("rentai_theme", !d ? "dark" : "light");
+    return !d;
+  });
+
+  const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+  useEffect(() => {
+    const saved = localStorage.getItem("rentai_user");
+    if(saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Check session expiry
+        if(!parsed.session_exp || Date.now() > parsed.session_exp) {
+          localStorage.removeItem("rentai_user");
+          setChecking(false);
+          return;
+        }
+        // New multi-role format — restore directly from stored session
+        if(parsed.roles) {
+          setUser(parsed);
+          setShowLanding(false);
+          setChecking(false);
+          return;
+        }
+        // Legacy single-role format
+        if(parsed.type === "admin") {
+          setUser(parsed);
+          setShowLanding(false);
+          setChecking(false);
+          return;
+        }
+        const table = parsed.type === "tenant" ? "tenants" : "owners";
+        supabase.from(table).select("*").eq("id", parsed.id).single()
+          .then(({ data }) => {
+            if(data) { setUser({ type: parsed.type, session_exp: parsed.session_exp, ...data }); setShowLanding(false); }
+            setChecking(false);
+          });
+      } catch { localStorage.removeItem("rentai_user"); setChecking(false); }
+    } else { setChecking(false); }
+  }, []);
+
+  const handleLogin = (userData) => {
+    const session = { ...userData, session_exp: Date.now() + SESSION_TTL_MS };
+    localStorage.setItem("rentai_user", JSON.stringify(session));
+    setUser(session);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("rentai_user");
+    setUser(null);
+  };
+
+  if(checking) return (
+    <div style={{ fontFamily:"'Nunito','Segoe UI',sans-serif", background:"#FAFAF7",
+      minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <style>{CSS}</style>
+      <Spinner/>
+    </div>
+  );
+
+  // New multi-role format
+  if(user?.roles) {
+    const roleData = user.roles[user.activeRole];
     const availableRoles = Object.keys(user.roles);
     const switchRole = (role) => {
       const updated = { ...user, activeRole: role };
