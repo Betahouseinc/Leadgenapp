@@ -1,3 +1,4 @@
+import AIChat from "./AIChat";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { generateInsights } from "./utils/insights";
 import { createClient } from "@supabase/supabase-js";
@@ -824,8 +825,8 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const [profileForm, setProfileForm] = useState({ name:owner.name||"", phone:owner.phone||"", city:owner.city||"" });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
-
+const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
+  
   const createSelfTenant = async () => {
     if(!selfTenantForm.property_address.trim()) { showToast("Enter your property address"); return; }
     if(!selfTenantForm.monthly_rent || isNaN(selfTenantForm.monthly_rent)) { showToast("Enter a valid rent amount"); return; }
@@ -3009,6 +3010,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       )}
 
       <Toast msg={toast}/>
+            <AIChat owner={owner} T={T} />
     </div>
   );
 }
@@ -4849,16 +4851,19 @@ function LandingPage({ onGetStarted }) {
             { name:"Free", monthly:"₹0", yearly:"₹0", desc:"Perfect to get started",
               features:["1 Property","1 Unit","Basic rent tracking","Expense tracking"],
               cta:"Start Free", sub:"No credit card required", color:T.muted, bg:T.panel },
-            { name:"Basic", monthly:"₹999/mo", yearly:"₹9,999/yr", desc:"For small landlords",
-              features:["1 Property","Up to 2 Units","WhatsApp rent reminders","Tenant management"],
-              cta:"Start Free Trial", sub:"15-day free trial", color:T.sky, bg:T.skyL },
-            { name:"Growth", monthly:"₹4,999/mo", yearly:"₹49,999/yr", desc:"Most Popular",
+            { name:"Starter", monthly:"₹500/mo", yearly:"₹5,000/yr", desc:"Small landlords managing a few properties",
+              features:["Up to 3 Units","UPI rent collection","Tenant management","WhatsApp reminders"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.muted, bg:T.panel },
+            { name:"Growth", monthly:"₹1,000/mo", yearly:"₹10,000/yr", desc:"Growing landlords with multiple properties",
               highlight:true,
-              features:["Up to 10 Properties","Multi-unit support","AI insights","Profit tracking"],
-              cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL },
-            { name:"Pro", monthly:"Custom", yearly:"Custom", desc:"For 10+ properties",
-              features:["10+ Properties","Dedicated support","Custom automation","Advanced AI analytics","Custom integrations"],
-              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.teal, bg:T.tealL },
+              features:["Up to 5 Units","Multi-unit support","AI insights","Profit tracking"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.muted, bg:T.panel },
+            { name:"Pro", monthly:"₹1,500/mo", yearly:"₹15,000/yr", desc:"Advanced automation + AI features",
+              features:["Up to 10 Units","Dedicated support","Custom automation","Advanced AI analytics"],
+              cta:"Start Free Trial", sub:"15-day free trial", color:T.muted, bg:T.panel },
+            { name:"Business", monthly:"₹2,500+/mo", yearly:"Custom", desc:"Property managers & agencies",
+              features:["10+ Units","Custom integrations","Priority support","Scalable usage"],
+              cta:"Contact Sales", sub:"Tailored pricing for your portfolio", color:T.muted, bg:T.panel }
           ].map((plan,i) => (
             <div key={plan.name} style={{
               background:plan.highlight?T.ink:T.card,
