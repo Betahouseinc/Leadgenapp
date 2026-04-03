@@ -1,3 +1,4 @@
+import AIChat from "./AIChat";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { generateInsights } from "./utils/insights";
 import { createClient } from "@supabase/supabase-js";
@@ -824,8 +825,8 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
   const [profileForm, setProfileForm] = useState({ name:owner.name||"", phone:owner.phone||"", city:owner.city||"" });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
-
+const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000); };
+  
   const createSelfTenant = async () => {
     if(!selfTenantForm.property_address.trim()) { showToast("Enter your property address"); return; }
     if(!selfTenantForm.monthly_rent || isNaN(selfTenantForm.monthly_rent)) { showToast("Enter a valid rent amount"); return; }
@@ -3009,6 +3010,7 @@ function OwnerDashboard({ owner, onLogout, isDark, onToggleTheme, availableRoles
       )}
 
       <Toast msg={toast}/>
+            <AIChat owner={owner} T={T} />
     </div>
   );
 }
