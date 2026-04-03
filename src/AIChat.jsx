@@ -56,23 +56,26 @@ export default function AIChat({ owner, T }) {
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (!data || data === "[DONE]") continue;
-           try {
-  console.log("SSE line:", data);
-  const json  = JSON.parse(data);
-            const delta = json?.delta?.text || "";
-            if (delta) {
-              reply += delta;
-              setMessages(m => [
-                ...m.slice(0, -1),
-                { role: "assistant", text: reply },
-              ]);
-            }
-          } catch {}
+for (const line of lines) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("data:")) continue;
+  const data = trimmed.slice(5).trim();
+  if (!data || data === "[DONE]") continue;
+  try {
+    const json = JSON.parse(data);
+    // Only grab text from content_block_delta events
+    if (json.type === "content_block_delta" && json.delta?.type === "text_delta") {
+      const delta = json.delta.text || "";
+      if (delta) {
+        reply += delta;
+        setMessages(m => [
+          ...m.slice(0, -1),
+          { role: "assistant", text: reply },
+        ]);
+      }
+    }
+  } catch {}
+}
         }
       }
       if (!reply) {
