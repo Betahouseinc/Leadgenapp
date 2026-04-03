@@ -61,8 +61,9 @@ export default function AIChat({ owner, T }) {
           if (!trimmed.startsWith("data:")) continue;
           const data = trimmed.slice(5).trim();
           if (!data || data === "[DONE]") continue;
-          try {
-            const json  = JSON.parse(data);
+           try {
+  console.log("SSE line:", data);
+  const json  = JSON.parse(data);
             const delta = json?.delta?.text || "";
             if (delta) {
               reply += delta;
