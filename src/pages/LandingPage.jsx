@@ -49,35 +49,35 @@ const CSS = `
 `;
 
 const PLANS = [
-  { name:"Free", monthly:0, yearly:0, monthlyLabel:"\u20b90/mo", yearlyLabel:"\u20b90/yr",
+  { name:"Free", monthly:0, yearly:0, monthlyLabel:"₹0/mo", yearlyLabel:"₹0/yr",
     desc:"Perfect for getting started", unitLimit:"1 Unit",
     features:["1 Unit","Basic rent tracking","Expense tracking","OTP login","Mobile app"],
     cta:"Get Started Free", sub:"No credit card needed", color:T.teal, bg:T.tealL, highlight:false },
-  { name:"Starter", monthly:500, yearly:5000, monthlyLabel:"\u20b9500/mo", yearlyLabel:"\u20b95,000/yr",
+  { name:"Starter", monthly:500, yearly:5000, monthlyLabel:"₹500/mo", yearlyLabel:"₹5,000/yr",
     desc:"Growing landlords with a few units", unitLimit:"3 Units",
     features:["3 Units","Phone reminders","Maintenance requests","Tenant portal","Email support"],
     cta:"Start Free Trial", sub:"15-day free trial", color:T.amber, bg:T.amberL, highlight:false },
-  { name:"Growth", monthly:1000, yearly:10000, monthlyLabel:"\u20b91,000/mo", yearlyLabel:"\u20b910,000/yr",
+  { name:"Growth", monthly:1000, yearly:10000, monthlyLabel:"₹1,000/mo", yearlyLabel:"₹10,000/yr",
     desc:"Most popular for serious landlords", unitLimit:"5 Units",
     features:["5 Units","Multi-unit support","AI insights","Profit & expense tracking","Priority support"],
     cta:"Start Free Trial", sub:"15-day free trial", color:T.saffron, bg:T.saffronL, highlight:true },
-  { name:"Pro", monthly:1500, yearly:15000, monthlyLabel:"\u20b91,500/mo", yearlyLabel:"\u20b915,000/yr",
+  { name:"Pro", monthly:1500, yearly:15000, monthlyLabel:"₹1,500/mo", yearlyLabel:"₹15,000/yr",
     desc:"Advanced automation + AI features", unitLimit:"10 Units",
     features:["10 Units","Advanced AI analytics","Custom automation","Dedicated support","API access"],
     cta:"Start Free Trial", sub:"15-day free trial", color:T.teal, bg:T.tealL, highlight:false },
-  { name:"Business", monthly:null, yearly:null, monthlyLabel:"\u20b92,500+/mo", yearlyLabel:"Custom/yr",
+  { name:"Business", monthly:null, yearly:null, monthlyLabel:"₹2,500+/mo", yearlyLabel:"Custom/yr",
     desc:"Property managers & agencies", unitLimit:"10+ Units",
     features:["10+ Units","Priority support","Custom automation","Advanced AI analytics","Custom integrations"],
     cta:"Contact Sales", sub:"Custom pricing available", color:T.plum, bg:T.plumL, highlight:false },
 ];
 
 const SERVICES = [
-  { icon:"\ud83c\udfe0", title:"Property Setup", desc:"Full onboarding — units, tenants, agreements loaded for you." },
-  { icon:"\ud83d\udcdd", title:"Rent Agreement Drafting", desc:"Legally-sound rental agreements drafted and delivered fast." },
-  { icon:"\ud83d\udcca", title:"Financial Reports", desc:"Monthly P&L, tax-ready statements, and occupancy reports." },
-  { icon:"\ud83d\udd27", title:"Maintenance Coordination", desc:"We manage vendor calls, follow-ups, and resolution tracking." },
-  { icon:"\ud83d\udce3", title:"Tenant Listing & Marketing", desc:"Advertise vacancies across platforms and find quality tenants." },
-  { icon:"\u2696\ufe0f", title:"Legal Assistance", desc:"Eviction support, notice drafting, and compliance guidance." },
+  { icon:"🏠", title:"Property Setup", desc:"Full onboarding — units, tenants, agreements loaded for you." },
+  { icon:"📝", title:"Rent Agreement Drafting", desc:"Legally-sound rental agreements drafted and delivered fast." },
+  { icon:"📊", title:"Financial Reports", desc:"Monthly P&L, tax-ready statements, and occupancy reports." },
+  { icon:"🔧", title:"Maintenance Coordination", desc:"We manage vendor calls, follow-ups, and resolution tracking." },
+  { icon:"📣", title:"Tenant Listing & Marketing", desc:"Advertise vacancies across platforms and find quality tenants." },
+  { icon:"⚖️", title:"Legal Assistance", desc:"Eviction support, notice drafting, and compliance guidance." },
 ];
 
 const TESTIMONIALS = [
@@ -100,7 +100,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
             <div style={{ width:36, height:36, borderRadius:10,
               background:"linear-gradient(135deg,"+T.saffron+","+T.saffronB+")",
               display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:20, boxShadow:"0 4px 12px "+T.saffron+"40" }}>\ud83c\udfe1</div>
+              fontSize:20, boxShadow:"0 4px 12px "+T.saffron+"40" }}>🏡</div>
             <span style={{ fontSize:19, fontWeight:900, color:T.ink, letterSpacing:"-.3px",
               fontFamily:"Montserrat,sans-serif" }}>RentAI</span>
             <span style={{ fontSize:10, fontWeight:800, color:T.saffron,
@@ -113,7 +113,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
               background:"transparent", color:T.ink2, cursor:"pointer" }}>Services</button>
             <button onClick={onGetStarted} style={{ padding:"9px 20px", borderRadius:10,
               fontSize:13, fontWeight:800, border:"1.5px solid "+T.border2,
-              background:"transparent", color:T.ink, cursor:"pointer" }}>Login \u2192</button>
+              background:"transparent", color:T.ink, cursor:"pointer" }}>Login →</button>
           </div>
         </div>
       </nav>
@@ -121,7 +121,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
         <div className="badge-pop" style={{ display:"inline-flex", alignItems:"center", gap:7,
           background:T.tealL, border:"1.5px solid "+T.teal+"30", borderRadius:30,
           padding:"6px 18px", marginBottom:24, fontSize:12, fontWeight:800, color:T.teal }}>
-          \u2728 Built for Indian landlords
+          ✨ Built for Indian landlords
         </div>
         <h1 className="land-hero" style={{ fontSize:"clamp(30px,6vw,54px)", fontWeight:900,
           color:T.ink, lineHeight:1.12, letterSpacing:"-.5px", marginBottom:20 }}>
@@ -140,7 +140,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
               border:"none", color:"#ffffff", cursor:"pointer",
               background:"linear-gradient(135deg,"+T.saffron+","+T.saffronB+","+T.amber+")",
               boxShadow:"0 6px 20px "+T.saffron+"40" }}>
-            Get Started Free \u2192
+            Get Started Free →
           </button>
           <button onClick={onGetStarted} className="ghost-btn"
             style={{ padding:"15px 28px", borderRadius:14, fontSize:15, fontWeight:800,
@@ -149,7 +149,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
           </button>
         </div>
         <div style={{ marginTop:28, display:"flex", justifyContent:"center", gap:8, flexWrap:"wrap" }}>
-          {["\ud83d\udd12 Secure OTP login","\ud83d\udcb8 UPI ready","\ud83d\udcf1 Mobile first","\ud83c\uddee\ud83c\uddf3 Made in India"].map(t => (
+          {["🔒 Secure OTP login","💸 UPI ready","📱 Mobile first","🇮🇳 Made in India"].map(t => (
             <span key={t} style={{ fontSize:11, fontWeight:700, color:T.muted,
               background:T.panel, border:"1px solid "+T.border, padding:"4px 12px", borderRadius:20 }}>{t}</span>
           ))}
@@ -158,9 +158,9 @@ export default function LandingPage({ onGetStarted, onServices }) {
       <section style={{ maxWidth:1000, margin:"0 auto", padding:"0 24px 52px" }}>
         <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
           {[
-            { cls:"float-a", emoji:"\ud83c\udfe0", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
-            { cls:"float-b", emoji:"\u2705", label:"Payment received!", sub:"\u20b925,000 from Tenant #3", color:T.teal, bg:T.tealL },
-            { cls:"float-c", emoji:"\ud83d\udcca", label:"Monthly P&L ready", sub:"Net income: \u20b91.2L", color:T.amber, bg:T.amberL },
+            { cls:"float-a", emoji:"🏠", label:"3 BHK, Indiranagar", sub:"Rent due in 3 days", color:T.saffron, bg:T.saffronL },
+            { cls:"float-b", emoji:"✅", label:"Payment received!", sub:"₹25,000 from Tenant #3", color:T.teal, bg:T.tealL },
+            { cls:"float-c", emoji:"📊", label:"Monthly P&L ready", sub:"Net income: ₹1.2L", color:T.amber, bg:T.amberL },
           ].map(c => (
             <div key={c.label} className={c.cls} style={{ background:T.surface,
               border:"1.5px solid "+c.color+"30", borderRadius:16, padding:"14px 18px",
@@ -180,7 +180,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
         <div className="stats-grid" style={{ maxWidth:1000, margin:"0 auto",
           display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:24 }}>
           {[
-            { value:"\u20b90", label:"Setup cost" },
+            { value:"₹0", label:"Setup cost" },
             { value:"30s", label:"To get started" },
             { value:"100%", label:"UPI compatible" },
             { value:"24/7", label:"Access anywhere" },
@@ -205,12 +205,12 @@ export default function LandingPage({ onGetStarted, onServices }) {
         </div>
         <div className="features-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:20 }}>
           {[
-            { icon:"\ud83d\udcb0", title:"Automated Rent Collection", desc:"UPI-powered collection with auto-reminders before due dates.", color:T.saffron, bg:T.saffronL },
-            { icon:"\ud83d\udcc8", title:"AI Financial Insights", desc:"Know your true P&L, vacancy costs, and growth opportunities.", color:T.teal, bg:T.tealL },
-            { icon:"\ud83d\udd14", title:"Smart Reminders", desc:"Automatic reminders sent to tenants before due dates.", color:T.rose, bg:T.roseL },
-            { icon:"\ud83c\udfd8\ufe0f", title:"Multi-Property Dashboard", desc:"All your properties and units in one clean view.", color:T.amber, bg:T.amberL },
-            { icon:"\ud83d\udccb", title:"Tenant Management", desc:"Store tenant profiles, documents, and communication history.", color:T.plum, bg:T.plumL },
-            { icon:"\ud83d\udd27", title:"Maintenance Tracking", desc:"Log, assign, and resolve maintenance requests effortlessly.", color:T.teal, bg:T.tealL },
+            { icon:"💰", title:"Automated Rent Collection", desc:"UPI-powered collection with auto-reminders before due dates.", color:T.saffron, bg:T.saffronL },
+            { icon:"📈", title:"AI Financial Insights", desc:"Know your true P&L, vacancy costs, and growth opportunities.", color:T.teal, bg:T.tealL },
+            { icon:"🔔", title:"Smart Reminders", desc:"Automatic reminders sent to tenants before due dates.", color:T.rose, bg:T.roseL },
+            { icon:"🏘️", title:"Multi-Property Dashboard", desc:"All your properties and units in one clean view.", color:T.amber, bg:T.amberL },
+            { icon:"📋", title:"Tenant Management", desc:"Store tenant profiles, documents, and communication history.", color:T.plum, bg:T.plumL },
+            { icon:"🔧", title:"Maintenance Tracking", desc:"Log, assign, and resolve maintenance requests effortlessly.", color:T.teal, bg:T.tealL },
           ].map(f => (
             <div key={f.title} className="feature-card" style={{ background:T.surface,
               border:"1px solid "+T.border, borderRadius:18, padding:"24px 22px",
@@ -285,7 +285,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
                 <div style={{ position:"absolute", top:-12, left:"50%", transform:"translateX(-50%)",
                   background:"linear-gradient(135deg,"+T.saffron+","+T.saffronB+")",
                   color:"#ffffff", fontSize:10, fontWeight:900, padding:"4px 14px",
-                  borderRadius:20, whiteSpace:"nowrap" }}>\u2b50 Most Popular</div>
+                  borderRadius:20, whiteSpace:"nowrap" }}>⭐ Most Popular</div>
               )}
               <div style={{ width:38, height:38, borderRadius:10, background:p.bg,
                 display:"flex", alignItems:"center", justifyContent:"center",
@@ -302,7 +302,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
                 {p.features.map(f => (
                   <li key={f} style={{ fontSize:11, color:T.ink2, fontWeight:600,
                     padding:"3px 0", display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ color:T.teal, fontSize:10 }}>\u2713</span> {f}
+                    <span style={{ color:T.teal, fontSize:10 }}>✓</span> {f}
                   </li>
                 ))}
               </ul>
@@ -326,7 +326,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
             <div style={{ display:"inline-flex", alignItems:"center", gap:7,
               background:T.tealL, border:"1.5px solid "+T.teal+"30", borderRadius:30,
               padding:"6px 16px", marginBottom:20, fontSize:12, fontWeight:800, color:T.teal }}>
-              \ud83c\udfaf Professional Services
+              🎯 Professional Services
             </div>
             <h2 style={{ fontSize:"clamp(22px,5vw,34px)", fontWeight:900, color:T.ink,
               letterSpacing:"-.3px", marginBottom:12, fontFamily:"Montserrat,sans-serif" }}>
@@ -352,7 +352,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
             <button onClick={() => onServices && onServices()}
               style={{ padding:"13px 32px", borderRadius:13, fontSize:14, fontWeight:900,
                 border:"2px solid "+T.teal, background:"transparent", color:T.teal, cursor:"pointer" }}>
-              View All Services \u2192
+              View All Services →
             </button>
           </div>
         </div>
@@ -370,7 +370,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
               borderRadius:18, padding:"24px 20px", boxShadow:"0 2px 8px rgba(44,36,22,.05)" }}>
               <div style={{ display:"flex", gap:3, marginBottom:14 }}>
                 {[...Array(t.rating)].map((_,i) => (
-                  <span key={i} style={{ color:T.saffron, fontSize:14 }}>\u2605</span>
+                  <span key={i} style={{ color:T.saffron, fontSize:14 }}>★</span>
                 ))}
               </div>
               <p style={{ fontSize:13, color:T.ink2, lineHeight:1.75, fontWeight:500,
@@ -385,7 +385,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
         <div style={{ maxWidth:1000, margin:"0 auto",
           background:"linear-gradient(135deg,"+T.saffronL+","+T.tealL+")",
           border:"2px solid "+T.saffron+"20", borderRadius:24, padding:"52px 28px", textAlign:"center" }}>
-          <div style={{ fontSize:44, marginBottom:16 }}>\ud83c\udfe1</div>
+          <div style={{ fontSize:44, marginBottom:16 }}>🏡</div>
           <h2 style={{ fontSize:"clamp(20px,5vw,32px)", fontWeight:900, color:T.ink,
             letterSpacing:"-.3px", marginBottom:12, fontFamily:"Montserrat,sans-serif" }}>
             Start managing smarter today
@@ -399,7 +399,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
               border:"none", color:"#ffffff", cursor:"pointer",
               background:"linear-gradient(135deg,"+T.saffron+","+T.saffronB+","+T.amber+")",
               boxShadow:"0 6px 20px "+T.saffron+"40" }}>
-            Get Started Free \u2192
+            Get Started Free →
           </button>
           <div style={{ marginTop:16, fontSize:12, color:T.muted, fontWeight:600 }}>
             Free forever plan available. No credit card required.
@@ -413,7 +413,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
                 <div style={{ width:34, height:34, borderRadius:9,
                   background:"linear-gradient(135deg,"+T.saffron+","+T.saffronB+")",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>\ud83c\udfe1</div>
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏡</div>
                 <span style={{ fontSize:17, fontWeight:900, color:"#fff", fontFamily:"Montserrat,sans-serif" }}>RentAI</span>
               </div>
               <p style={{ fontSize:12, color:"#9B8B7A", lineHeight:1.75, fontWeight:500, maxWidth:240 }}>
@@ -436,7 +436,7 @@ export default function LandingPage({ onGetStarted, onServices }) {
           </div>
           <div style={{ borderTop:"1px solid #3C3426", paddingTop:20,
             display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
-            <div style={{ fontSize:11, color:"#6B5A4A", fontWeight:600 }}>\u00a9 2025 RentAI. Made with \u2764\ufe0f in India.</div>
+            <div style={{ fontSize:11, color:"#6B5A4A", fontWeight:600 }}>© 2025 RentAI. Made with ❤️ in India.</div>
             <div style={{ fontSize:11, color:"#6B5A4A", fontWeight:600 }}>support@rentai.co.in</div>
           </div>
         </div>
