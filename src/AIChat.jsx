@@ -1,60 +1,58 @@
 import { useState, useRef, useEffect } from "react";
 
-const SUPABASE_URL  = "https://xcjakihewzegzyumnyuw.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjamFraWhld3plZ3p5dW1ueXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2ODcyNDIsImV4cCI6MjA4OTI2MzI0Mn0.HLwaK6PDdMap8SQ5ODz5XNSCKbCNnHkilO3HeuSVdyc";
-const EDGE_FN_URL   = `${SUPABASE_URL}/functions/v1/ai-chat`;
+const SUPABASE_URL = "https://xcjakihewzegzyumnyuw.supabase.co";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjamFraWhld3plZ3p5dW1ueXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2NTEyNjAsImV4cCI6MjA1OTIyNzI2MH0.kzABVB-DSMjhDhVlAMuqEqm9rPpSHiMJSFPUZiLfbI8";
 
-export default function AIChat({ owner, T }) {
-  const [open, setOpen]         = useState(false);
-  const [messages, setMessages] = useState([
-    { role: "assistant", text: `Hi ${(owner?.name || "").split(" ")[0] || "there"}! 👋 I'm your RentAI assistant. Ask me anything about your properties, tenants, payments or expenses.` }
-  ]);
-  const [input, setInput]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef             = useRef(null);
-  const inputRef              = useRef(null);
+const STARTER_PROMPTS = [
+  { icon: "💰", label: "How do I handle a late payment?" },
+  { icon: "✉️", label: "Draft a rent reminder message" },
+  { icon: "🚪", label: "My tenant wants to leave early — what are my rights?" },
+  { icon: "📋", label: "How much notice do I need to give before eviction?" },
+];
+
+export default function AIChat({ ownerId }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
-  }, [open]);
+  const sendMessage = async (text) => {
+    const userText = (text ?? input).trim();
+    if (!userText || isStreaming) return;
 
-  const send = async () => {
-    const text = input.trim();
-    if (!text || loading) return;
     setInput("");
-    setMessages(m => [...m, { role: "user", text }]);
-    setLoading(true);
+    setMessages((prev) => [...prev, { role: "user", content: userText }]);
+    setIsStreaming(true);
+
+    // Placeholder for the assistant reply that we'll stream into
+    setMessages((prev) => [
+      ...prev,
+      { role: "assistant", content: "", streaming: true },
+    ]);
 
     try {
-      const res = await fetch(EDGE_FN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_ANON}`,
-          "apikey": SUPABASE_ANON,
-        },
-        body: JSON.stringify({ message: text, owner_id: owner.id }),
-      });
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/ai-chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ message: userText, owner_id: ownerId }),
+        }
+      );
 
-      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      if (!response.ok) throw new Error("Edge function error");
 
-      // If it came back as JSON (error), surface it
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        const err = await res.json();
-        throw new Error(err.error || "Server error");
-      }
-
-      const reader  = res.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let   reply   = "";
-      let   buffer  = "";
-
-      setMessages(m => [...m, { role: "assistant", text: "" }]);
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -62,237 +60,371 @@ export default function AIChat({ owner, T }) {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        buffer = lines.pop(); // keep incomplete line in buffer
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data:")) continue;
-          const data = trimmed.slice(5).trim();
-          if (!data || data === "[DONE]") continue;
-
-          try {
-            const json = JSON.parse(data);
-
-            // Standard Anthropic streaming format
-            if (json.type === "content_block_delta" && json.delta?.type === "text_delta" && json.delta?.text) {
-              reply += json.delta.text;
-            }
-            // Fallback: delta.text directly
-            else if (json.delta?.text) {
-              reply += json.delta.text;
-            }
-            // Fallback: flat text field
-            else if (typeof json.text === "string" && json.text) {
-              reply += json.text;
-            }
-            // Fallback: OpenAI-compatible
-            else if (json.choices?.[0]?.delta?.content) {
-              reply += json.choices[0].delta.content;
-            }
-
-            if (reply) {
-              setMessages(m => [
-                ...m.slice(0, -1),
-                { role: "assistant", text: reply },
-              ]);
-            }
-          } catch {
-            // Plain text chunk fallback
-            if (data && data !== "[DONE]" && !data.startsWith("{")) {
-              reply += data;
-              if (reply) {
-                setMessages(m => [
-                  ...m.slice(0, -1),
-                  { role: "assistant", text: reply },
-                ]);
+          if (line.startsWith("data: ")) {
+            const chunk = line.slice(6);
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last?.role === "assistant") {
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + chunk,
+                };
               }
-            }
+              return updated;
+            });
           }
         }
       }
-
-      if (!reply) {
-        setMessages(m => [
-          ...m.slice(0, -1),
-          { role: "assistant", text: "No response received. Please try again." },
-        ]);
-      }
-
     } catch (err) {
-      console.error("AIChat error:", err);
-      setMessages(m => [
-        ...m.slice(0, -1),
-        { role: "assistant", text: `Error: ${err.message}. Please try again.` },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: "Sorry, something went wrong. Please try again.",
+        };
+        return updated;
+      });
+    } finally {
+      // Remove streaming flag from last message
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last?.streaming) {
+          updated[updated.length - 1] = { ...last, streaming: false };
+        }
+        return updated;
+      });
+      setIsStreaming(false);
     }
-
-    setLoading(false);
   };
 
-  const suggestions = [
-    "Which tenants have overdue rent?",
-    "Which leases are expiring soon?",
-    "What's my income this month?",
-    "Any open maintenance requests?",
-  ];
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const isEmpty = messages.length === 0;
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          position: "fixed", bottom: 82, right: 18, zIndex: 200,
-          width: 52, height: 52, borderRadius: "50%", border: "none",
-          background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-          color: "#fff", fontSize: 22, cursor: "pointer",
-          boxShadow: `0 6px 20px ${T.saffron}50`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "transform .2s",
-        }}
-        title="Ask RentAI"
-      >
-        {open ? "✕" : "🤖"}
-      </button>
+    <div style={styles.container}>
+      {/* Header */}
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <span style={styles.headerIcon}>🏠</span>
+          <div>
+            <div style={styles.headerTitle}>RentAI Assistant</div>
+            <div style={styles.headerSub}>Powered by Gemini · Indian property law</div>
+          </div>
+        </div>
+        <div style={styles.statusDot} title="Online" />
+      </div>
 
-      {open && (
-        <div style={{
-          position: "fixed", bottom: 144, right: 12, left: 12,
-          maxWidth: 492, margin: "0 auto", zIndex: 199,
-          background: T.surface, border: `1.5px solid ${T.border}`,
-          borderRadius: 20, boxShadow: "0 16px 48px rgba(0,0,0,.18)",
-          display: "flex", flexDirection: "column", maxHeight: "68vh",
-          fontFamily: "'Nunito','Segoe UI',sans-serif",
-        }}>
-
-          <div style={{
-            padding: "13px 16px", borderBottom: `1px solid ${T.border}`,
-            background: `linear-gradient(135deg,${T.saffron},${T.saffronB})`,
-            borderRadius: "18px 18px 0 0",
-            display: "flex", alignItems: "center", gap: 10,
-          }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 10,
-              background: "rgba(255,255,255,.2)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-            }}>🤖</div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 900, color: "#fff" }}>RentAI Assistant</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,.8)" }}>
-                Knows your properties, tenants & payments
-              </div>
+      {/* Messages */}
+      <div style={styles.messages}>
+        {isEmpty && (
+          <div style={styles.emptyState}>
+            <div style={styles.emptyIconWrap}>
+              <span style={styles.emptyIcon}>🏡</span>
             </div>
-          </div>
+            <p style={styles.emptyTitle}>Namaste! How can I help?</p>
+            <p style={styles.emptySubtitle}>
+              Ask me anything about rent, tenants, or Indian property law.
+            </p>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px 8px" }}>
-            {messages.map((m, i) => (
-              <div key={i} style={{
-                display: "flex",
-                justifyContent: m.role === "user" ? "flex-end" : "flex-start",
-                marginBottom: 10,
-              }}>
-                <div style={{
-                  maxWidth: "82%",
-                  padding: "9px 13px",
-                  borderRadius: m.role === "user"
-                    ? "14px 14px 3px 14px"
-                    : "14px 14px 14px 3px",
-                  background: m.role === "user"
-                    ? `linear-gradient(135deg,${T.saffron},${T.saffronB})`
-                    : T.panel,
-                  border: m.role === "user" ? "none" : `1px solid ${T.border}`,
-                  color: m.role === "user" ? "#fff" : T.ink,
-                  fontSize: 13, fontWeight: 600, lineHeight: 1.55,
-                  whiteSpace: "pre-wrap", wordBreak: "break-word",
-                }}>
-                  {m.text}
-                  {loading && i === messages.length - 1 && m.role === "assistant" && m.text === "" && (
-                    <span style={{ display: "inline-flex", gap: 3, marginLeft: 2 }}>
-                      {[0, 1, 2].map(d => (
-                        <span key={d} style={{
-                          width: 5, height: 5, borderRadius: "50%",
-                          background: T.muted, display: "inline-block",
-                          animation: `bounce .9s ${d * 0.2}s ease infinite`,
-                        }} />
-                      ))}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-            <div ref={bottomRef} />
-          </div>
-
-          {messages.length === 1 && (
-            <div style={{
-              padding: "0 12px 10px",
-              display: "flex", gap: 6, flexWrap: "wrap",
-            }}>
-              {suggestions.map(s => (
-                <button key={s}
-                  onClick={() => { setInput(s); setTimeout(() => inputRef.current?.focus(), 50); }}
-                  style={{
-                    padding: "5px 11px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    background: T.saffronL, border: `1px solid ${T.saffron}30`,
-                    color: T.saffron, cursor: "pointer",
-                  }}>
-                  {s}
+            {/* ── Starter prompt chips ── */}
+            <div style={styles.chipsGrid}>
+              {STARTER_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt.label}
+                  style={styles.chip}
+                  onClick={() => sendMessage(prompt.label)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#E8821A";
+                    e.currentTarget.style.color = "#fff";
+                    e.currentTarget.style.borderColor = "#E8821A";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 12px rgba(232,130,26,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "#FAFAF7";
+                    e.currentTarget.style.color = "#2C2416";
+                    e.currentTarget.style.borderColor = "#e0ddd6";
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <span style={styles.chipIcon}>{prompt.icon}</span>
+                  <span style={styles.chipLabel}>{prompt.label}</span>
                 </button>
               ))}
             </div>
-          )}
-
-          <div style={{
-            padding: "10px 12px", borderTop: `1px solid ${T.border}`,
-            display: "flex", gap: 8, alignItems: "flex-end",
-          }}>
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder="Ask about rent, tenants, leases…"
-              rows={1}
-              style={{
-                flex: 1, background: T.panel, border: `1.5px solid ${T.border2}`,
-                borderRadius: 12, padding: "9px 12px", fontSize: 13, fontWeight: 600,
-                color: T.ink, resize: "none", fontFamily: "inherit",
-                maxHeight: 80, overflowY: "auto", outline: "none",
-              }}
-            />
-            <button
-              onClick={send}
-              disabled={!input.trim() || loading}
-              style={{
-                width: 38, height: 38, borderRadius: 11, border: "none",
-                background: input.trim() && !loading
-                  ? `linear-gradient(135deg,${T.saffron},${T.saffronB})`
-                  : T.border,
-                color: "#fff", fontSize: 16,
-                cursor: input.trim() && !loading ? "pointer" : "default",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, transition: "background .2s",
-              }}
-            >
-              {loading ? (
-                <div style={{
-                  width: 16, height: 16,
-                  border: `2px solid rgba(255,255,255,.4)`,
-                  borderTopColor: "#fff", borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                }} />
-              ) : "↑"}
-            </button>
           </div>
+        )}
 
-          <style>{`
-            @keyframes bounce {
-              0%,80%,100% { transform: translateY(0) }
-              40% { transform: translateY(-4px) }
-            }
-            @keyframes spin { to { transform: rotate(360deg) } }
-          `}</style>
-        </div>
-      )}
-    </>
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              ...styles.messageBubble,
+              ...(msg.role === "user" ? styles.userBubble : styles.aiBubble),
+            }}
+          >
+            {msg.role === "assistant" && (
+              <span style={styles.aiBadge}>AI</span>
+            )}
+            <span style={styles.messageText}>
+              {msg.content}
+              {msg.streaming && <span style={styles.cursor}>▍</span>}
+            </span>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input bar */}
+      <div style={styles.inputBar}>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask about rent, tenants, agreements…"
+          rows={1}
+          style={styles.textarea}
+          disabled={isStreaming}
+        />
+        <button
+          onClick={() => sendMessage()}
+          disabled={!input.trim() || isStreaming}
+          style={{
+            ...styles.sendBtn,
+            opacity: !input.trim() || isStreaming ? 0.4 : 1,
+            cursor: !input.trim() || isStreaming ? "not-allowed" : "pointer",
+          }}
+        >
+          {isStreaming ? "…" : "→"}
+        </button>
+      </div>
+    </div>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    fontFamily: "'Nunito', sans-serif",
+    background: "#FAFAF7",
+    borderRadius: "16px",
+    overflow: "hidden",
+    boxShadow: "0 2px 20px rgba(44,36,22,0.08)",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "14px 20px",
+    background: "#fff",
+    borderBottom: "1px solid #f0ece4",
+  },
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  headerIcon: {
+    fontSize: "22px",
+  },
+  headerTitle: {
+    fontFamily: "'Montserrat', sans-serif",
+    fontWeight: 700,
+    fontSize: "15px",
+    color: "#2C2416",
+  },
+  headerSub: {
+    fontSize: "11px",
+    color: "#9e8f7a",
+    marginTop: "1px",
+  },
+  statusDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#1A8A72",
+    boxShadow: "0 0 0 2px rgba(26,138,114,0.2)",
+  },
+  messages: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "20px 16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    textAlign: "center",
+    padding: "20px 0 10px",
+    gap: "8px",
+  },
+  emptyIconWrap: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #fff8f0, #ffeedd)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "28px",
+    marginBottom: "4px",
+    boxShadow: "0 2px 8px rgba(232,130,26,0.15)",
+  },
+  emptyIcon: {
+    lineHeight: 1,
+  },
+  emptyTitle: {
+    fontFamily: "'Montserrat', sans-serif",
+    fontWeight: 700,
+    fontSize: "16px",
+    color: "#2C2416",
+    margin: 0,
+  },
+  emptySubtitle: {
+    fontSize: "13px",
+    color: "#9e8f7a",
+    margin: "0 0 8px",
+    maxWidth: "280px",
+    lineHeight: 1.5,
+  },
+
+  // ── Chips ──
+  chipsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "8px",
+    width: "100%",
+    maxWidth: "380px",
+    marginTop: "4px",
+  },
+  chip: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "8px",
+    padding: "10px 12px",
+    background: "#FAFAF7",
+    border: "1.5px solid #e0ddd6",
+    borderRadius: "10px",
+    cursor: "pointer",
+    textAlign: "left",
+    transition: "all 0.18s ease",
+    fontFamily: "'Nunito', sans-serif",
+    fontSize: "12.5px",
+    color: "#2C2416",
+    lineHeight: 1.35,
+  },
+  chipIcon: {
+    fontSize: "15px",
+    flexShrink: 0,
+    marginTop: "1px",
+  },
+  chipLabel: {
+    fontWeight: 600,
+  },
+
+  // ── Messages ──
+  messageBubble: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "8px",
+    maxWidth: "85%",
+    lineHeight: 1.55,
+    fontSize: "14px",
+    padding: "10px 14px",
+    borderRadius: "12px",
+    wordBreak: "break-word",
+  },
+  userBubble: {
+    alignSelf: "flex-end",
+    background: "#E8821A",
+    color: "#fff",
+    borderBottomRightRadius: "4px",
+    flexDirection: "row-reverse",
+  },
+  aiBubble: {
+    alignSelf: "flex-start",
+    background: "#fff",
+    color: "#2C2416",
+    border: "1px solid #f0ece4",
+    borderBottomLeftRadius: "4px",
+    boxShadow: "0 1px 4px rgba(44,36,22,0.06)",
+  },
+  aiBadge: {
+    flexShrink: 0,
+    fontSize: "10px",
+    fontWeight: 800,
+    fontFamily: "'Montserrat', sans-serif",
+    color: "#1A8A72",
+    background: "rgba(26,138,114,0.1)",
+    padding: "2px 5px",
+    borderRadius: "4px",
+    marginTop: "2px",
+  },
+  messageText: {
+    whiteSpace: "pre-wrap",
+  },
+  cursor: {
+    display: "inline-block",
+    animation: "blink 1s step-start infinite",
+    color: "#E8821A",
+  },
+
+  // ── Input bar ──
+  inputBar: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: "8px",
+    padding: "12px 14px",
+    background: "#fff",
+    borderTop: "1px solid #f0ece4",
+  },
+  textarea: {
+    flex: 1,
+    resize: "none",
+    border: "1.5px solid #e0ddd6",
+    borderRadius: "10px",
+    padding: "10px 13px",
+    fontFamily: "'Nunito', sans-serif",
+    fontSize: "14px",
+    color: "#2C2416",
+    background: "#FAFAF7",
+    outline: "none",
+    lineHeight: 1.5,
+    transition: "border-color 0.15s",
+  },
+  sendBtn: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#E8821A",
+    color: "#fff",
+    fontSize: "18px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "opacity 0.15s, transform 0.1s",
+    flexShrink: 0,
+  },
+};
