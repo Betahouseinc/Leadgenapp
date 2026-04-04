@@ -185,7 +185,7 @@ function UPIPayModal({ payment, tenant, onClose, onPaid }) {
               Pay {fd(amount)}
             </div>
             <div style={{ fontSize:12, color:T.muted, marginBottom:20 }}>
-              {payment.type} Â· UPI ID: <span style={{ color:T.ink, fontWeight:700 }}>{upiId}</span>
+              {payment.type} · UPI ID: <span style={{ color:T.ink, fontWeight:700 }}>{upiId}</span>
             </div>
 
             {/* QR placeholder â€” links to any UPI app */}
@@ -540,7 +540,7 @@ const createProfile = async () => {
                   ))}
                 </div>
                 <div style={{ fontSize:10, color:T.muted, marginTop:8, textAlign:"center" }}>
-                  Auto-login Â· No OTP needed
+                  Auto-login · No OTP needed
                 </div>
               </div>
 
@@ -766,7 +766,7 @@ function AddTenantForm({ unitId, ownerId, onSaved, onCancel }) {
       {error && <div style={{ color:T.rose, fontSize:12, marginBottom:10, fontWeight:600 }}>{error}</div>}
       <div style={{ background:T.tealL, border:`1px solid ${T.teal}25`, borderRadius:10,
         padding:"9px 12px", fontSize:12, color:T.teal, marginBottom:14, fontWeight:600 }}>
-        âœ“ Unit will be marked occupied Â· First rent payment created automatically
+        âœ“ Unit will be marked occupied · First rent payment created automatically
       </div>
       <div style={{ display:"flex", gap:8 }}>
         <button onClick={onCancel}
@@ -929,7 +929,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
           amount: unit.rent_amount,
           due_date: dueDate,
           status: "pending",
-          notes: `Auto-generated Â· ${monthLabel}`,
+          notes: `Auto-generated · ${monthLabel}`,
         });
       }
 
@@ -1229,7 +1229,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} Â· Owner</div>
+          <div style={{ fontSize:9, color:T.muted }}>{owner.name || owner.phone} · Owner</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -1347,7 +1347,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                     <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80,
                       borderRadius:"50%", background:"rgba(255,255,255,.08)", pointerEvents:"none" }}/>
                     <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.75)", letterSpacing:.8, marginBottom:3 }}>
-                      NET INCOME Â· {monthLabel.toUpperCase()}
+                      NET INCOME · {monthLabel.toUpperCase()}
                     </div>
                     <div style={{ fontSize:30, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>
                       {isProfit?"+":"-"}{fd(Math.abs(net))}
@@ -1463,7 +1463,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                                   </div>
                                   <div style={{ flex:1 }}>
                                     <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{t?.name||"No tenant"}</div>
-                                    <div style={{ fontSize:10, color:T.muted }}>{u.unit_number} Â· {fd(u.rent_amount)}/mo</div>
+                                    <div style={{ fontSize:10, color:T.muted }}>{u.unit_number} · {fd(u.rent_amount)}/mo</div>
                                   </div>
                                   {t?.lease_end && (()=>{
                                     const d = Math.ceil((new Date(t.lease_end)-today)/(1000*60*60*24));
@@ -1486,7 +1486,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                                   borderRadius:10, border:`1px solid ${T.rose}20` }}>
                                   <div style={{ flex:1 }}>
                                     <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{p.tenants?.name||"Tenant"}</div>
-                                    <div style={{ fontSize:10, color:T.muted }}>{p.units?.unit_number} Â· {p.type} Â· Due {fmt(p.due_date)}</div>
+                                    <div style={{ fontSize:10, color:T.muted }}>{p.units?.unit_number} · {p.type} · Due {fmt(p.due_date)}</div>
                                   </div>
                                   <div style={{ fontSize:13, fontWeight:900, color:T.rose }}>{fd(p.amount)}</div>
                                   <button onClick={()=>markPaid(p.id)}
@@ -1522,7 +1522,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                                 borderRadius:10, border:`1px solid ${T.sky}20` }}>
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{r.title}</div>
-                                  <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} Â· {fmt(r.created_at)}</div>
+                                  <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} · {fmt(r.created_at)}</div>
                                 </div>
                                 <Chip label={r.priority} color={r.priority==="high"?T.rose:r.priority==="medium"?T.amber:T.teal}/>
                                 <button onClick={()=>resolveRequest(r.id)}
@@ -1544,7 +1544,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                                 borderRadius:10, border:`1px solid ${u.is_occupied?T.teal+"20":T.border}` }}>
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{u.unit_number}</div>
-                                  <div style={{ fontSize:10, color:T.muted }}>{fd(u.rent_amount)}/mo Â· {u.type}</div>
+                                  <div style={{ fontSize:10, color:T.muted }}>{fd(u.rent_amount)}/mo · {u.type}</div>
                                 </div>
                                 <Chip label={u.is_occupied?"Occupied":"Vacant"} color={u.is_occupied?T.teal:T.rose}/>
                               </div>
@@ -1638,7 +1638,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                         {p.status==="verification_pending" && <Chip label="Verify!" color={T.amber}/>}
                       </div>
                       <div style={{ fontSize:10, color:T.muted }}>
-                        {p.units?.unit_number} Â· {p.type} Â· {fd(p.amount)}
+                        {p.units?.unit_number} · {p.type} · {fd(p.amount)}
                       </div>
                       {p.utr_number && (
                         <div style={{ fontSize:10, color:T.amber, fontWeight:700 }}>UTR: {p.utr_number}</div>
@@ -1690,7 +1690,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                     </div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>
-                        {u.unit_number} Â· {tenant.name}
+                        {u.unit_number} · {tenant.name}
                       </div>
                       <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>
                         Lease ends {fmt(tenant.lease_end)}
@@ -1810,7 +1810,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                   ğŸ“ˆ Revenue Forecast
                 </div>
                 <div style={{ fontSize:11, color:T.muted, marginBottom:14 }}>
-                  Based on current leases Â· 6-month outlook
+                  Based on current leases · 6-month outlook
                 </div>
 
                 {/* Bar chart */}
@@ -2019,7 +2019,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                   return (
                     <div key={pr.id} style={{ background:T.card, border:`1.5px solid ${T.border}`, borderRadius:12, padding:"8px 14px" }}>
                       <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{pr.name}</div>
-                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} Â· {pr.city||pr.address||""}</div>
+                      <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{prUnits.length} unit{prUnits.length!==1?"s":""} · {pr.city||pr.address||""}</div>
                     </div>
                   );
                 })}
@@ -2181,7 +2181,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                         );
                       })()}
                       <div style={{ fontSize:13, fontWeight:900, color:T.saffron }}>{fd(u.rent_amount)}/mo
-                        {u.deposit && <span style={{ fontSize:10, color:T.muted, fontWeight:600 }}> Â· Deposit {fd(u.deposit)}</span>}
+                        {u.deposit && <span style={{ fontSize:10, color:T.muted, fontWeight:600 }}> · Deposit {fd(u.deposit)}</span>}
                       </div>
                     </div>
                     <div style={{ fontSize:16, color:T.muted, marginLeft:8 }}>{isOpen?"â–²":"â–¼"}</div>
@@ -2379,10 +2379,10 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:4 }}>
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>
-                      {p.tenants?.name || "Tenant"} Â· {p.units?.unit_number}
+                      {p.tenants?.name || "Tenant"} · {p.units?.unit_number}
                     </div>
                     <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>
-                      {p.type} Â· Due: {fmt(p.due_date)}
+                      {p.type} · Due: {fmt(p.due_date)}
                     </div>
                     {p.paid_date && (
                       <div style={{ fontSize:11, color:T.teal, marginTop:1 }}>
@@ -2609,7 +2609,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                         <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{exp.title}</div>
                         <div style={{ fontSize:10, color:T.muted, marginTop:2 }}>
                           {fmt(exp.date)}
-                          {exp.units?.unit_number && ` Â· ${exp.units.unit_number}`}
+                          {exp.units?.unit_number && ` · ${exp.units.unit_number}`}
                         </div>
                         {exp.notes && (
                           <div style={{ fontSize:11, color:T.ink2, marginTop:4, lineHeight:1.5 }}>{exp.notes}</div>
@@ -2782,7 +2782,7 @@ const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(null), 3000)
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:T.ink }}>{r.title}</div>
                     <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>
-                      {r.units?.unit_number} Â· {fmt(r.created_at)}
+                      {r.units?.unit_number} · {fmt(r.created_at)}
                     </div>
                   </div>
                   <Chip label={r.status} color={r.status==="resolved"?T.teal:r.status==="in_progress"?T.amber:T.rose}/>
@@ -3165,7 +3165,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{tenant.name} Â· Tenant Portal</div>
+          <div style={{ fontSize:9, color:T.muted }}>{tenant.name} · Tenant Portal</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -3304,7 +3304,7 @@ function TenantDashboard({ tenant, onLogout, isDark, onToggleTheme, availableRol
                       <div style={{ padding:"8px 12px", background:T.amberL,
                         borderRadius:9, fontSize:12, fontWeight:700, color:T.amber,
                         textAlign:"center" }}>
-                        â³ Payment submitted Â· Waiting for landlord to verify
+                        â³ Payment submitted · Waiting for landlord to verify
                       </div>
                     )}
                   </div>
@@ -3693,7 +3693,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       id: "owner-" + o.id, ts: o.created_at,
       icon: "ğŸ¢", color: T.saffron, bg: T.saffronL,
       title: "New owner joined",
-      desc: `${o.name}${o.city ? " Â· " + o.city : ""}`,
+      desc: `${o.name}${o.city ? " · " + o.city : ""}`,
     })),
     ...tenants.map(t => ({
       id: "tenant-" + t.id, ts: t.created_at,
@@ -3712,7 +3712,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         id: "pay-" + p.id, ts: p.created_at,
         icon: s.icon, color: s.color, bg: s.bg,
         title: s.title,
-        desc: `${fd(p.amount)}${p.tenants?.name ? " Â· " + p.tenants.name : ""}${p.units?.unit_number ? " Â· Unit " + p.units.unit_number : ""}`,
+        desc: `${fd(p.amount)}${p.tenants?.name ? " · " + p.tenants.name : ""}${p.units?.unit_number ? " · Unit " + p.units.unit_number : ""}`,
       };
     }),
     ...requests.map(r => ({
@@ -3720,13 +3720,13 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
       icon: r.status === "resolved" ? "âœ…" : "ğŸ”§",
       color: r.status === "resolved" ? T.teal : T.sky, bg: r.status === "resolved" ? T.tealL : T.skyL,
       title: r.status === "resolved" ? "Request resolved" : "Maintenance request opened",
-      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " Â· " + r.tenants.name : ""}`,
+      desc: `${r.description?.slice(0,60) || "No description"}${r.tenants?.name ? " · " + r.tenants.name : ""}`,
     })),
     ...expenses.map(e => ({
       id: "exp-" + e.id, ts: e.date || e.created_at,
       icon: "ğŸ§¾", color: T.rose, bg: T.roseL,
       title: "Expense logged",
-      desc: `${fd(e.amount)} Â· ${e.title || e.category}${e.owners?.name ? " Â· " + e.owners.name : ""}`,
+      desc: `${fd(e.amount)} · ${e.title || e.category}${e.owners?.name ? " · " + e.owners.name : ""}`,
     })),
   ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
@@ -3767,7 +3767,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:16, fontWeight:900, color:T.ink }}>{owner.name}</div>
-              <div style={{ fontSize:12, color:T.muted }}>{owner.phone} Â· {owner.city||"â€”"}</div>
+              <div style={{ fontSize:12, color:T.muted }}>{owner.phone} · {owner.city||"â€”"}</div>
               <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(owner.created_at)}</div>
             </div>
             <button onClick={()=>setConfirmDelete(owner)}
@@ -3837,7 +3837,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{u.unit_number}</div>
-                      <div style={{ fontSize:11, color:T.muted }}>{fd(u.rent_amount)}/mo Â· {u.type}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{fd(u.rent_amount)}/mo · {u.type}</div>
                       {u.tenants?.[0] && (
                         <div style={{ fontSize:11, color:T.teal, marginTop:2 }}>ğŸ‘¤ {u.tenants[0].name}</div>
                       )}
@@ -3858,9 +3858,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>
-                        {p.tenants?.name||"â€”"} Â· {p.units?.unit_number||"â€”"}
+                        {p.tenants?.name||"â€”"} · {p.units?.unit_number||"â€”"}
                       </div>
-                      <div style={{ fontSize:10, color:T.muted }}>{p.type} Â· {fmt(p.due_date)}</div>
+                      <div style={{ fontSize:10, color:T.muted }}>{p.type} · {fmt(p.due_date)}</div>
                       {p.utr_number && <div style={{ fontSize:10, color:T.amber }}>UTR: {p.utr_number}</div>}
                     </div>
                     <div style={{ textAlign:"right" }}>
@@ -3883,7 +3883,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start" }}>
                     <div>
                       <div style={{ fontSize:12, fontWeight:700, color:T.ink }}>{r.title}</div>
-                      <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} Â· {fmt(r.created_at)}</div>
+                      <div style={{ fontSize:10, color:T.muted }}>{r.units?.unit_number} · {fmt(r.created_at)}</div>
                     </div>
                     <Chip label={r.status} color={r.status==="resolved"?T.teal:r.status==="in_progress"?T.amber:T.rose}/>
                   </div>
@@ -3901,7 +3901,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 <div key={n.id} style={{ background:T.panel, borderRadius:10, padding:"9px 12px",
                   marginBottom:8, border:`1px solid ${T.border}` }}>
                   <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
-                  <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} Â· {fmt(n.created_at)}</div>
+                  <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} · {fmt(n.created_at)}</div>
                 </div>
               ))}
               <div style={{ display:"flex", gap:8, marginTop:8 }}>
@@ -3941,9 +3941,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
             </div>
             <div>
               <div style={{ fontSize:16, fontWeight:900, color:T.ink }}>{tenant.name}</div>
-              <div style={{ fontSize:12, color:T.muted }}>{tenant.phone||"â€”"} Â· {tenant.units?.unit_number||"No unit"}</div>
+              <div style={{ fontSize:12, color:T.muted }}>{tenant.phone||"â€”"} · {tenant.units?.unit_number||"No unit"}</div>
               <div style={{ fontSize:10, color:T.muted }}>
-                {tenant.is_active ? "ğŸŸ¢ Active" : "ğŸ”´ Inactive"} Â· Joined {fmt(tenant.created_at)}
+                {tenant.is_active ? "ğŸŸ¢ Active" : "ğŸ”´ Inactive"} · Joined {fmt(tenant.created_at)}
               </div>
             </div>
           </div>
@@ -3952,7 +3952,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
           {tNotes.map(n=>(
             <div key={n.id} style={{ background:T.panel, borderRadius:10, padding:"9px 12px", marginBottom:8, border:`1px solid ${T.border}` }}>
               <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
-              <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} Â· {fmt(n.created_at)}</div>
+              <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{n.admin_name} · {fmt(n.created_at)}</div>
             </div>
           ))}
           <div style={{ display:"flex", gap:8, marginTop:8 }}>
@@ -3992,7 +3992,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <img src="/logo-full.png" alt="RentAI" style={{ height:36, width:"auto" }} />
-          <div style={{ fontSize:9, color:T.muted }}>{admin.name} Â· {admin.role}</div>
+          <div style={{ fontSize:9, color:T.muted }}>{admin.name} · {admin.role}</div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {availableRoles.length > 1 && (
@@ -4064,7 +4064,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 </span>
                 {lastRefresh && (
                   <span style={{ fontSize:10, color:T.muted }}>
-                    Â· {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
+                    · {lastRefresh.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}
                   </span>
                 )}
                 <button onClick={loadAll}
@@ -4147,7 +4147,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div key={n.id} style={{ background:T.card, border:`1.5px solid ${T.plum}20`,
                     borderRadius:12, padding:"10px 13px", marginBottom:8 }}>
                     <div style={{ fontSize:11, fontWeight:800, color:T.plum, marginBottom:4 }}>
-                      {n.entity_type === "owner" ? "ğŸ¢ Owner" : "ğŸ‘¤ Tenant"} Â· {n.admin_name}
+                      {n.entity_type === "owner" ? "ğŸ¢ Owner" : "ğŸ‘¤ Tenant"} · {n.admin_name}
                     </div>
                     <div style={{ fontSize:12, color:T.ink, lineHeight:1.5 }}>{n.note}</div>
                     <div style={{ fontSize:10, color:T.muted, marginTop:4 }}>{fmt(n.created_at)}</div>
@@ -4212,7 +4212,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     </div>
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{o.name}</div>
-                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} Â· {o.city||"â€”"}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} · {o.city||"â€”"}</div>
                       <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(o.created_at)}</div>
                     </div>
                   </div>
@@ -4249,7 +4249,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                     <div>
                       <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{t.name}</div>
                       <div style={{ fontSize:11, color:T.muted }}>
-                        {t.phone||"No phone"} Â· {t.units?.unit_number||"No unit"}
+                        {t.phone||"No phone"} · {t.units?.unit_number||"No unit"}
                       </div>
                       <div style={{ fontSize:10, color:t.is_active?T.teal:T.rose, fontWeight:700 }}>
                         {t.is_active ? "Active" : "Inactive"}
@@ -4298,11 +4298,11 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start" }}>
                   <div>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>
-                      {p.tenants?.name||"â€”"} Â· {p.units?.unit_number||"â€”"}
+                      {p.tenants?.name||"â€”"} · {p.units?.unit_number||"â€”"}
                     </div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {p.type} Â· Due {fmt(p.due_date)}
-                      {p.paid_date && ` Â· Paid ${fmt(p.paid_date)}`}
+                      {p.type} · Due {fmt(p.due_date)}
+                      {p.paid_date && ` · Paid ${fmt(p.paid_date)}`}
                     </div>
                     {p.utr_number && (
                       <div style={{ fontSize:10, color:T.amber, fontWeight:700 }}>UTR: {p.utr_number}</div>
@@ -4336,7 +4336,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div style={{ flex:1, marginRight:8 }}>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{r.title}</div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {r.tenants?.name||"â€”"} Â· {r.units?.unit_number||"â€”"} Â· {fmt(r.created_at)}
+                      {r.tenants?.name||"â€”"} · {r.units?.unit_number||"â€”"} · {fmt(r.created_at)}
                     </div>
                     {r.description && (
                       <div style={{ fontSize:11, color:T.ink2, marginTop:4, lineHeight:1.5 }}>{r.description}</div>
@@ -4356,7 +4356,7 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
         {tab === "expenses" && (
           <div style={{ padding:"18px 16px" }} className="fu">
             <div style={{ fontWeight:800, fontSize:15, color:T.ink, marginBottom:14 }}>
-              All Expenses ({expenses.length}) Â· {fd(totalExpenses)} total
+              All Expenses ({expenses.length}) · {fd(totalExpenses)} total
             </div>
             {expenses.filter(e =>
               !filterStr || e.title?.toLowerCase().includes(filterStr) ||
@@ -4368,8 +4368,8 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                   <div>
                     <div style={{ fontSize:12, fontWeight:800, color:T.ink }}>{e.title}</div>
                     <div style={{ fontSize:11, color:T.muted }}>
-                      {e.category} Â· {fmt(e.date)}
-                      {e.units?.unit_number && ` Â· ${e.units.unit_number}`}
+                      {e.category} · {fmt(e.date)}
+                      {e.units?.unit_number && ` · ${e.units.unit_number}`}
                     </div>
                     <div style={{ fontSize:10, color:T.muted }}>Owner: {e.owners?.name||"â€”"}</div>
                     {e.notes && <div style={{ fontSize:11, color:T.ink2, marginTop:3 }}>{e.notes}</div>}
@@ -4520,9 +4520,9 @@ function AdminDashboard({ admin, onLogout, isDark, onToggleTheme, availableRoles
                         <div style={{ fontSize:13, fontWeight:800, color:T.ink }}>{o.name}</div>
                         {isTestAccount && <Chip label="No data" color={T.rose}/>}
                       </div>
-                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} Â· {o.city||"â€”"}</div>
+                      <div style={{ fontSize:11, color:T.muted }}>{o.phone} · {o.city||"â€”"}</div>
                       <div style={{ fontSize:10, color:T.muted, marginTop:3 }}>
-                        {oUnits.length} units Â· {oTenants.length} active tenants Â· {oPayments.length} payments
+                        {oUnits.length} units · {oTenants.length} active tenants · {oPayments.length} payments
                       </div>
                       <div style={{ fontSize:10, color:T.muted }}>Joined {fmt(o.created_at)}</div>
                     </div>
