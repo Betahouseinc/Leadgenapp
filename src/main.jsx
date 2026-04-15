@@ -6,6 +6,8 @@ import App from './App.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Legal from './pages/Legal.jsx'
 import About from './pages/About.jsx'
+import Login from './pages/Login.jsx'
+import Leads from './pages/Leads.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -19,6 +21,9 @@ createRoot(document.getElementById('root')).render(
         <Route path="/legal/:page" element={<Legal />} />
         {/* About page */}
         <Route path="/about" element={<About />} />
+        {/* LeadGen app */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/leads" element={<Leads />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
