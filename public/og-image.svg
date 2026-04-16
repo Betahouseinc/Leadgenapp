@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#FAFAF7"/>
+  <rect x="0" y="0" width="1200" height="630" fill="#EFF6FF" opacity="0.5"/>
+  <!-- Blue accent bar -->
+  <rect x="0" y="0" width="8" height="630" fill="#2563EB"/>
+  <!-- Logo mark -->
+  <rect x="80" y="200" width="80" height="80" rx="16" fill="#2563EB"/>
+  <text x="100" y="264" font-family="system-ui, -apple-system, sans-serif" font-size="60" font-weight="800" fill="white">L</text>
+  <!-- Brand name -->
+  <text x="180" y="262" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="#2563EB">LeadgenAI</text>
+  <!-- Tagline -->
+  <text x="80" y="330" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#5C5240">AI-Powered Lead Generation</text>
+  <!-- Description -->
+  <text x="80" y="390" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#9C8E7A">Find qualified business leads in under 60 seconds.</text>
+  <text x="80" y="425" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#9C8E7A">Scrape Google Maps · Score with AI · Export to Excel</text>
+  <!-- CTA pill -->
+  <rect x="80" y="470" width="240" height="52" rx="26" fill="#2563EB"/>
+  <text x="200" y="503" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="700" fill="white">Start for free →</text>
+  <!-- URL -->
+  <text x="80" y="580" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#9C8E7A">leadgenapp.vercel.app</text>
+</svg>
