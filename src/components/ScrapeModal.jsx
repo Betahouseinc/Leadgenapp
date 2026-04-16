@@ -70,12 +70,13 @@ export default function ScrapeModal({ onClose, onDone }) {
       const { data: before } = await supabase.from('leads').select('id', { count: 'exact' })
       const beforeCount = before?.length || 0
       let polls = 0
-      const poll = setInterval(async () => {
+      let pollId
+      pollId = setInterval(async () => {
         polls++
         const { data: after } = await supabase.from('leads').select('id', { count: 'exact' })
         const afterCount = after?.length || 0
         if (afterCount > beforeCount || polls >= 36) {
-          clearInterval(poll)
+          clearInterval(pollId)
           onDone()
           onClose()
         }
