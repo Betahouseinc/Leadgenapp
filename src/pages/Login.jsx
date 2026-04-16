@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const T = {
@@ -16,6 +16,8 @@ const T = {
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectTo = searchParams.get('redirect') || 'leads'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -30,7 +32,7 @@ export default function Login() {
     if (err) {
       setError(err.message)
     } else {
-      navigate('/leads')
+      navigate(`/${redirectTo}`)
     }
   }
 

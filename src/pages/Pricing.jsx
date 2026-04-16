@@ -69,7 +69,7 @@ export default function Pricing() {
 
   const handleSelect = async (plan) => {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { navigate('/signup'); return }
+    if (!session) { navigate('/login?redirect=pricing'); return }
     if (plan.id === 'free') { navigate('/leads'); return }
     if (plan.id === 'agency') {
       window.location.href = 'mailto:betahouseincorporation@gmail.com?subject=Agency Plan Enquiry'
