@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const T = {
@@ -138,6 +138,12 @@ export default function Login() {
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: T.ink2 }}>
+          Don't have an account?{' '}
+          <Link to="/signup" style={{ color: T.blue, fontWeight: 600, textDecoration: 'none' }}>
+            Sign up free
+          </Link>
+        </div>
       </div>
     </div>
   )

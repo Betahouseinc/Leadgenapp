@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import StatsBar from '../components/StatsBar'
@@ -19,7 +19,7 @@ const T = {
 }
 
 const INDUSTRIES = ['All', 'Real estate', 'IT Software', 'Manufacturing', 'Healthcare', 'Retail', 'Education', 'Pharma']
-const SOURCES = ['All', 'Google Maps', 'LinkedIn']
+const SOURCES = ['All', 'Google Maps']
 const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'rejected']
 
 function sourceBadge(source) {
@@ -66,11 +66,18 @@ export default function Leads() {
   const [industry, setIndustry] = useState('All')
   const [source, setSource] = useState('All')
   const [minScore, setMinScore] = useState(0)
+  const [profile, setProfile] = useState(null)
 
-  // Auth guard
+  // Auth guard + load profile
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) navigate('/login')
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) { navigate('/login'); return }
+      const { data } = await supabase
+        .from('profiles')
+        .select('*, plans(*)')
+        .eq('id', session.user.id)
+        .single()
+      if (data) setProfile(data)
     })
   }, [navigate])
 
@@ -177,6 +184,37 @@ export default function Leads() {
           LeadGen
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {/* Usage meter */}
+          {profile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
+              <div>
+                <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>
+                  {profile.leads_used} / {profile.plans?.leads_per_month === -1 ? '∞' : profile.plans?.leads_per_month} leads
+                  {' · '}
+                  <span style={{ fontWeight: 600, color: T.blue }}>{profile.plans?.name}</span>
+                </div>
+                <div style={{ width: 100, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 4 }}>
+                  <div style={{
+                    height: '100%',
+                    borderRadius: 4,
+                    background: T.blue,
+                    width: profile.plans?.leads_per_month === -1 ? '10%' :
+                      `${Math.min(100, (profile.leads_used / profile.plans?.leads_per_month) * 100)}%`,
+                  }} />
+                </div>
+              </div>
+              <Link to="/pricing" style={{
+                padding: '4px 10px',
+                background: T.blueL,
+                color: T.blue,
+                border: `0.5px solid ${T.blue}`,
+                borderRadius: 20,
+                fontSize: 11,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}>Upgrade</Link>
+            </div>
+          )}
           <button
             onClick={() => setScrapeOpen(true)}
             style={{

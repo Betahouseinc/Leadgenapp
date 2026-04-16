@@ -62,6 +62,31 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     const db = createClient(supabaseUrl, supabaseKey)
 
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user } } = await db.auth.getUser(token)
+    const userId = user?.id
+
+    // Check usage limit
+    if (userId) {
+      const { data: profile } = await db
+        .from('profiles')
+        .select('leads_used, plans(leads_per_month)')
+        .eq('id', userId)
+        .single()
+
+      if (profile) {
+        const maxLeads = (profile.plans as { leads_per_month: number })?.leads_per_month
+        if (maxLeads !== -1 && profile.leads_used >= maxLeads) {
+          return new Response(
+            JSON.stringify({ error: 'Lead limit reached. Please upgrade your plan.' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+    }
+
     let raw: Record<string, unknown>[] = []
 
     // Run scrapers in parallel
@@ -122,12 +147,20 @@ Deno.serve(async (req) => {
       })
     )
 
+    // Add user_id to each lead
+    const leadsWithUser = enriched.map(l => ({ ...l, user_id: userId || null }))
+
     // Upsert to DB
-    if (enriched.length > 0) {
+    if (leadsWithUser.length > 0) {
       const { error } = await db
         .from('leads')
-        .upsert(enriched, { onConflict: 'name,city', ignoreDuplicates: false })
+        .upsert(leadsWithUser, { onConflict: 'name,city', ignoreDuplicates: false })
       if (error) console.error('Upsert error:', error)
+
+      // Update usage counter
+      if (userId) {
+        await db.rpc('increment_leads_used', { user_id: userId, amount: leadsWithUser.length })
+      }
     }
 
     return new Response(

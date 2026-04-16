@@ -23,7 +23,7 @@ const INDUSTRIES = [
 export default function ScrapeModal({ onClose, onDone }) {
   const [industry, setIndustry] = useState('Real estate')
   const [city, setCity] = useState('Bengaluru')
-  const [sources, setSources] = useState({ gmaps: true, linkedin: false })
+  const [sources, setSources] = useState({ gmaps: true })
   const [limit, setLimit] = useState(50)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -128,25 +128,15 @@ export default function ScrapeModal({ onClose, onDone }) {
             />
           </label>
 
-          {/* Sources */}
+          {/* Source */}
           <div style={{ marginBottom: 14 }}>
-            <div style={labelStyle}>Sources</div>
-            <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
-              {[['gmaps', 'Google Maps'], ['linkedin', 'LinkedIn (beta)']].map(([key, label]) => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: T.ink }}>
-                  <input
-                    type="checkbox"
-                    checked={sources[key]}
-                    onChange={() => toggleSource(key)}
-                    disabled={running}
-                    style={{ accentColor: T.blue, width: 14, height: 14 }}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-            <div style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>
-              Google Maps is recommended. LinkedIn results may vary.
+            <div style={labelStyle}>Source</div>
+            <div style={{
+              marginTop: 6, padding: '8px 12px',
+              background: '#EFF6FF', borderRadius: 8,
+              fontSize: 13, color: '#2563EB', fontWeight: 500,
+            }}>
+              📍 Google Maps
             </div>
           </div>
 
