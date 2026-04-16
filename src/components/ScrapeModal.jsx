@@ -38,16 +38,11 @@ export default function ScrapeModal({ onClose, onDone }) {
 
     setError('')
     setRunning(true)
-    setProgress(10)
+    setProgress(30)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-
-      // Animate progress while fetching
-      const interval = setInterval(() => {
-        setProgress(p => Math.min(p + 5, 85))
-      }, 800)
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-leads`,
@@ -70,7 +65,22 @@ export default function ScrapeModal({ onClose, onDone }) {
       }
 
       setDone(true)
-      setTimeout(() => { onDone(); onClose() }, 1200)
+
+      // Poll leads table every 10s — refresh dashboard when new leads arrive
+      const { data: before } = await supabase.from('leads').select('id', { count: 'exact' })
+      const beforeCount = before?.length || 0
+      let polls = 0
+      const poll = setInterval(async () => {
+        polls++
+        const { data: after } = await supabase.from('leads').select('id', { count: 'exact' })
+        const afterCount = after?.length || 0
+        if (afterCount > beforeCount || polls >= 36) {
+          clearInterval(poll)
+          onDone()
+          onClose()
+        }
+      }, 10000)
+
     } catch (err) {
       setError(err.message)
       setRunning(false)
@@ -190,7 +200,7 @@ export default function ScrapeModal({ onClose, onDone }) {
 
           {done && (
             <div style={{ color: T.teal, fontSize: 13, marginBottom: 12, fontWeight: 600 }}>
-              Scrape complete! Refreshing leads…
+              ✓ Scrape started! Leads will appear in 5–10 minutes. This window will close automatically.
             </div>
           )}
 
