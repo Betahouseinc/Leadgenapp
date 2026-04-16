@@ -132,7 +132,7 @@ export default function ScrapeModal({ onClose, onDone }) {
           <div style={{ marginBottom: 14 }}>
             <div style={labelStyle}>Sources</div>
             <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
-              {[['gmaps', 'Google Maps'], ['linkedin', 'LinkedIn']].map(([key, label]) => (
+              {[['gmaps', 'Google Maps'], ['linkedin', 'LinkedIn (beta)']].map(([key, label]) => (
                 <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: T.ink }}>
                   <input
                     type="checkbox"
@@ -144,6 +144,9 @@ export default function ScrapeModal({ onClose, onDone }) {
                   {label}
                 </label>
               ))}
+            </div>
+            <div style={{ fontSize: 11, color: T.muted, marginTop: 6 }}>
+              Google Maps is recommended. LinkedIn results may vary.
             </div>
           </div>
 

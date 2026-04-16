@@ -84,15 +84,15 @@ Deno.serve(async (req) => {
           status: 'new',
         }))
       } else if (s === 'linkedin') {
-        const items = await runApifyAndWait('UwSdACBp7ymaGUJjS', {
-          searchUrl: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(industry)}+${encodeURIComponent(city)}`,
+        const items = await runApifyAndWait('taHaRcqil3scbchuI', {
+          keyword: `${industry} ${city}`,
           maxResults: Math.min(limit, 20),
         }, apifyKey)
-        return items.map(item => ({
-          name: (item.name as string) || '',
-          website: (item.website as string) || '',
-          city: (item.location as string) || city,
-          industry,
+        return items.filter((item: Record<string, unknown>) => item.name || item.companyName).map(item => ({
+          name: ((item.name || item.companyName) as string) || '',
+          website: (item.website || item.companyWebsite as string) || '',
+          city: (item.location || item.headquarter as string) || city,
+          industry: (item.industry as string) || industry,
           source: 'linkedin',
           status: 'new',
         }))
