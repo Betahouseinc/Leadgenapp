@@ -64,22 +64,7 @@ export default function ScrapeModal({ onClose, onDone }) {
       }
 
       setDone(true)
-
-      // Poll leads table every 10s — refresh dashboard when new leads arrive
-      const { data: before } = await supabase.from('leads').select('id', { count: 'exact' })
-      const beforeCount = before?.length || 0
-      let polls = 0
-      let pollId
-      pollId = setInterval(async () => {
-        polls++
-        const { data: after } = await supabase.from('leads').select('id', { count: 'exact' })
-        const afterCount = after?.length || 0
-        if (afterCount > beforeCount || polls >= 36) {
-          clearInterval(pollId)
-          onDone()
-          onClose()
-        }
-      }, 10000)
+      setTimeout(() => { onDone(); onClose() }, 2000)
 
     } catch (err) {
       setError(err.message)
@@ -200,7 +185,7 @@ export default function ScrapeModal({ onClose, onDone }) {
 
           {done && (
             <div style={{ color: T.teal, fontSize: 13, marginBottom: 12, fontWeight: 600 }}>
-              ✓ Scrape started! Leads will appear in 5–10 minutes. This window will close automatically.
+              ✓ Scrape complete! Loading leads…
             </div>
           )}
 
