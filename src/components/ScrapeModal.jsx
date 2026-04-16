@@ -56,7 +56,6 @@ export default function ScrapeModal({ onClose, onDone }) {
         }
       )
 
-      clearInterval(interval)
       setProgress(100)
 
       if (!res.ok) {
