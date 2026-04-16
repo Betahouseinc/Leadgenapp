@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
     if (sources.includes('gmaps')) {
       tasks.push(triggerApify(
-        'apify~google-maps-scraper',
+        'nwua9Gu5YrADL7ZDj',
         {
           searchStringsArray: [`${industry} companies in ${city} India`],
           maxCrawledPlaces: Math.min(limit, 20),
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     if (sources.includes('linkedin')) {
       tasks.push(triggerApify(
-        'curious_coder~linkedin-company-search-export',
+        'UwSdACBp7ymaGUJjS',
         {
           searchUrl: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(industry)}+${encodeURIComponent(city)}`,
           maxResults: Math.min(limit, 20),
