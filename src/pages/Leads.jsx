@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
@@ -407,6 +407,9 @@ export default function Leads() {
             </table>
           )}
         </div>
+
+        {/* FAQ Section */}
+        <FAQ />
       </div>
 
       {/* Bottom action bar */}
@@ -451,6 +454,130 @@ export default function Leads() {
           onDone={fetchLeads}
         />
       )}
+    </div>
+  )
+}
+
+const FAQ_ITEMS = [
+  {
+    q: 'How does the lead scraping work?',
+    a: 'We run your search on Google Maps using Apify, pulling business name, phone, website, address, and category. Results are scored by Gemini AI and saved to your account instantly.',
+  },
+  {
+    q: 'How is the AI score calculated?',
+    a: 'Gemini AI evaluates each lead\'s data completeness, industry relevance, and online presence to assign a score from 0–100. Leads above 70 are considered high quality.',
+  },
+  {
+    q: 'Can I export my leads to Excel?',
+    a: 'Yes — select any leads using the checkboxes and click "Export Excel" in the bottom bar. You can also export all filtered results without selecting anything.',
+  },
+  {
+    q: 'What does each lead status mean?',
+    a: '"New" = freshly scraped. "Contacted" = you\'ve reached out. "Qualified" = confirmed interest or fit. "Rejected" = not a good match. Update statuses from the dropdown in each row.',
+  },
+  {
+    q: 'Why am I seeing leads from other searches?',
+    a: 'All your scrapes accumulate in one place so you can filter across them. Use the industry filter, source pill, and score slider to narrow down to what you need.',
+  },
+  {
+    q: 'What happens when I hit my lead limit?',
+    a: 'New scrapes will be blocked until you upgrade. Your existing leads remain accessible. Go to Pricing to upgrade your plan at any time.',
+  },
+  {
+    q: 'Is my data private?',
+    a: 'Yes. Each account has full isolation — you only ever see your own leads. No other user can access your data.',
+  },
+]
+
+function FAQ() {
+  const [open, setOpen] = useState(null)
+  const toggle = useCallback((i) => setOpen(prev => prev === i ? null : i), [])
+
+  return (
+    <div style={{ marginTop: 48 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#2C2416', letterSpacing: '-0.3px' }}>
+          Frequently asked questions
+        </div>
+        <div style={{ fontSize: 13, color: '#9C8E7A', marginTop: 4 }}>
+          Everything you need to know about using LeadgenAI.
+        </div>
+      </div>
+
+      <div style={{
+        background: '#FFFFFF',
+        border: '0.5px solid rgba(0,0,0,0.12)',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}>
+        {FAQ_ITEMS.map((item, i) => (
+          <div
+            key={i}
+            style={{ borderTop: i === 0 ? 'none' : '0.5px solid rgba(0,0,0,0.08)' }}
+          >
+            <button
+              onClick={() => toggle(i)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                gap: 16,
+              }}
+            >
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#2C2416', lineHeight: 1.4 }}>
+                {item.q}
+              </span>
+              <span style={{
+                flexShrink: 0,
+                fontSize: 18,
+                color: '#2563EB',
+                fontWeight: 300,
+                transition: 'transform 0.2s',
+                transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)',
+                display: 'inline-block',
+              }}>+</span>
+            </button>
+
+            {open === i && (
+              <div style={{
+                padding: '0 20px 16px',
+                fontSize: 14,
+                color: '#5C5240',
+                lineHeight: 1.7,
+              }}>
+                {item.a}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        marginTop: 16,
+        padding: '14px 20px',
+        background: '#EFF6FF',
+        border: '0.5px solid rgba(37,99,235,0.2)',
+        borderRadius: 8,
+        fontSize: 13,
+        color: '#2563EB',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <span>Still have questions?</span>
+        <a
+          href="mailto:betahouseincorporation@gmail.com"
+          style={{ fontWeight: 600, color: '#2563EB', textDecoration: 'underline' }}
+        >
+          Email us
+        </a>
+      </div>
     </div>
   )
 }
