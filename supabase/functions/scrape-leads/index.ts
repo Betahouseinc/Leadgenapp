@@ -5,10 +5,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const INDUSTRY_SEARCH_MAP: Record<string, string> = {
+  'Real Estate':                  'real estate agency',
+  'IT Software':                  'software company',
+  'EdTech':                       'edtech education technology company',
+  'FinTech':                      'fintech financial technology startup',
+  'Social Media Marketing':       'social media marketing agency',
+  'Digital Marketing':            'digital marketing agency',
+  'Media & Production':           'media production company',
+  'Manufacturing':                'manufacturing company',
+  'Healthcare':                   'healthcare clinic hospital',
+  'Retail':                       'retail store chain',
+  'Education':                    'school college university',
+  'Pharma':                       'pharmaceutical company',
+  'Logistics & Supply Chain':     'logistics supply chain company',
+  'Food & Beverage':              'food beverage company restaurant chain',
+  'E-commerce':                   'ecommerce online retail company',
+  'Construction & Infrastructure':'construction infrastructure company',
+  'Legal Services':               'law firm legal services',
+  'HR & Staffing':                'hr staffing recruitment agency',
+  'Events & Entertainment':       'event management entertainment company',
+  'Travel & Hospitality':         'travel agency hotel hospitality',
+}
+
 async function runApifyAndWait(actorId: string, input: unknown, apiKey: string): Promise<Record<string, unknown>[]> {
-  // Start run and wait up to 120s for it to finish
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}&waitForFinish=120`,
+    `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}&waitForFinish=55`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,19 +39,22 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
   )
   if (!runRes.ok) throw new Error(`Apify run failed: ${await runRes.text()}`)
   const { data: run } = await runRes.json()
-
-  if (run.status !== 'SUCCEEDED') throw new Error(`Apify run ${run.status}`)
-
-  // Fetch dataset items
+  if (run.status !== 'SUCCEEDED') throw new Error(`Apify actor ${run.status}`)
   const dataRes = await fetch(
     `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${apiKey}`
   )
+  if (!dataRes.ok) throw new Error('Failed to fetch Apify dataset')
   return await dataRes.json()
 }
 
-async function enrichWithGemini(lead: Record<string, unknown>, geminiKey: string) {
-  const prompt = `Given this business data: ${JSON.stringify(lead)}. Return JSON only with fields: industry (classify into: Real estate / IT Software / Manufacturing / Healthcare / Retail / Education / Pharma), score (0-100 based on completeness and relevance), summary (one line, max 12 words). No explanation.`
-
+async function enrichWithGemini(lead: Record<string, unknown>, geminiKey: string, industry: string) {
+  const industryList = Object.keys(INDUSTRY_SEARCH_MAP).join(' / ')
+  const prompt = `Given this business data: ${JSON.stringify(lead)}.
+Return JSON only with these exact fields:
+- industry: classify into one of: ${industryList}
+- score: integer 0-100 (higher = more complete: has phone, website, address, reviews)
+- summary: one line description max 12 words
+No explanation, no markdown, just raw JSON.`
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
@@ -42,59 +67,57 @@ async function enrichWithGemini(lead: Record<string, unknown>, geminiKey: string
         }),
       }
     )
-    if (!res.ok) return {}
+    if (!res.ok) return { industry, score: 40, summary: '' }
     const body = await res.json()
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-    return JSON.parse(text)
+    const parsed = JSON.parse(text)
+    return {
+      industry: parsed.industry || industry,
+      score: typeof parsed.score === 'number' ? parsed.score : 40,
+      summary: parsed.summary || '',
+    }
   } catch {
-    return {}
+    return { industry, score: 40, summary: '' }
   }
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://dbmtdeensqawntawaoyf.supabase.co'
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  const db = createClient(supabaseUrl, supabaseKey)
+
+  let scrapeRunId: string | null = null
+  let userId: string | null = null
+
   try {
     const { industry, city, sources, limit } = await req.json()
     const apifyKey = Deno.env.get('APIFY_API_KEY') || ''
     const geminiKey = Deno.env.get('GEMINI_API_KEY') || ''
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://dbmtdeensqawntawaoyf.supabase.co'
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-    const db = createClient(supabaseUrl, supabaseKey)
 
-    // Get user from auth header
     const authHeader = req.headers.get('Authorization') || ''
     const token = authHeader.replace('Bearer ', '')
     const { data: { user } } = await db.auth.getUser(token)
-    const userId = user?.id
+    userId = user?.id || null
 
-    // Check usage limit
-    if (userId) {
-      const { data: profile } = await db
-        .from('profiles')
-        .select('leads_used, plans(leads_per_month)')
-        .eq('id', userId)
-        .single()
+    const searchTerm = INDUSTRY_SEARCH_MAP[industry] || industry
 
-      if (profile) {
-        const maxLeads = (profile.plans as { leads_per_month: number })?.leads_per_month
-        if (maxLeads !== -1 && profile.leads_used >= maxLeads) {
-          return new Response(
-            JSON.stringify({ error: 'Lead limit reached. Please upgrade your plan.' }),
-            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
-      }
-    }
+    // Create scrape_run record
+    const { data: runRow } = await db
+      .from('scrape_runs')
+      .insert({ user_id: userId, industry, city, sources, limit_requested: limit, status: 'running' })
+      .select('id')
+      .single()
+    if (runRow) scrapeRunId = runRow.id
 
     let raw: Record<string, unknown>[] = []
 
-    // Run scrapers in parallel
-    const tasks = sources.map(async (s: string) => {
+    const tasks = (sources as string[]).map(async (s) => {
       if (s === 'gmaps') {
         const items = await runApifyAndWait('nwua9Gu5YrADL7ZDj', {
-          searchStringsArray: [`${industry} companies in ${city} India`],
-          maxCrawledPlaces: Math.min(limit, 20),
+          searchStringsArray: [`${searchTerm} in ${city} India`],
+          maxCrawledPlaces: Math.min(limit, 40),
           language: 'en',
           maxImages: 0,
           maxReviews: 0,
@@ -103,24 +126,33 @@ Deno.serve(async (req) => {
           name: (item.title as string) || '',
           phone: (item.phone as string) || '',
           website: (item.website as string) || '',
+          address: (item.address as string) || '',
+          rating: (item.totalScore as number) || null,
+          review_count: (item.reviewsCount as number) || null,
           city,
-          industry: (item.categoryName as string) || industry,
+          industry,
           source: 'gmaps',
           status: 'new',
+          user_id: userId,
+          scrape_run_id: scrapeRunId,
         }))
       } else if (s === 'linkedin') {
         const items = await runApifyAndWait('taHaRcqil3scbchuI', {
-          keyword: `${industry} ${city}`,
-          maxResults: Math.min(limit, 20),
+          keyword: `${searchTerm} ${city}`,
+          maxResults: Math.min(limit, 40),
         }, apifyKey)
-        return items.filter((item: Record<string, unknown>) => item.name || item.companyName).map(item => ({
-          name: ((item.name || item.companyName) as string) || '',
-          website: (item.website || item.companyWebsite as string) || '',
-          city: (item.location || item.headquarter as string) || city,
-          industry: (item.industry as string) || industry,
-          source: 'linkedin',
-          status: 'new',
-        }))
+        return items
+          .filter((item: Record<string, unknown>) => item.name || item.companyName)
+          .map((item: Record<string, unknown>) => ({
+            name: ((item.name || item.companyName) as string) || '',
+            website: ((item.website || item.companyWebsite) as string) || '',
+            city: ((item.location || item.headquarter) as string) || city,
+            industry,
+            source: 'linkedin',
+            status: 'new',
+            user_id: userId,
+            scrape_run_id: scrapeRunId,
+          }))
       }
       return []
     })
@@ -130,7 +162,7 @@ Deno.serve(async (req) => {
       if (r.status === 'fulfilled') raw = raw.concat(r.value)
     }
 
-    // Dedup
+    // Dedup by name+city
     const seen = new Set<string>()
     const unique = raw.filter(l => {
       const key = `${String(l.name).toLowerCase()}|${String(l.city).toLowerCase()}`
@@ -140,35 +172,56 @@ Deno.serve(async (req) => {
     })
 
     // Enrich with Gemini
-    const enriched = await Promise.all(
-      unique.map(async lead => {
-        const ai = await enrichWithGemini(lead, geminiKey)
-        return { ...lead, ...ai }
-      })
-    )
+    const enriched: Record<string, unknown>[] = []
+    for (const lead of unique) {
+      const ai = await enrichWithGemini(lead, geminiKey, industry)
+      enriched.push({ ...lead, ...ai })
+    }
 
-    // Add user_id to each lead
-    const leadsWithUser = enriched.map(l => ({ ...l, user_id: userId || null }))
-
-    // Upsert to DB
-    if (leadsWithUser.length > 0) {
-      const { error } = await db
+    // Insert leads
+    let savedCount = 0
+    if (enriched.length > 0) {
+      const { data: inserted, error: insertErr } = await db
         .from('leads')
-        .upsert(leadsWithUser, { onConflict: 'name,city', ignoreDuplicates: false })
-      if (error) console.error('Upsert error:', error)
+        .insert(enriched)
+        .select('id')
 
-      // Update usage counter
-      if (userId) {
-        await db.rpc('increment_leads_used', { user_id: userId, amount: leadsWithUser.length })
+      if (insertErr) {
+        console.error('Insert error:', insertErr.message)
+        // Fallback: upsert ignoring duplicates
+        const { data: upserted } = await db
+          .from('leads')
+          .upsert(enriched, { onConflict: 'name,city', ignoreDuplicates: true })
+          .select('id')
+        savedCount = upserted?.length || 0
+      } else {
+        savedCount = inserted?.length || 0
+      }
+
+      if (userId && savedCount > 0) {
+        await db.rpc('increment_leads_used', { user_id: userId, amount: savedCount })
       }
     }
 
+    if (scrapeRunId) {
+      await db
+        .from('scrape_runs')
+        .update({ status: 'completed', leads_found: enriched.length, leads_saved: savedCount })
+        .eq('id', scrapeRunId)
+    }
+
     return new Response(
-      JSON.stringify({ success: true, count: enriched.length }),
+      JSON.stringify({ success: true, count: enriched.length, saved: savedCount, run_id: scrapeRunId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {
-    console.error(err)
+    console.error('scrape-leads error:', err)
+    if (scrapeRunId) {
+      await db
+        .from('scrape_runs')
+        .update({ status: 'failed', error_message: (err as Error).message })
+        .eq('id', scrapeRunId)
+    }
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
