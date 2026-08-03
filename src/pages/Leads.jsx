@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
+import { LEAD_STATUSES, normaliseStatus, statusMeta } from '../constants/leadStatus'
+import { exportCsv, exportExcel } from '../utils/exportLeads'
 import StatsBar from '../components/StatsBar'
 import LeadDrawer from '../components/LeadDrawer'
 import ScrapeModal from '../components/ScrapeModal'
@@ -20,7 +21,28 @@ const T = {
 
 const INDUSTRIES = ['All', 'Real estate', 'IT Software', 'Manufacturing', 'Healthcare', 'Retail', 'Education', 'Pharma']
 const SOURCES = ['All', 'Google Maps']
-const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'rejected']
+const SORTS = [
+  { value: 'newest',      label: 'Newest first',  col: 'created_at', asc: false },
+  { value: 'oldest',      label: 'Oldest first',  col: 'created_at', asc: true },
+  { value: 'score_desc',  label: 'Highest score', col: 'score',      asc: false },
+  { value: 'score_asc',   label: 'Lowest score',  col: 'score',      asc: true },
+  { value: 'name_asc',    label: 'Name A-Z',      col: 'name',       asc: true },
+]
+
+const PAGE = 1000
+
+function relativeTime(v) {
+  if (!v) return null
+  const then = new Date(v)
+  if (Number.isNaN(then.getTime())) return null
+  const days = Math.floor((Date.now() - then.getTime()) / 86400000)
+  if (days <= 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months} mo ago`
+  return `${Math.floor(months / 12)} yr ago`
+}
 
 function sourceBadge(source) {
   const isGmaps = source === 'gmaps' || source === 'Google Maps'
@@ -66,7 +88,15 @@ export default function Leads() {
   const [industry, setIndustry] = useState('All')
   const [source, setSource] = useState('All')
   const [minScore, setMinScore] = useState(0)
+  const [status, setStatus] = useState('All')
+  const [sort, setSort] = useState('newest')
   const [profile, setProfile] = useState(null)
+  const [notesOpen, setNotesOpen] = useState(null)
+  const [noteDraft, setNoteDraft] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
+  const [noteMsg, setNoteMsg] = useState(null)
+  const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(null)
 
   // Auth guard + load profile
   useEffect(() => {
@@ -81,17 +111,39 @@ export default function Leads() {
     })
   }, [navigate])
 
-  const fetchLeads = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error) setLeads(data || [])
-    setLoading(false)
-  }
+  const buildQuery = useCallback(() => {
+    const s = SORTS.find(x => x.value === sort) || SORTS[0]
+    let q = supabase.from('leads').select('*')
+    if (status !== 'All') q = q.eq('status', status)
+    return q.order(s.col, { ascending: s.asc, nullsFirst: false })
+  }, [status, sort])
 
-  useEffect(() => { fetchLeads() }, [])
+  // Supabase caps a request at 1000 rows; page through so filters and exports
+  // always operate on the complete set, never a silent first page.
+  const fetchAllRows = useCallback(async () => {
+    const out = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await buildQuery().range(from, from + PAGE - 1)
+      if (error) throw error
+      out.push(...(data || []))
+      if (!data || data.length < PAGE) break
+    }
+    return out
+  }, [buildQuery])
+
+  const fetchLeads = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      setLeads(await fetchAllRows())
+    } catch (e) {
+      setError(e.message || 'Could not load leads. Please refresh.')
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchAllRows])
+
+  useEffect(() => { fetchLeads() }, [fetchLeads])
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
@@ -122,35 +174,55 @@ export default function Leads() {
     })
   }
 
-  const updateStatus = async (ids, status) => {
-    await supabase.from('leads').update({ status }).in('id', ids)
-    setLeads(prev => prev.map(l => ids.includes(l.id) ? { ...l, status } : l))
+  const applyStatus = async (ids, next) => {
+    setError(null)
+    const { error: e } = await supabase.from('leads').update({ status: next }).in('id', ids)
+    if (e) { setError(`Could not update status: ${e.message}`); return }
+    // last_contacted_at is stamped by a DB trigger, so re-read to reflect it.
+    const { data } = await supabase.from('leads').select('*').in('id', ids)
+    const byId = Object.fromEntries((data || []).map(r => [r.id, r]))
+    setLeads(prev => prev.map(l => byId[l.id] ? byId[l.id] : l))
   }
 
-  const updateRowStatus = async (id, status) => {
-    await supabase.from('leads').update({ status }).eq('id', id)
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l))
+  const updateStatus = (ids, next) => applyStatus(ids, next)
+  const updateRowStatus = (id, next) => applyStatus([id], next)
+
+  const openNotes = (lead) => {
+    if (notesOpen === lead.id) { setNotesOpen(null); return }
+    setNotesOpen(lead.id)
+    setNoteDraft(lead.notes || '')
+    setNoteMsg(null)
   }
 
-  const exportExcel = () => {
-    const rows = selected.size > 0 ? filtered.filter(l => selected.has(l.id)) : filtered
-    const data = rows.map(l => ({
-      Name: l.name || '',
-      Company: l.company || '',
-      Email: l.email || '',
-      Phone: l.phone || '',
-      Industry: l.industry || '',
-      Source: l.source || '',
-      City: l.city || '',
-      Score: l.score ?? '',
-      Status: l.status || '',
-      'Created At': l.created_at ? new Date(l.created_at).toLocaleDateString() : '',
-    }))
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Leads')
-    const date = new Date().toISOString().slice(0, 10)
-    XLSX.writeFile(wb, `leads-export-${date}.xlsx`)
+  const saveNote = async (id) => {
+    if (noteSaving) return
+    setNoteSaving(true)
+    setNoteMsg(null)
+    const { error: e } = await supabase.from('leads').update({ notes: noteDraft }).eq('id', id)
+    setNoteSaving(false)
+    if (e) { setNoteMsg({ ok: false, text: `Not saved: ${e.message}` }); return }
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, notes: noteDraft } : l))
+    setNoteMsg({ ok: true, text: 'Saved' })
+    setTimeout(() => setNoteMsg(null), 2000)
+  }
+
+  const runExport = async (kind, scope) => {
+    setError(null)
+    setExporting(kind)
+    try {
+      let rows
+      if (scope === 'selected') {
+        rows = filtered.filter(l => selected.has(l.id))
+      } else {
+        rows = filtered.length === leads.length ? filtered : filtered
+      }
+      if (!rows.length) { setError('Nothing to export.'); return }
+      kind === 'csv' ? exportCsv(rows) : exportExcel(rows)
+    } catch (e) {
+      setError(`Export failed: ${e.message}`)
+    } finally {
+      setExporting(null)
+    }
   }
 
   const handleLogout = async () => {
@@ -283,6 +355,18 @@ export default function Leads() {
             {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
           </select>
 
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+            style={selectStyle}
+            aria-label="Filter by status"
+          >
+            <option value="All">All statuses</option>
+            {LEAD_STATUSES.map(st => (
+              <option key={st.value} value={st.value}>{st.label}</option>
+            ))}
+          </select>
+
           {/* Source pills */}
           <div style={{ display: 'flex', gap: 6 }}>
             {SOURCES.map(s => (
@@ -303,17 +387,57 @@ export default function Leads() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
-            <span style={{ fontSize: 12, color: T.muted }}>Min score: {minScore}</span>
-            <input
-              type="range"
-              min={0} max={100} step={5}
-              value={minScore}
-              onChange={e => setMinScore(Number(e.target.value))}
-              style={{ accentColor: T.blue, width: 90 }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: T.muted }}>Min score: {minScore}</span>
+              <input
+                type="range"
+                min={0} max={100} step={5}
+                value={minScore}
+                onChange={e => setMinScore(Number(e.target.value))}
+                style={{ accentColor: T.blue, width: 90 }}
+              />
+            </div>
+            <select
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+              style={selectStyle}
+              aria-label="Sort leads"
+            >
+              {SORTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
           </div>
         </div>
+
+        {error && (
+          <div style={{
+            marginBottom: 12, padding: '10px 14px', borderRadius: 8,
+            background: '#FEE2E2', border: '0.5px solid rgba(185,28,28,0.25)',
+            color: '#B91C1C', fontSize: 13,
+          }}>{error}</div>
+        )}
+
+        {/* Export all filtered — visible when nothing is hand-selected */}
+        {!loading && selected.size === 0 && filtered.length > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+            marginBottom: 12, padding: '10px 14px',
+            background: T.surface, border: `0.5px solid ${T.border}`, borderRadius: 8,
+          }}>
+            <span style={{ fontSize: 13, color: T.ink2 }}>
+              Export all {filtered.length} result{filtered.length === 1 ? '' : 's'}
+            </span>
+            <button onClick={() => runExport('csv', 'all')} disabled={!!exporting} style={ghostBtn}>
+              {exporting === 'csv' ? 'Preparing…' : 'CSV'}
+            </button>
+            <button onClick={() => runExport('xlsx', 'all')} disabled={!!exporting} style={ghostBtn}>
+              {exporting === 'xlsx' ? 'Preparing…' : 'Excel'}
+            </button>
+            <span style={{ fontSize: 11, color: T.muted, marginLeft: 'auto' }}>
+              Tick rows to export a subset
+            </span>
+          </div>
+        )}
 
         {/* Table */}
         <div style={{
@@ -349,12 +473,14 @@ export default function Leads() {
                   <Th>Score</Th>
                   <Th>City</Th>
                   <Th>Status</Th>
+                  <Th>Last contacted</Th>
+                  <Th style={{ width: 44 }}>Notes</Th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(lead => (
+                  <Fragment key={lead.id}>
                   <tr
-                    key={lead.id}
                     onClick={() => setDrawer(lead)}
                     style={{
                       borderBottom: `0.5px solid ${T.border}`,
@@ -386,22 +512,89 @@ export default function Leads() {
                     <Td>{lead.city || '—'}</Td>
                     <Td onClick={e => e.stopPropagation()}>
                       <select
-                        value={lead.status || 'new'}
+                        value={normaliseStatus(lead.status)}
                         onChange={e => updateRowStatus(lead.id, e.target.value)}
                         style={{
                           padding: '3px 7px',
                           border: `0.5px solid ${T.border}`,
                           borderRadius: 6,
                           fontSize: 12,
-                          background: T.bg,
-                          color: T.ink,
+                          background: statusMeta(lead.status).bg,
+                          color: statusMeta(lead.status).color,
+                          fontWeight: 600,
                           cursor: 'pointer',
                         }}
                       >
-                        {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                        {LEAD_STATUSES.map(st => (
+                          <option key={st.value} value={st.value}>{st.label}</option>
+                        ))}
                       </select>
                     </Td>
+                    <Td>
+                      <span style={{ color: lead.last_contacted_at ? T.ink2 : T.muted, fontSize: 12 }}>
+                        {relativeTime(lead.last_contacted_at) || '—'}
+                      </span>
+                    </Td>
+                    <Td onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => openNotes(lead)}
+                        title={lead.notes ? 'Edit notes' : 'Add notes'}
+                        style={{
+                          border: `0.5px solid ${lead.notes ? T.blue : T.border}`,
+                          background: lead.notes ? T.blueL : 'transparent',
+                          color: lead.notes ? T.blue : T.muted,
+                          borderRadius: 6, cursor: 'pointer',
+                          padding: '3px 8px', fontSize: 12, fontWeight: 600, lineHeight: 1.4,
+                        }}
+                      >{lead.notes ? '✎' : '+'}</button>
+                    </Td>
                   </tr>
+                  {notesOpen === lead.id && (
+                    <tr>
+                      <td colSpan={11} style={{ padding: '0 14px 14px', background: T.bg }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <textarea
+                            value={noteDraft}
+                            onChange={e => setNoteDraft(e.target.value)}
+                            onClick={e => e.stopPropagation()}
+                            placeholder={`Notes on ${lead.name || 'this lead'} — call outcomes, follow-up dates, context…`}
+                            rows={3}
+                            style={{
+                              width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                              padding: '9px 11px', fontSize: 13, lineHeight: 1.5,
+                              fontFamily: 'inherit', color: T.ink, background: T.surface,
+                              border: `0.5px solid ${T.border}`, borderRadius: 8, outline: 'none',
+                            }}
+                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <button
+                              onClick={e => { e.stopPropagation(); saveNote(lead.id) }}
+                              disabled={noteSaving}
+                              style={{
+                                padding: '6px 14px', background: T.blue, color: '#FFF',
+                                border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                                cursor: noteSaving ? 'wait' : 'pointer', opacity: noteSaving ? 0.7 : 1,
+                              }}
+                            >{noteSaving ? 'Saving…' : 'Save notes'}</button>
+                            <button
+                              onClick={e => { e.stopPropagation(); setNotesOpen(null) }}
+                              style={{
+                                padding: '6px 12px', background: 'none',
+                                border: `0.5px solid ${T.border}`, borderRadius: 8,
+                                fontSize: 12, color: T.ink2, cursor: 'pointer',
+                              }}
+                            >Close</button>
+                            {noteMsg && (
+                              <span style={{ fontSize: 12, color: noteMsg.ok ? T.teal : '#B91C1C' }}>
+                                {noteMsg.text}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -429,8 +622,10 @@ export default function Leads() {
             {selected.size} selected
           </span>
           <ActionBtn onClick={() => updateStatus(selectedIds, 'contacted')}>Mark contacted</ActionBtn>
+          <ActionBtn onClick={() => updateStatus(selectedIds, 'follow_up')} accent="#B45309">Follow-up</ActionBtn>
           <ActionBtn onClick={() => updateStatus(selectedIds, 'qualified')} accent={T.teal}>Mark qualified</ActionBtn>
-          <ActionBtn onClick={exportExcel}>Export Excel</ActionBtn>
+          <ActionBtn onClick={() => runExport('csv', 'selected')}>Export CSV</ActionBtn>
+          <ActionBtn onClick={() => runExport('xlsx', 'selected')}>Export Excel</ActionBtn>
           <button
             onClick={() => setSelected(new Set())}
             style={{
@@ -469,11 +664,11 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Can I export my leads to Excel?',
-    a: 'Yes — select any leads using the checkboxes and click "Export Excel" in the bottom bar. You can also export all filtered results without selecting anything.',
+    a: 'Yes — export to Excel or CSV. Select leads with the checkboxes and use the bottom bar, or export every filtered result at once using the Export all bar above the table.',
   },
   {
     q: 'What does each lead status mean?',
-    a: '"New" = freshly scraped. "Contacted" = you\'ve reached out. "Qualified" = confirmed interest or fit. "Rejected" = not a good match. Update statuses from the dropdown in each row.',
+    a: 'New = freshly scraped. Contacted = you\'ve reached out. Follow-up = needs another touch. Qualified = confirmed interest or fit. Not interested = ruled out. Converted = won. Update from the dropdown in each row; the Last contacted date fills in automatically.',
   },
   {
     q: 'Why am I seeing leads from other searches?',
@@ -623,6 +818,17 @@ function ActionBtn({ children, onClick, accent = '#2563EB' }) {
       }}
     >{children}</button>
   )
+}
+
+const ghostBtn = {
+  padding: '5px 12px',
+  background: '#FAFAF7',
+  border: '0.5px solid rgba(37,99,235,0.35)',
+  borderRadius: 8,
+  fontSize: 12,
+  fontWeight: 600,
+  color: '#2563EB',
+  cursor: 'pointer',
 }
 
 const selectStyle = {

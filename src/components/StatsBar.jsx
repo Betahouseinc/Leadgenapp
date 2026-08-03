@@ -1,3 +1,5 @@
+import { ENGAGED_STATUSES, normaliseStatus } from '../constants/leadStatus'
+
 const T = {
   surface: '#FFFFFF',
   border: 'rgba(0,0,0,0.12)',
@@ -9,7 +11,7 @@ const T = {
   tealL: '#E0F5F0',
 }
 
-function StatCard({ label, value, accent = T.blue, accentL = T.blueL }) {
+function StatCard({ label, value, accent = T.blue }) {
   return (
     <div style={{
       background: T.surface,
@@ -33,15 +35,25 @@ export default function StatsBar({ leads }) {
   const total = leads.length
   const today = new Date().toDateString()
   const newToday = leads.filter(l => new Date(l.created_at).toDateString() === today).length
-  const qualified = leads.filter(l => l.status === 'qualified').length
-  const avgScore = total > 0 ? Math.round(leads.reduce((s, l) => s + (l.score || 0), 0) / total) : 0
+
+  // "High score" reflects lead quality from AI scoring; the pipeline count is
+  // tracked separately so an empty pipeline never looks like zero good leads.
+  const highScore = leads.filter(l => (l.score || 0) >= 70).length
+  const engaged = leads.filter(l => ENGAGED_STATUSES.includes(normaliseStatus(l.status))).length
+
+  // Unscored leads (AI scoring failed) would drag the average down misleadingly.
+  const scored = leads.filter(l => typeof l.score === 'number' && l.score > 0)
+  const avgScore = scored.length > 0
+    ? Math.round(scored.reduce((s, l) => s + l.score, 0) / scored.length)
+    : 0
 
   return (
     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
       <StatCard label="Total Leads" value={total} accent={T.blue} />
-      <StatCard label="New Today" value={newToday} accent="#2D7DD2" accentL="#E8F2FC" />
-      <StatCard label="Qualified" value={qualified} accent={T.teal} accentL={T.tealL} />
-      <StatCard label="Avg Score" value={avgScore} accent="#7C3AED" accentL="#EDE9FE" />
+      <StatCard label="New Today" value={newToday} accent="#2D7DD2" />
+      <StatCard label="High Score (70+)" value={highScore} accent={T.teal} />
+      <StatCard label="In Pipeline" value={engaged} accent="#B45309" />
+      <StatCard label="Avg Score" value={avgScore} accent="#7C3AED" />
     </div>
   )
 }
