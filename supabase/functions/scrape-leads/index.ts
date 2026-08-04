@@ -8,14 +8,14 @@ const corsHeaders = {
 const INDUSTRY_SEARCH_MAP: Record<string, string> = {
   'Real Estate':                  'real estate agency',
   'IT Software':                  'software company',
-  'EdTech':                       'edtech education technology company',
-  'FinTech':                      'fintech financial technology startup',
+  'EdTech':                       'education technology company',
+  'FinTech':                      'financial technology company',
   'Social Media Marketing':       'social media marketing agency',
   'Digital Marketing':            'digital marketing agency',
-  'Media & Production':           'media production company',
+  'Media & Production':           'media production studio',
   'Manufacturing':                'manufacturing company',
-  'Healthcare':                   'healthcare clinic hospital',
-  'Retail':                       'retail store chain',
+  'Healthcare':                   'clinic',
+  'Retail':                       'retail store',
   'Education':                    'school college university',
   'Pharma':                       'pharmaceutical company',
   'Logistics & Supply Chain':     'logistics supply chain company',
@@ -29,8 +29,10 @@ const INDUSTRY_SEARCH_MAP: Record<string, string> = {
 }
 
 async function runApifyAndWait(actorId: string, input: unknown, apiKey: string): Promise<Record<string, unknown>[]> {
+  // Start the run without blocking. waitForFinish caps at 60s, but enabling
+  // scrapeContacts pushes many runs past that, so we poll instead of waiting once.
   const runRes = await fetch(
-    `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}&waitForFinish=55`,
+    `https://api.apify.com/v2/acts/${actorId}/runs?token=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,13 +40,111 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
     }
   )
   if (!runRes.ok) throw new Error(`Apify run failed: ${await runRes.text()}`)
-  const { data: run } = await runRes.json()
+  const { data: started } = await runRes.json()
+
+  const TERMINAL = ['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']
+  const DEADLINE_MS = 6 * 60 * 1000   // hard stop well under the function limit
+  const POLL_MS = 5000
+  const begun = Date.now()
+
+  let run = started
+  while (!TERMINAL.includes(run.status)) {
+    if (Date.now() - begun > DEADLINE_MS) {
+      throw new Error(`Apify run still ${run.status} after ${Math.round((Date.now()-begun)/1000)}s - aborting`)
+    }
+    await new Promise(r => setTimeout(r, POLL_MS))
+    const poll = await fetch(`https://api.apify.com/v2/actor-runs/${run.id}?token=${apiKey}`)
+    if (!poll.ok) throw new Error('Apify status check failed')
+    run = (await poll.json()).data
+  }
+
   if (run.status !== 'SUCCEEDED') throw new Error(`Apify actor ${run.status}`)
+  console.log(`Apify run ${run.id} finished in ${Math.round((Date.now()-begun)/1000)}s`)
+
   const dataRes = await fetch(
     `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${apiKey}`
   )
   if (!dataRes.ok) throw new Error('Failed to fetch Apify dataset')
-  return await dataRes.json()
+  const items = await dataRes.json()
+  console.log(`Apify returned ${items.length} items`)
+  return items
+}
+
+async function enrichBatchWithGemini(leads: Record<string, unknown>[], geminiKey: string, industry: string) {
+  const industryList = Object.keys(INDUSTRY_SEARCH_MAP).join(' / ')
+  const slim = leads.map((l, i) => ({
+    i,
+    name: l.name,
+    website: l.website,
+    phone: l.phone,
+    address: l.address,
+    rating: l.rating,
+    review_count: l.review_count,
+  }))
+  const prompt = `You are scoring sales leads. For EACH business below, return an object with:
+- i: the same index given
+- industry: classify into one of: ${industryList}
+- score: integer 0-100. Higher = better lead. Reward having a website, phone, address, high rating and many reviews. Vary the scores meaningfully; do NOT give everything the same number.
+- summary: one line description, max 12 words
+
+Businesses: ${JSON.stringify(slim)}
+
+Return JSON only: an array of objects. No markdown, no explanation.`
+
+  const attempt = async (modelName: string) => {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: 'application/json' },
+        }),
+      }
+    )
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('Gemini batch error', modelName, res.status, errText.substring(0, 300))
+      return null
+    }
+    const body = await res.json()
+    const text = body.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
+    try {
+      const parsed = JSON.parse(text)
+      return Array.isArray(parsed) ? parsed : (parsed.leads || parsed.results || null)
+    } catch (e) {
+      console.error('Gemini batch parse failed', String(e))
+      return null
+    }
+  }
+
+  // primary model, then a lighter-quota fallback, with one short retry for 429s
+  let arr = await attempt('gemini-3.6-flash')
+  if (!arr) {
+    await new Promise(r => setTimeout(r, 3000))
+    arr = await attempt('gemini-3.5-flash-lite')
+  }
+  if (!arr) {
+    console.error('Gemini scoring FAILED for all models - leads saved unscored')
+    return leads.map(l => ({ ...l, industry, score: 40, summary: '[AI scoring unavailable]' }))
+  }
+
+  const byIndex = new Map<number, Record<string, unknown>>()
+  for (const o of arr) {
+    if (o && typeof o.i === 'number') byIndex.set(o.i, o)
+  }
+  return leads.map((l, i) => {
+    const ai = byIndex.get(i)
+    if (!ai) return { ...l, industry, score: 40, summary: '[AI scoring unavailable]' }
+    const s = Number(ai.score)
+    return {
+      ...l,
+      industry: (ai.industry as string) || industry,
+      score: Number.isFinite(s) ? Math.max(0, Math.min(100, Math.round(s))) : 40,
+      summary: (ai.summary as string) || '',
+    }
+  })
 }
 
 async function enrichWithGemini(lead: Record<string, unknown>, geminiKey: string, industry: string) {
@@ -57,17 +157,17 @@ Return JSON only with these exact fields:
 No explanation, no markdown, just raw JSON.`
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { responseMimeType: 'application/json' },
         }),
       }
     )
-    if (!res.ok) return { industry, score: 40, summary: '' }
+    if (!res.ok) { const errText = await res.text(); console.error('Gemini API error', res.status, errText); return { industry, score: 40, summary: '[AI scoring unavailable]' } }
     const body = await res.json()
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
     const parsed = JSON.parse(text)
@@ -101,6 +201,39 @@ Deno.serve(async (req) => {
     const { data: { user } } = await db.auth.getUser(token)
     userId = user?.id || null
 
+    // --- Quota enforcement (reject if request exceeds remaining allowance) ---
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const { data: quota, error: quotaErr } = await db.rpc('check_lead_quota', { p_user_id: userId })
+    if (quotaErr) {
+      console.error('Quota check failed', quotaErr)
+      return new Response(JSON.stringify({ error: 'Could not verify your plan usage. Please try again.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    // 'allowed' is the lower of what's left today and what's left this month,
+    // so a daily cap bounds even an unlimited monthly plan.
+    const allowed = quota?.allowed ?? 0
+    if (limit > allowed) {
+      const daily = quota?.blocked_by === 'daily' || (quota?.day_remaining ?? 0) < (quota?.remaining ?? 0)
+      const message = daily
+        ? `You have ${quota?.day_remaining} of ${quota?.day_limit} leads left today on the ${quota?.plan} plan. You requested ${limit}. Your daily allowance resets at midnight IST, or you can upgrade for a higher limit.`
+        : `You have ${quota?.remaining} of ${quota?.limit} leads left this month on the ${quota?.plan} plan. You requested ${limit}. Reduce the number or upgrade your plan.`
+
+      return new Response(JSON.stringify({
+        error: 'quota_exceeded',
+        scope: daily ? 'daily' : 'monthly',
+        message,
+        plan: quota?.plan,
+        limit: quota?.limit,
+        used: quota?.used,
+        remaining: quota?.remaining,
+        day_limit: quota?.day_limit,
+        day_used: quota?.day_used,
+        day_remaining: quota?.day_remaining,
+        allowed,
+      }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const searchTerm = INDUSTRY_SEARCH_MAP[industry] || industry
 
     // Create scrape_run record
@@ -116,14 +249,23 @@ Deno.serve(async (req) => {
     const tasks = (sources as string[]).map(async (s) => {
       if (s === 'gmaps') {
         const items = await runApifyAndWait('nwua9Gu5YrADL7ZDj', {
-          searchStringsArray: [`${searchTerm} in ${city} India`],
-          maxCrawledPlaces: Math.min(limit, 40),
+          // Keep the search term clean and pass location separately — embedding the
+          // city in the query makes Google Maps match literally and starves results.
+          searchStringsArray: [searchTerm],
+          locationQuery: `${city}, India`,
+          maxCrawledPlacesPerSearch: Math.min(limit, 200),
           language: 'en',
+          // Visits each business website on Apify's infra to pull business emails
+          // and social profiles. Runs in parallel there, so it can't time out here.
+          scrapeContacts: true,
+          skipClosedPlaces: true,
           maxImages: 0,
           maxReviews: 0,
         }, apifyKey)
         return items.map(item => ({
           name: (item.title as string) || '',
+          // scrapeContacts returns emails[] on the item; take the first business address.
+          email: (Array.isArray(item.emails) ? (item.emails[0] as string) : '') || '',
           phone: (item.phone as string) || '',
           website: (item.website as string) || '',
           address: (item.address as string) || '',
@@ -172,11 +314,7 @@ Deno.serve(async (req) => {
     })
 
     // Enrich with Gemini
-    const enriched: Record<string, unknown>[] = []
-    for (const lead of unique) {
-      const ai = await enrichWithGemini(lead, geminiKey, industry)
-      enriched.push({ ...lead, ...ai })
-    }
+    const enriched: Record<string, unknown>[] = await enrichBatchWithGemini(unique, geminiKey, industry)
 
     // Insert leads
     let savedCount = 0
