@@ -28,6 +28,8 @@ export default function ScrapeModal({ onClose, onDone }) {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
+  const [overQuota, setOverQuota] = useState(false)
+  const [saved, setSaved] = useState(null)
   const [done, setDone] = useState(false)
 
   const toggleSource = (key) => setSources(s => ({ ...s, [key]: !s[key] }))
@@ -37,6 +39,8 @@ export default function ScrapeModal({ onClose, onDone }) {
     if (selectedSources.length === 0) { setError('Select at least one source'); return }
 
     setError('')
+    setOverQuota(false)
+    setSaved(null)
     setRunning(true)
     setProgress(30)
 
@@ -58,13 +62,21 @@ export default function ScrapeModal({ onClose, onDone }) {
 
       setProgress(100)
 
+      const body = await res.json().catch(() => null)
+
       if (!res.ok) {
-        const body = await res.text()
-        throw new Error(body || `HTTP ${res.status}`)
+        // The backend returns a readable `message` for quota rejections (402).
+        // Surface that rather than dumping the raw response at the user.
+        if (res.status === 402) {
+          setOverQuota(true)
+          throw new Error(body?.message || 'You have reached your plan limit for this month.')
+        }
+        throw new Error(body?.message || body?.error || `Something went wrong (HTTP ${res.status}). Please try again.`)
       }
 
+      setSaved(typeof body?.saved === 'number' ? body.saved : null)
       setDone(true)
-      setTimeout(() => { onDone(); onClose() }, 2000)
+      setTimeout(() => { onDone(); onClose() }, 2200)
 
     } catch (err) {
       setError(err.message)
@@ -178,7 +190,11 @@ export default function ScrapeModal({ onClose, onDone }) {
 
           {done && (
             <div style={{ color: T.teal, fontSize: 13, marginBottom: 12, fontWeight: 600 }}>
-              ✓ Scrape complete! Loading leads…
+              {saved === 0
+                ? '✓ Finished — no new leads. Every result was already in your list.'
+                : saved != null
+                  ? `✓ Added ${saved} new lead${saved === 1 ? '' : 's'}. Loading…`
+                  : '✓ Scrape complete! Loading leads…'}
             </div>
           )}
 
@@ -187,11 +203,31 @@ export default function ScrapeModal({ onClose, onDone }) {
               background: T.errorL,
               border: `0.5px solid ${T.error}`,
               borderRadius: 8,
-              padding: '9px 12px',
+              padding: '10px 12px',
               fontSize: 13,
               color: T.error,
               marginBottom: 12,
-            }}>{error}</div>
+              lineHeight: 1.55,
+            }}>
+              {error}
+              {overQuota && (
+                <div style={{ marginTop: 8 }}>
+                  <a
+                    href="/pricing"
+                    style={{
+                      display: 'inline-block',
+                      padding: '5px 12px',
+                      background: T.error,
+                      color: '#FFF',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >See plans →</a>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Buttons */}

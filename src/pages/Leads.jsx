@@ -91,12 +91,22 @@ export default function Leads() {
   const [status, setStatus] = useState('All')
   const [sort, setSort] = useState('newest')
   const [profile, setProfile] = useState(null)
+  const [quota, setQuota] = useState(null)
   const [notesOpen, setNotesOpen] = useState(null)
   const [noteDraft, setNoteDraft] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
   const [noteMsg, setNoteMsg] = useState(null)
   const [error, setError] = useState(null)
   const [exporting, setExporting] = useState(null)
+
+  // Usage is read from the same RPC the edge function enforces with, so the
+  // meter can never disagree with what the backend actually allows.
+  const refreshQuota = useCallback(async (userId) => {
+    const id = userId || (await supabase.auth.getSession()).data.session?.user?.id
+    if (!id) return
+    const { data } = await supabase.rpc('check_lead_quota', { p_user_id: id })
+    if (data) setQuota(data)
+  }, [])
 
   // Auth guard + load profile
   useEffect(() => {
@@ -107,9 +117,11 @@ export default function Leads() {
         .select('*, plans(*)')
         .eq('id', session.user.id)
         .single()
-      if (data) setProfile(data)
+      if (data) setProfile({ ...data, email: data.email || session.user.email })
+
+      refreshQuota(session.user.id)
     })
-  }, [navigate])
+  }, [navigate, refreshQuota])
 
   const buildQuery = useCallback(() => {
     const s = SORTS.find(x => x.value === sort) || SORTS[0]
@@ -256,35 +268,65 @@ export default function Leads() {
           LeadGen
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {/* Usage meter */}
-          {profile && (
+          {/* Usage meter — values come from check_lead_quota so this always
+              matches what the backend will actually permit. */}
+          {quota && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>
-                  {profile.leads_used} / {profile.plans?.leads_per_month === -1 ? '∞' : profile.plans?.leads_per_month} leads
+                  {quota.used} / {quota.unlimited ? '∞' : quota.limit} leads this month
                   {' · '}
-                  <span style={{ fontWeight: 600, color: T.blue }}>{profile.plans?.name}</span>
+                  <span style={{ fontWeight: 600, color: T.blue }}>{profile?.plans?.name || quota.plan}</span>
                 </div>
-                <div style={{ width: 100, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 4 }}>
+                <div style={{ width: 110, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 4 }}>
                   <div style={{
                     height: '100%',
                     borderRadius: 4,
-                    background: T.blue,
-                    width: profile.plans?.leads_per_month === -1 ? '10%' :
-                      `${Math.min(100, (profile.leads_used / profile.plans?.leads_per_month) * 100)}%`,
+                    background: !quota.unlimited && quota.remaining === 0 ? '#B91C1C'
+                      : !quota.unlimited && quota.remaining <= quota.limit * 0.2 ? '#B45309'
+                      : T.blue,
+                    width: quota.unlimited ? '10%'
+                      : `${Math.min(100, (quota.used / Math.max(quota.limit, 1)) * 100)}%`,
+                    transition: 'width 200ms',
                   }} />
                 </div>
               </div>
-              <Link to="/pricing" style={{
-                padding: '4px 10px',
-                background: T.blueL,
-                color: T.blue,
-                border: `0.5px solid ${T.blue}`,
-                borderRadius: 20,
-                fontSize: 11,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}>Upgrade</Link>
+              {!quota.unlimited && (
+                <Link to="/pricing" style={{
+                  padding: '4px 10px',
+                  background: quota.remaining === 0 ? T.blue : T.blueL,
+                  color: quota.remaining === 0 ? '#FFF' : T.blue,
+                  border: `0.5px solid ${T.blue}`,
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}>Upgrade</Link>
+              )}
+            </div>
+          )}
+
+          {profile && (
+            <div
+              title={profile.email}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, marginRight: 2 }}
+            >
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%',
+                background: T.blue, color: '#FFF',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11.5, fontWeight: 700, flexShrink: 0,
+              }}>
+                {(profile.full_name || profile.email || '?').trim().charAt(0).toUpperCase()}
+              </div>
+              <span style={{
+                fontSize: 12.5, color: T.ink2, fontWeight: 600,
+                maxWidth: 130, overflow: 'hidden',
+                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {profile.full_name || profile.email}
+              </span>
             </div>
           )}
           <button
@@ -646,7 +688,7 @@ export default function Leads() {
       {scrapeOpen && (
         <ScrapeModal
           onClose={() => setScrapeOpen(false)}
-          onDone={fetchLeads}
+          onDone={() => { fetchLeads(); refreshQuota() }}
         />
       )}
     </div>
