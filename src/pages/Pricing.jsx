@@ -215,9 +215,35 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 40, fontSize: 13, color: T.muted }}>
-          All plans include AI-powered lead scoring and Excel export. <br />
+        <div style={{ textAlign: 'center', marginTop: 40, fontSize: 13, color: T.muted, lineHeight: 1.9 }}>
+          All plans include AI-powered lead scoring, and CSV &amp; Excel export.<br />
+          Prices are in Indian Rupees (₹) and billed in advance. Monthly lead allowances reset
+          at the start of each calendar month and do not carry over.<br />
           Questions? Email <a href="mailto:betahouseincorporation@gmail.com" style={{ color: T.blue }}>betahouseincorporation@gmail.com</a>
+        </div>
+
+        <div style={{
+          textAlign: 'center', marginTop: 28, paddingTop: 20,
+          borderTop: `0.5px solid ${T.border}`,
+          fontSize: 12.5, color: T.muted,
+          display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap',
+        }}>
+          {[
+            ['Terms of Use', '/legal/terms'],
+            ['Privacy Policy', '/legal/privacy'],
+            ['Refund & Cancellation', '/legal/refunds'],
+            ['Contact', '/legal/contact'],
+          ].map(([label, to]) => (
+            <button
+              key={to}
+              onClick={() => navigate(to)}
+              style={{ background: 'none', border: 'none', fontSize: 12.5, color: T.ink2, cursor: 'pointer', padding: 0 }}
+            >{label}</button>
+          ))}
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 16, fontSize: 12.5, color: T.muted }}>
+          Powered by <a href="https://exommerce.online" style={{ color: T.blue, textDecoration: 'none', fontWeight: 600 }}>Exommerce.online</a>
         </div>
       </div>
     </div>

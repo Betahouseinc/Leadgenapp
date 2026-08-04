@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx'
 import Leads from './pages/Leads.jsx'
 import Signup from './pages/Signup.jsx'
 import Pricing from './pages/Pricing.jsx'
+import Legal from './pages/Legal.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -17,6 +18,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/signup" element={<Signup />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/legal" element={<Navigate to="/legal/terms" replace />} />
+        <Route path="/legal/:doc" element={<Legal />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

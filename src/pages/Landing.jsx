@@ -352,12 +352,31 @@ export default function Landing() {
         <div style={{ fontSize: 13, color: T.muted }}>
           © 2025 Betahouse Inc. · <a href="mailto:betahouseincorporation@gmail.com" style={{ color: T.blue, textDecoration: 'none' }}>betahouseincorporation@gmail.com</a>
         </div>
-        <div style={{ display: 'flex', gap: 20 }}>
-          <button onClick={() => navigate('/pricing')} style={{ background: 'none', border: 'none', fontSize: 13, color: T.ink2, cursor: 'pointer' }}>Pricing</button>
-          <button onClick={() => navigate('/login')} style={{ background: 'none', border: 'none', fontSize: 13, color: T.ink2, cursor: 'pointer' }}>Sign in</button>
-          <button onClick={() => navigate('/signup')} style={{ background: 'none', border: 'none', fontSize: 13, color: T.ink2, cursor: 'pointer' }}>Sign up</button>
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+          {[
+            ['Pricing', '/pricing'],
+            ['Terms', '/legal/terms'],
+            ['Privacy', '/legal/privacy'],
+            ['Refunds', '/legal/refunds'],
+            ['Contact', '/legal/contact'],
+            ['Sign in', '/login'],
+          ].map(([label, to]) => (
+            <button
+              key={to}
+              onClick={() => navigate(to)}
+              style={{ background: 'none', border: 'none', fontSize: 13, color: T.ink2, cursor: 'pointer', padding: 0 }}
+            >{label}</button>
+          ))}
         </div>
       </footer>
+
+      <div style={{
+        background: T.surface, borderTop: `0.5px solid ${T.border}`,
+        padding: '14px 24px', textAlign: 'center',
+        fontSize: 12.5, color: T.muted,
+      }}>
+        Powered by <a href="https://exommerce.online" style={{ color: T.blue, textDecoration: 'none', fontWeight: 600 }}>Exommerce.online</a>
+      </div>
     </div>
   )
 }
