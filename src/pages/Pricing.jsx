@@ -72,7 +72,7 @@ export default function Pricing() {
     if (!session) { navigate('/login?redirect=pricing'); return }
     if (plan.id === 'free') { navigate('/leads'); return }
     if (plan.id === 'agency') {
-      window.location.href = 'mailto:betahouseincorporation@gmail.com?subject=Agency Plan Enquiry'
+      window.location.href = 'mailto:admin@exommerce.online?subject=Agency Plan Enquiry'
       return
     }
 
@@ -219,7 +219,7 @@ export default function Pricing() {
           All plans include AI-powered lead scoring, and CSV &amp; Excel export.<br />
           Prices are in Indian Rupees (₹) and billed in advance. Monthly lead allowances reset
           at the start of each calendar month and do not carry over.<br />
-          Questions? Email <a href="mailto:betahouseincorporation@gmail.com" style={{ color: T.blue }}>betahouseincorporation@gmail.com</a>
+          Questions? Email <a href="mailto:admin@exommerce.online" style={{ color: T.blue }}>admin@exommerce.online</a>
         </div>
 
         <div style={{

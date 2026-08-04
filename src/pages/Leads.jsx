@@ -767,7 +767,7 @@ function FAQ() {
       }}>
         <span>Still have questions?</span>
         <a
-          href="mailto:betahouseincorporation@gmail.com"
+          href="mailto:admin@exommerce.online"
           style={{ fontWeight: 600, color: '#2563EB', textDecoration: 'underline' }}
         >
           Email us

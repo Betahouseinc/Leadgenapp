@@ -350,7 +350,7 @@ export default function Landing() {
       }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: T.blue }}>LeadgenAI</div>
         <div style={{ fontSize: 13, color: T.muted }}>
-          © 2025 Betahouse Inc. · <a href="mailto:betahouseincorporation@gmail.com" style={{ color: T.blue, textDecoration: 'none' }}>betahouseincorporation@gmail.com</a>
+          © 2025 Betahouse Inc. · <a href="mailto:admin@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>admin@exommerce.online</a>
         </div>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           {[

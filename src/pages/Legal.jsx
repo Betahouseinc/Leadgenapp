@@ -13,7 +13,7 @@ const T = {
 
 const COMPANY = 'Betahouse Inc.'
 const BRAND = 'LeadgenAI'
-const SUPPORT = 'betahouseincorporation@gmail.com'
+const SUPPORT = 'admin@exommerce.online'
 const UPDATED = '4 August 2026'
 
 const LEGAL_PAGES = {
