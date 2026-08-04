@@ -15,14 +15,29 @@ const T = {
   errorL: '#FDEAEA',
 }
 
-const INDUSTRIES = [
-  'Real estate', 'IT Software', 'Manufacturing',
-  'Healthcare', 'Retail', 'Education', 'Pharma',
+// Keys must match INDUSTRY_SEARCH_MAP in supabase/functions/scrape-leads.
+// Anything not in that map falls back to searching the raw label, which gives
+// noticeably worse Google Maps results — keep the two lists in step.
+const INDUSTRIES = {
+  'Technology': ['IT Software', 'EdTech', 'FinTech', 'E-commerce'],
+  'Marketing & Media': ['Digital Marketing', 'Social Media Marketing', 'Media & Production', 'Events & Entertainment'],
+  'Business Services': ['HR & Staffing', 'Legal Services', 'Logistics & Supply Chain', 'Travel & Hospitality'],
+  'Traditional': ['Real Estate', 'Manufacturing', 'Construction & Infrastructure', 'Food & Beverage'],
+  'Social Sectors': ['Healthcare', 'Education', 'Pharma', 'Retail'],
+}
+
+const INDIAN_CITIES = [
+  'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
+  'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
+  'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
 ]
 
 export default function ScrapeModal({ onClose, onDone }) {
-  const [industry, setIndustry] = useState('Real estate')
+  const [selectedCategory, setSelectedCategory] = useState('Traditional')
+  const [industry, setIndustry] = useState('Real Estate')
   const [city, setCity] = useState('Bengaluru')
+  const [useCustomCity, setUseCustomCity] = useState(false)
+  const [customCity, setCustomCity] = useState('')
   const [sources, setSources] = useState({ gmaps: true })
   const [limit, setLimit] = useState(50)
   const [running, setRunning] = useState(false)
@@ -34,9 +49,17 @@ export default function ScrapeModal({ onClose, onDone }) {
 
   const toggleSource = (key) => setSources(s => ({ ...s, [key]: !s[key] }))
 
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category)
+    setIndustry(INDUSTRIES[category][0])
+  }
+
   const handleRun = async () => {
     const selectedSources = Object.entries(sources).filter(([, v]) => v).map(([k]) => k)
     if (selectedSources.length === 0) { setError('Select at least one source'); return }
+
+    const finalCity = useCustomCity ? customCity.trim() : city
+    if (!finalCity) { setError('Please enter a city'); return }
 
     setError('')
     setOverQuota(false)
@@ -56,7 +79,7 @@ export default function ScrapeModal({ onClose, onDone }) {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ industry, city, sources: selectedSources, limit }),
+          body: JSON.stringify({ industry, city: finalCity, sources: selectedSources, limit }),
         }
       )
 
@@ -108,12 +131,27 @@ export default function ScrapeModal({ onClose, onDone }) {
             padding: '28px 32px',
             width: '100%',
             maxWidth: 440,
+            maxHeight: '90vh',
+            overflowY: 'auto',
             fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
           <div style={{ fontSize: 17, fontWeight: 700, color: T.ink, marginBottom: 20 }}>
             Run lead scrape
           </div>
+
+          {/* Industry category */}
+          <label style={{ display: 'block', marginBottom: 14 }}>
+            <div style={labelStyle}>Industry Category</div>
+            <select
+              value={selectedCategory}
+              onChange={e => handleCategoryChange(e.target.value)}
+              disabled={running}
+              style={inputStyle}
+            >
+              {Object.keys(INDUSTRIES).map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          </label>
 
           {/* Industry */}
           <label style={{ display: 'block', marginBottom: 14 }}>
@@ -124,20 +162,44 @@ export default function ScrapeModal({ onClose, onDone }) {
               disabled={running}
               style={inputStyle}
             >
-              {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+              {INDUSTRIES[selectedCategory].map(i => <option key={i}>{i}</option>)}
             </select>
           </label>
 
           {/* City */}
           <label style={{ display: 'block', marginBottom: 14 }}>
             <div style={labelStyle}>City</div>
-            <input
-              type="text"
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              disabled={running}
-              style={inputStyle}
-            />
+            {!useCustomCity ? (
+              <select
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                disabled={running}
+                style={inputStyle}
+              >
+                {INDIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={customCity}
+                onChange={e => setCustomCity(e.target.value)}
+                placeholder="Enter city name"
+                disabled={running}
+                style={inputStyle}
+              />
+            )}
+            <div
+              onClick={() => !running && setUseCustomCity(!useCustomCity)}
+              style={{
+                marginTop: 6,
+                fontSize: 12,
+                color: T.blue,
+                cursor: running ? 'not-allowed' : 'pointer',
+                fontWeight: 500,
+              }}
+            >
+              {useCustomCity ? '← Use dropdown' : '+ Custom city'}
+            </div>
           </label>
 
           {/* Source */}
