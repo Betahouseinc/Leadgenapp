@@ -32,14 +32,14 @@ const INDIAN_CITIES = [
   'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
 ]
 
-export default function ScrapeModal({ onClose, onDone }) {
+export default function ScrapeModal({ onClose, onDone, quota }) {
   const [selectedCategory, setSelectedCategory] = useState('Traditional')
   const [industry, setIndustry] = useState('Real Estate')
   const [city, setCity] = useState('Bengaluru')
   const [useCustomCity, setUseCustomCity] = useState(false)
   const [customCity, setCustomCity] = useState('')
   const [sources, setSources] = useState({ gmaps: true })
-  const [limit, setLimit] = useState(50)
+  const [limit, setLimit] = useState(10)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [elapsed, setElapsed] = useState(0)
@@ -54,6 +54,17 @@ export default function ScrapeModal({ onClose, onDone }) {
     setSelectedCategory(category)
     setIndustry(INDUSTRIES[category][0])
   }
+
+  // Never let the user ask for more than the backend will allow. Presenting an
+  // impossible option and then rejecting it is a worse experience than simply
+  // not offering it — a new free user hitting an error on their first click has
+  // no way to tell a broken product from a plan limit.
+  const allowed = quota ? (quota.unlimited ? 200 : Math.min(quota.allowed ?? 0, 200)) : 200
+  const sliderMax = Math.max(allowed, 0)
+
+  useEffect(() => {
+    if (sliderMax > 0 && limit > sliderMax) setLimit(sliderMax)
+  }, [sliderMax, limit])
 
   // The request is a single blocking call, so we cannot know the real stage.
   // Rather than fake precision, drive the label off elapsed time using the
@@ -249,12 +260,22 @@ export default function ScrapeModal({ onClose, onDone }) {
             </div>
             <input
               type="range"
-              min={10} max={200} step={10}
+              min={Math.min(10, sliderMax)} max={sliderMax} step={sliderMax < 10 ? 1 : 10}
               value={limit}
               onChange={e => setLimit(Number(e.target.value))}
-              disabled={running}
+              disabled={running || sliderMax === 0}
               style={{ width: '100%', accentColor: T.blue, marginTop: 6 }}
             />
+            {quota && !quota.unlimited && (
+              <div style={{ fontSize: 11.5, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+                {allowed === 0
+                  ? <span style={{ color: T.error }}>
+                      No leads left {quota.day_remaining === 0 ? 'today — resets at midnight IST' : 'this month'}.
+                    </span>
+                  : <>You can request up to {allowed} right now ({quota.remaining} left this month
+                      {quota.day_limit != null && `, ${quota.day_remaining} today`}).</>}
+              </div>
+            )}
           </div>
 
           {/* Progress bar */}

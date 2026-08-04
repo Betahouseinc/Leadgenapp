@@ -33,7 +33,13 @@ export default function Signup() {
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        // Without this the confirmation link falls back to the Site URL, which
+        // drops a freshly confirmed user on the marketing page with no sign
+        // they are actually signed in.
+        emailRedirectTo: `${window.location.origin}/leads`,
+      },
     })
     if (err) {
       setError(err.message)

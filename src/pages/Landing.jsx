@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 const T = {
   bg: '#FAFAF7',
@@ -51,6 +53,15 @@ const industries = ['Real Estate', 'Healthcare', 'Pharma', 'Retail', 'Finance', 
 
 export default function Landing() {
   const navigate = useNavigate()
+
+  // A confirmed user arriving from the email link lands here with a live
+  // session; without this they see the marketing page and assume signup failed.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate('/leads', { replace: true })
+    })
+  }, [navigate])
+
 
   return (
     <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: T.bg, color: T.ink }}>

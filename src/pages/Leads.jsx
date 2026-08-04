@@ -697,6 +697,7 @@ export default function Leads() {
       {drawer && <LeadDrawer lead={drawer} onClose={() => setDrawer(null)} />}
       {scrapeOpen && (
         <ScrapeModal
+          quota={quota}
           onClose={() => setScrapeOpen(false)}
           onDone={() => { fetchLeads(); refreshQuota() }}
         />
