@@ -15,6 +15,9 @@ dist-ssr
 # Claude settings (may contain secrets)
 .claude/settings.local.json
 
+# Credentials — never commit
+Creds.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
