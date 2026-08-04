@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
 const T = {
@@ -42,6 +42,7 @@ export default function ScrapeModal({ onClose, onDone }) {
   const [limit, setLimit] = useState(50)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState('')
   const [overQuota, setOverQuota] = useState(false)
   const [saved, setSaved] = useState(null)
@@ -54,6 +55,32 @@ export default function ScrapeModal({ onClose, onDone }) {
     setIndustry(INDUSTRIES[category][0])
   }
 
+  // The request is a single blocking call, so we cannot know the real stage.
+  // Rather than fake precision, drive the label off elapsed time using the
+  // timings we actually observe: Apify dominates, and enabling contact
+  // scraping roughly doubled it to 60-90s. Anything past 90s is honest about
+  // running long instead of pretending it is nearly done.
+  const stageFor = (secs) => {
+    if (secs < 4)  return { label: 'Starting search…',            pct: 8 }
+    if (secs < 12) return { label: 'Searching Google Maps…',       pct: 22 }
+    if (secs < 45) return { label: 'Collecting businesses…',       pct: 45 }
+    if (secs < 75) return { label: 'Finding emails from websites…', pct: 68 }
+    if (secs < 95) return { label: 'Scoring leads with AI…',        pct: 85 }
+    return { label: 'Still working — larger searches take longer…', pct: 92 }
+  }
+
+  useEffect(() => {
+    if (!running) return
+    const started = Date.now()
+    setElapsed(0)
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - started) / 1000)
+      setElapsed(secs)
+      setProgress(stageFor(secs).pct)
+    }, 500)
+    return () => clearInterval(id)
+  }, [running])
+
   const handleRun = async () => {
     const selectedSources = Object.entries(sources).filter(([, v]) => v).map(([k]) => k)
     if (selectedSources.length === 0) { setError('Select at least one source'); return }
@@ -65,7 +92,7 @@ export default function ScrapeModal({ onClose, onDone }) {
     setOverQuota(false)
     setSaved(null)
     setRunning(true)
-    setProgress(30)
+    setProgress(6)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -232,21 +259,49 @@ export default function ScrapeModal({ onClose, onDone }) {
 
           {/* Progress bar */}
           {(running || done) && (
-            <div style={{
-              background: T.bg,
-              border: `0.5px solid ${T.border}`,
-              borderRadius: 20,
-              height: 8,
-              overflow: 'hidden',
-              marginBottom: 16,
-            }}>
+            <div style={{ marginBottom: 16 }}>
+              {running && !done && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  marginBottom: 7, fontSize: 12.5,
+                }}>
+                  <span style={{ color: T.ink, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{
+                      width: 11, height: 11, borderRadius: '50%',
+                      border: `2px solid ${T.blue}`, borderTopColor: 'transparent',
+                      display: 'inline-block', animation: 'lgspin 0.7s linear infinite',
+                    }} />
+                    {stageFor(elapsed).label}
+                  </span>
+                  <span style={{ color: T.muted, fontVariantNumeric: 'tabular-nums' }}>
+                    {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+
               <div style={{
-                height: '100%',
-                width: `${progress}%`,
-                background: done ? T.teal : T.blue,
+                background: T.bg,
+                border: `0.5px solid ${T.border}`,
                 borderRadius: 20,
-                transition: 'width 0.4s ease, background 0.3s',
-              }} />
+                height: 8,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${progress}%`,
+                  background: done ? T.teal : T.blue,
+                  borderRadius: 20,
+                  transition: 'width 0.5s ease, background 0.3s',
+                }} />
+              </div>
+
+              {running && !done && (
+                <div style={{ fontSize: 11.5, color: T.muted, marginTop: 7, lineHeight: 1.5 }}>
+                  {elapsed < 95
+                    ? 'This usually takes 60–90 seconds. Please keep this window open.'
+                    : 'Taking longer than usual — still running. Please keep this window open.'}
+                </div>
+              )}
             </div>
           )}
 

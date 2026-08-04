@@ -109,3 +109,8 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Spinner for the scrape progress indicator */
+@keyframes lgspin {
+  to { transform: rotate(360deg); }
+}
