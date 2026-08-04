@@ -133,3 +133,78 @@ begin
   );
 end;
 $$ language plpgsql security definer;
+
+-- ---------------------------------------------------------------------------
+-- 7. Daily caps
+--
+-- The monthly allowance alone left "unlimited" plans with no ceiling at all,
+-- which is an uncapped third-party API liability rather than a generous plan.
+-- A daily cap bounds cost exposure and smooths usage. Numbers are deliberately
+-- generous: they are an abuse guard, not a behavioural lever, and only outliers
+-- should ever meet them.
+--
+-- The day boundary is Asia/Kolkata so "today" matches the customer's day.
+-- ---------------------------------------------------------------------------
+
+alter table plans add column if not exists leads_per_day int;
+
+update plans set leads_per_day = 5    where id = 'free';
+update plans set leads_per_day = 100  where id = 'starter';
+update plans set leads_per_day = 300  where id = 'pro';
+update plans set leads_per_day = 1000 where id = 'agency';
+
+create or replace function public.check_lead_quota(p_user_id uuid)
+returns json as $$
+declare
+  v_month_limit int;
+  v_day_limit   int;
+  v_month_used  int;
+  v_day_used    int;
+  v_plan        text;
+  v_month_rem   int;
+  v_day_rem     int;
+begin
+  select p.plan_id into v_plan from profiles p where p.id = p_user_id;
+  if v_plan is null then v_plan := 'free'; end if;
+
+  select pl.leads_per_month, coalesce(pl.leads_per_day, 999999)
+    into v_month_limit, v_day_limit
+  from plans pl where pl.id = v_plan;
+
+  if v_month_limit is null then v_month_limit := 10; end if;
+  if v_day_limit   is null then v_day_limit   := 5;  end if;
+
+  select
+    count(*) filter (where l.created_at >= date_trunc('month', now())),
+    count(*) filter (
+      where (l.created_at at time zone 'Asia/Kolkata')::date
+          = (now()         at time zone 'Asia/Kolkata')::date
+    )
+  into v_month_used, v_day_used
+  from leads l
+  where l.user_id = p_user_id
+    and l.created_at >= timestamptz '2026-08-04'
+    and coalesce(l.summary, '') not like '%unavailable%'
+    and coalesce(l.summary, '') <> '';
+
+  v_month_rem := case when v_month_limit < 0 then 999999
+                      else greatest(v_month_limit - v_month_used, 0) end;
+  v_day_rem   := greatest(v_day_limit - v_day_used, 0);
+
+  return json_build_object(
+    'plan',          v_plan,
+    'limit',         v_month_limit,
+    'used',          v_month_used,
+    'remaining',     v_month_rem,
+    'unlimited',     v_month_limit < 0,
+    'day_limit',     v_day_limit,
+    'day_used',      v_day_used,
+    'day_remaining', v_day_rem,
+    -- What the next scrape may actually request: the lower of the two.
+    'allowed',       least(v_month_rem, v_day_rem),
+    'blocked_by',    case when v_day_rem   <= 0 then 'daily'
+                          when v_month_rem <= 0 then 'monthly'
+                          else null end
+  );
+end;
+$$ language plpgsql security definer;

@@ -274,7 +274,12 @@ export default function Leads() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
               <div>
                 <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>
-                  {quota.used} / {quota.unlimited ? '∞' : quota.limit} leads this month
+                  {quota.used} / {quota.unlimited ? '∞' : quota.limit} this month
+                  {quota.day_limit != null && (
+                    <> · <span style={{ color: quota.day_remaining === 0 ? '#B91C1C' : T.muted }}>
+                      {quota.day_used} / {quota.day_limit} today
+                    </span></>
+                  )}
                   {' · '}
                   <span style={{ fontWeight: 600, color: T.blue }}>{profile?.plans?.name || quota.plan}</span>
                 </div>
@@ -282,20 +287,25 @@ export default function Leads() {
                   <div style={{
                     height: '100%',
                     borderRadius: 4,
-                    background: !quota.unlimited && quota.remaining === 0 ? '#B91C1C'
-                      : !quota.unlimited && quota.remaining <= quota.limit * 0.2 ? '#B45309'
+                    background: quota.allowed === 0 ? '#B91C1C'
+                      : quota.allowed <= 5 ? '#B45309'
                       : T.blue,
-                    width: quota.unlimited ? '10%'
-                      : `${Math.min(100, (quota.used / Math.max(quota.limit, 1)) * 100)}%`,
+                    // Track whichever ceiling is closer, so the bar reflects what
+                    // actually constrains the next scrape.
+                    width: (() => {
+                      const monthPct = quota.unlimited ? 0 : (quota.used / Math.max(quota.limit, 1)) * 100
+                      const dayPct = quota.day_limit ? (quota.day_used / Math.max(quota.day_limit, 1)) * 100 : 0
+                      return `${Math.max(4, Math.min(100, Math.max(monthPct, dayPct)))}%`
+                    })(),
                     transition: 'width 200ms',
                   }} />
                 </div>
               </div>
-              {!quota.unlimited && (
+              {(!quota.unlimited || quota.day_remaining === 0) && (
                 <Link to="/pricing" style={{
                   padding: '4px 10px',
-                  background: quota.remaining === 0 ? T.blue : T.blueL,
-                  color: quota.remaining === 0 ? '#FFF' : T.blue,
+                  background: quota.allowed === 0 ? T.blue : T.blueL,
+                  color: quota.allowed === 0 ? '#FFF' : T.blue,
                   border: `0.5px solid ${T.blue}`,
                   borderRadius: 20,
                   fontSize: 11,

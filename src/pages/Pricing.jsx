@@ -21,7 +21,8 @@ const PLANS = [
     name: 'Free',
     price: 0,
     leads: 10,
-    features: ['10 leads total', 'Google Maps scraping', 'AI scoring', 'Excel export'],
+    daily: 5,
+    features: ['10 leads/month', 'Up to 5 leads per day', 'Google Maps scraping', 'AI scoring', 'CSV & Excel export'],
     cta: 'Get started',
     highlight: false,
   },
@@ -30,7 +31,8 @@ const PLANS = [
     name: 'Starter',
     price: 999,
     leads: 500,
-    features: ['500 leads/month', 'Google Maps scraping', 'AI scoring + summary', 'Excel export', 'Email support'],
+    daily: 100,
+    features: ['500 leads/month', 'Up to 100 leads per day', 'Google Maps scraping', 'AI scoring + summary', 'CSV & Excel export', 'Email support'],
     cta: 'Start Starter',
     highlight: false,
   },
@@ -39,7 +41,8 @@ const PLANS = [
     name: 'Pro',
     price: 2999,
     leads: 2000,
-    features: ['2,000 leads/month', 'Google Maps scraping', 'AI scoring + summary', 'Excel export', 'Priority support', 'Saved searches'],
+    daily: 300,
+    features: ['2,000 leads/month', 'Up to 300 leads per day', 'Google Maps scraping', 'AI scoring + summary', 'CSV & Excel export', 'Priority support', 'Saved searches'],
     cta: 'Start Pro',
     highlight: true,
   },
@@ -48,7 +51,8 @@ const PLANS = [
     name: 'Agency',
     price: 7999,
     leads: -1,
-    features: ['Unlimited leads', 'Google Maps scraping', 'AI scoring + summary', 'Excel export', 'Dedicated support', 'Saved searches', 'Custom integrations'],
+    daily: 1000,
+    features: ['Unlimited leads per month', 'Up to 1,000 leads per day', 'Google Maps scraping', 'AI scoring + summary', 'CSV & Excel export', 'Dedicated support', 'Saved searches', 'Custom integrations'],
     cta: 'Contact us',
     highlight: false,
   },
@@ -219,6 +223,8 @@ export default function Pricing() {
           All plans include AI-powered lead scoring, and CSV &amp; Excel export.<br />
           Prices are in Indian Rupees (₹) and billed in advance. Monthly lead allowances reset
           at the start of each calendar month and do not carry over.<br />
+          Each plan also has a daily ceiling, which resets at midnight IST. It exists to keep
+          usage predictable and protect service quality for everyone.<br />
           Questions? Email <a href="mailto:admin@exommerce.online" style={{ color: T.blue }}>admin@exommerce.online</a>
         </div>
 
