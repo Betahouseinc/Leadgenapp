@@ -396,7 +396,7 @@ export default function Leads() {
               color: T.ink,
               background: T.bg,
               outline: 'none',
-              width: 220,
+              width: 'clamp(140px, 30vw, 220px)',
             }}
           />
           <select
@@ -439,7 +439,7 @@ export default function Leads() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 12, color: T.muted }}>Min score: {minScore}</span>
               <input
@@ -527,6 +527,7 @@ export default function Leads() {
                   <Th>Status</Th>
                   <Th>Last contacted</Th>
                   <Th style={{ width: 44 }}>Notes</Th>
+                  <Th>Date Added</Th>
                 </tr>
               </thead>
               <tbody>
@@ -601,6 +602,11 @@ export default function Leads() {
                       >{lead.notes ? '✎' : '+'}</button>
                     </Td>
                   </tr>
+                  <Td>
+                      <span style={{ fontSize: 11.5, color: T.muted, whiteSpace: 'nowrap' }}>
+                        {lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
+                      </span>
+                    </Td>
                   {notesOpen === lead.id && (
                     <tr>
                       <td colSpan={11} style={{ padding: '0 14px 14px', background: T.bg }}>
@@ -713,7 +719,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How is the AI score calculated?',
-    a: 'Gemini AI evaluates each lead\'s data completeness, industry relevance, and online presence to assign a score from 0–100. Leads above 70 are considered high quality.',
+    a: 'Each lead is scored 0–100 by Gemini AI based on profile completeness and outreach-readiness. 80–100 (green bar) means the business has a phone, website, strong rating and reviews — high priority. 60–79 (blue) has most details — worth contacting. Below 60 (red) has a sparse profile — lower priority. Gemini also writes a one-line summary explaining the score, visible in the AI Summary export column.',
   },
   {
     q: 'Can I export my leads to Excel?',
