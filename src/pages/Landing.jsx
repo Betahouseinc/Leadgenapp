@@ -79,14 +79,17 @@ export default function Landing() {
           <button
             onClick={() => navigate('/pricing')}
             style={{ background: 'none', border: 'none', fontSize: 14, fontWeight: 500, color: T.ink2, cursor: 'pointer', padding: '8px 12px' }}
+          aria-label="Pricing"
           >Pricing</button>
           <button
             onClick={() => navigate('/login')}
             style={{ background: 'none', border: `1px solid ${T.border}`, fontSize: 14, fontWeight: 500, color: T.ink, cursor: 'pointer', padding: '8px 16px', borderRadius: 8 }}
+          aria-label="Sign in"
           >Sign in</button>
           <button
             onClick={() => navigate('/signup')}
             style={{ background: T.blue, border: 'none', fontSize: 14, fontWeight: 600, color: '#FFF', cursor: 'pointer', padding: '8px 18px', borderRadius: 8 }}
+          aria-label="Get started free"
           >Get started free</button>
         </div>
       </nav>
@@ -122,12 +125,15 @@ export default function Landing() {
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => navigate('/signup')}
+            onMouseEnter={e => { e.currentTarget.style.background = T.blueD; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = T.blue; e.currentTarget.style.transform = 'none' }}
             style={{
               background: T.blue, color: '#FFF',
               border: 'none', borderRadius: 10,
               fontSize: 16, fontWeight: 700,
               padding: '14px 32px', cursor: 'pointer',
               boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
+              transition: 'all 0.15s ease',
             }}
           >Start for free →</button>
           <button
@@ -166,7 +172,7 @@ export default function Landing() {
               flex: 1, textAlign: 'center', fontSize: 12, color: T.muted,
               background: T.surface, borderRadius: 6, padding: '3px 12px',
               marginLeft: 12, maxWidth: 280, margin: '0 auto',
-            }}>leadgenapp.vercel.app/leads</div>
+            }}>leadgenai.exommerce.online/leads</div>
           </div>
           {/* fake dashboard */}
           <div style={{ padding: 24 }}>
@@ -298,9 +304,9 @@ export default function Landing() {
           <p style={{ fontSize: 16, color: T.ink2, marginBottom: 40 }}>No credit card needed. Get 10 leads free, then upgrade for more.</p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             {[
-              { name: 'Free', price: '₹0', desc: '10 leads total', highlight: false },
-              { name: 'Starter', price: '₹999/mo', desc: '500 leads/month', highlight: false },
-              { name: 'Pro', price: '₹2,999/mo', desc: '2,000 leads/month', highlight: true },
+              { name: 'Free', price: '₹0', desc: '10 leads/month', highlight: false },
+              { name: 'Starter', price: '₹999/mo', desc: '500 leads/month', highlight: true },
+              { name: 'Pro', price: '₹2,999/mo', desc: '2,000 leads/month', highlight: false },
               { name: 'Agency', price: '₹7,999/mo', desc: 'Unlimited leads', highlight: false },
             ].map(p => (
               <div key={p.name} style={{
@@ -342,11 +348,14 @@ export default function Landing() {
         </p>
         <button
           onClick={() => navigate('/signup')}
+          onMouseEnter={e => { e.currentTarget.style.background = T.blueL; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; e.currentTarget.style.transform = 'none' }}
           style={{
             background: '#FFF', color: T.blue,
             border: 'none', borderRadius: 10,
             fontSize: 16, fontWeight: 700,
             padding: '14px 32px', cursor: 'pointer',
+            transition: 'all 0.15s ease',
           }}
         >Get started free →</button>
       </section>
@@ -361,7 +370,7 @@ export default function Landing() {
       }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: T.blue }}>LeadgenAI</div>
         <div style={{ fontSize: 13, color: T.muted }}>
-          © 2025 Betahouse Inc. · <a href="mailto:admin@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>admin@exommerce.online</a>
+          © 2026 Betahouse Inc. · <a href="mailto:admin@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>admin@exommerce.online</a>
         </div>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           {[
