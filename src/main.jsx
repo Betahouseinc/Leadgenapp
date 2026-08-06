@@ -8,6 +8,7 @@ import Leads from './pages/Leads.jsx'
 import Signup from './pages/Signup.jsx'
 import Pricing from './pages/Pricing.jsx'
 import Legal from './pages/Legal.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/legal" element={<Navigate to="/legal/terms" replace />} />
         <Route path="/legal/:doc" element={<Legal />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
