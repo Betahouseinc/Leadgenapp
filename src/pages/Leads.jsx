@@ -255,7 +255,7 @@ export default function Leads() {
       <div style={{
         background: T.surface,
         borderBottom: `0.5px solid ${T.border}`,
-        padding: '0 24px',
+        padding: '0 clamp(12px, 3vw, 24px)',
         height: 52,
         display: 'flex',
         alignItems: 'center',
@@ -368,7 +368,7 @@ export default function Leads() {
       </div>
 
       {/* Main */}
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 24px 80px' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: 'clamp(12px, 3vw, 24px) clamp(12px, 3vw, 24px) 80px' }}>
         <StatsBar leads={leads} />
 
         {/* Filter bar */}

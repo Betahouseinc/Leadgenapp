@@ -18,8 +18,9 @@ function StatCard({ label, value, accent = T.blue }) {
       border: `0.5px solid ${T.border}`,
       borderRadius: 8,
       padding: '16px 20px',
-      flex: 1,
-      minWidth: 140,
+      flex: '1 1 calc(50% - 6px)',
+      minWidth: 120,
+      maxWidth: '100%',
     }}>
       <div style={{ fontSize: 12, color: T.ink2, marginBottom: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         {label}
@@ -48,7 +49,7 @@ export default function StatsBar({ leads }) {
     : 0
 
   return (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, alignItems: 'stretch' }}>
       <StatCard label="Total Leads" value={total} accent={T.blue} />
       <StatCard label="New Today" value={newToday} accent="#2D7DD2" />
       <StatCard label="High Score (70+)" value={highScore} accent={T.teal} />
