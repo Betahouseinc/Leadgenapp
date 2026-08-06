@@ -11,7 +11,7 @@ const T = {
   blueL: '#EFF6FF',
 }
 
-const COMPANY = 'Betahouse Inc.'
+const COMPANY = 'Exommerce.online'
 const BRAND = 'LeadgenAI'
 const SUPPORT = 'admin@exommerce.online'
 const UPDATED = '4 August 2026'
