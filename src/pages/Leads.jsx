@@ -291,7 +291,7 @@ export default function Leads() {
                       : quota.allowed <= 5 ? '#B45309'
                       : T.blue,
                     // Track whichever ceiling is closer, so the bar reflects what
-                    // actually constrains the next scrape.
+                    // actually constrains the next search.
                     width: (() => {
                       const monthPct = quota.unlimited ? 0 : (quota.used / Math.max(quota.limit, 1)) * 100
                       const dayPct = quota.day_limit ? (quota.day_used / Math.max(quota.day_limit, 1)) * 100 : 0
@@ -714,7 +714,7 @@ export default function Leads() {
 
 const FAQ_ITEMS = [
   {
-    q: 'How does the lead scraping work?',
+    q: 'How does the lead search work?',
     a: 'We search publicly available business directories for your keyword and location, pulling business name, phone, website, address, and category. Results are scored by our AI model and saved to your account instantly.',
   },
   {
