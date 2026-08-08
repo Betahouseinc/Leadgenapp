@@ -208,3 +208,13 @@ begin
   );
 end;
 $$ language plpgsql security definer;
+
+-- ---------------------------------------------------------------------------
+-- 8. Compliance timestamp (2026-08-08)
+--
+-- Stores when a user accepted the compliance checkbox on signup ("I confirm
+-- I will use exported data in compliance with applicable anti-spam,
+-- do-not-call, and data protection laws").
+-- ---------------------------------------------------------------------------
+
+alter table profiles add column if not exists terms_accepted_at timestamptz;

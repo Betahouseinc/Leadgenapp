@@ -75,3 +75,41 @@ See `migrations/20260804_leads_pipeline_and_quota.sql`. Notable:
 - Email coverage is bounded by website coverage. In a 20-lead Bengaluru retail
   sample only 4 businesses had websites, so at most 4 could yield an email.
   Higher-value segments (IT, pharma) perform considerably better.
+
+## 2026-08-08 — Compliance pass
+
+### Frontend (copy and content only, no functional changes)
+- All user-facing instances of "scrape/scraping" replaced with neutral phrasing
+  ("aggregates publicly available business directory data", "retrieve public
+  listings", etc.) in Landing.jsx and Leads.jsx FAQ
+- "Google Maps Scraping" feature card renamed "Business Directory Search"
+- "Gemini AI" softened to "our AI model" in feature cards and FAQ answers
+- Trademark disclaimer added to footer: "Google Maps and Gemini are trademarks
+  of Google LLC. LeadgenAI is not affiliated with, endorsed by, or sponsored
+  by Google."
+- OG/Twitter meta descriptions in index.html updated to remove "scrape" and
+  fix URL from leadgenapp.vercel.app to leadgenai.exommerce.online
+
+### Privacy Policy (Legal.jsx section 3)
+- Added paragraph acknowledging that publicly listed business data may
+  incidentally include personal data of identifiable individuals (sole
+  proprietors, personal mobile numbers listed as business contacts, names
+  in public reviews), and that such data is subject to the same section 8
+  rights and the same removal process (email admin@exommerce.online)
+
+### Signup (Signup.jsx)
+- Added required compliance checkbox: "I confirm I will use exported data in
+  compliance with applicable anti-spam, do-not-call, and data protection laws,
+  and that I am solely responsible for my outreach."
+- Submit button disabled until checkbox is ticked
+- Acceptance timestamp stored as `terms_accepted_at` in profiles table
+
+### Cookie consent (index.html, CookieConsent.jsx, main.jsx)
+- Google Analytics removed from unconditional load in index.html
+- window.__loadGA() function added — fires GA only after user accepts
+- Auto-loads GA if prior consent found in localStorage
+- CookieConsent banner component added (Accept analytics / Decline)
+- Consent persisted to localStorage as `leadgenai_cookie_consent`
+
+### Schema
+- `profiles.terms_accepted_at timestamptz` — stores compliance acceptance time
