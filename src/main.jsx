@@ -9,6 +9,7 @@ import Signup from './pages/Signup.jsx'
 import Pricing from './pages/Pricing.jsx'
 import Legal from './pages/Legal.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+import CookieConsent from './components/CookieConsent.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <CookieConsent />
     </BrowserRouter>
   </StrictMode>,
 )

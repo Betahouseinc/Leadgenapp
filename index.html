@@ -8,28 +8,43 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LeadgenAI — AI-Powered Lead Generation</title>
-    <meta name="description" content="Find qualified business leads in under 60 seconds. LeadgenAI scrapes Google Maps and scores every lead with Gemini AI." />
+    <meta name="description" content="Find qualified business leads in under 60 seconds. LeadgenAI aggregates publicly available business listings and scores every lead with AI." />
 
-    <!-- Open Graph (WhatsApp, Telegram, LinkedIn, Facebook) -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://leadgenapp.vercel.app/" />
+    <meta property="og:url" content="https://leadgenai.exommerce.online/" />
     <meta property="og:title" content="LeadgenAI — AI-Powered Lead Generation" />
-    <meta property="og:description" content="Find qualified business leads in under 60 seconds. Scrape Google Maps, score with AI, export to Excel." />
-    <meta property="og:image" content="https://leadgenapp.vercel.app/og-image.png" />
+    <meta property="og:description" content="Find qualified business leads in under 60 seconds. Retrieve public business listings, score with AI, export to Excel or CSV." />
+    <meta property="og:image" content="https://leadgenai.exommerce.online/og-image.png" />
 
     <!-- Twitter / X card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="LeadgenAI — AI-Powered Lead Generation" />
-    <meta name="twitter:description" content="Find qualified business leads in under 60 seconds. Scrape Google Maps, score with AI, export to Excel." />
-    <meta name="twitter:image" content="https://leadgenapp.vercel.app/og-image.png" />
-    <!-- Google Tag + GA4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GT-NMCG4HWT"></script>
+    <meta name="twitter:description" content="Find qualified business leads in under 60 seconds. Retrieve public business listings, score with AI, export to Excel or CSV." />
+    <meta name="twitter:image" content="https://leadgenai.exommerce.online/og-image.png" />
+
+    <!-- Google Analytics — loaded only after cookie consent (see CookieConsent component) -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'GT-NMCG4HWT');
-      gtag('config', 'G-ZY9GJDKR9Y');
+      window.__GA_IDS = ['GT-NMCG4HWT', 'G-ZY9GJDKR9Y'];
+      window.__loadGA = function() {
+        if (window.__gaLoaded) return;
+        window.__gaLoaded = true;
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__GA_IDS[0];
+        document.head.appendChild(s);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = gtag;
+        gtag('js', new Date());
+        window.__GA_IDS.forEach(function(id){ gtag('config', id); });
+      };
+      // Auto-load if consent was previously given
+      try {
+        if (localStorage.getItem('leadgenai_cookie_consent') === 'accepted') {
+          window.__loadGA();
+        }
+      } catch(e) {}
     </script>
   </head>
   <body>

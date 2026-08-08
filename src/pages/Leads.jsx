@@ -715,11 +715,11 @@ export default function Leads() {
 const FAQ_ITEMS = [
   {
     q: 'How does the lead scraping work?',
-    a: 'We run your search on Google Maps using Apify, pulling business name, phone, website, address, and category. Results are scored by Gemini AI and saved to your account instantly.',
+    a: 'We search publicly available business directories for your keyword and location, pulling business name, phone, website, address, and category. Results are scored by our AI model and saved to your account instantly.',
   },
   {
     q: 'How is the AI score calculated?',
-    a: 'Each lead is scored 0–100 by Gemini AI based on profile completeness and outreach-readiness. 80–100 (green bar) means the business has a phone, website, strong rating and reviews — high priority. 60–79 (blue) has most details — worth contacting. Below 60 (red) has a sparse profile — lower priority. Gemini also writes a one-line summary explaining the score, visible in the AI Summary export column.',
+    a: 'Each lead is scored 0–100 by our AI model based on profile completeness and outreach-readiness. 80–100 (green bar) means the business has a phone, website, strong rating and reviews — high priority. 60–79 (blue) has most details — worth contacting. Below 60 (red) has a sparse profile — lower priority. The AI also writes a one-line summary explaining the score, visible in the AI Summary export column.',
   },
   {
     q: 'Can I export my leads to Excel?',
@@ -727,15 +727,15 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What does each lead status mean?',
-    a: 'New = freshly scraped. Contacted = you\'ve reached out. Follow-up = needs another touch. Qualified = confirmed interest or fit. Not interested = ruled out. Converted = won. Update from the dropdown in each row; the Last contacted date fills in automatically.',
+    a: 'New = freshly added to your list. Contacted = you\'ve reached out. Follow-up = needs another touch. Qualified = confirmed interest or fit. Not interested = ruled out. Converted = won. Update from the dropdown in each row; the Last contacted date fills in automatically.',
   },
   {
     q: 'Why am I seeing leads from other searches?',
-    a: 'All your scrapes accumulate in one place so you can filter across them. Use the industry filter, source pill, and score slider to narrow down to what you need.',
+    a: 'All your searches accumulate in one place so you can filter across them. Use the industry filter, source pill, and score slider to narrow down to what you need.',
   },
   {
     q: 'What happens when I hit my lead limit?',
-    a: 'New scrapes will be blocked until you upgrade. Your existing leads remain accessible. Go to Pricing to upgrade your plan at any time.',
+    a: 'New searches will be blocked until you upgrade. Your existing leads remain accessible. Go to Pricing to upgrade your plan at any time.',
   },
   {
     q: 'Is my data private?',

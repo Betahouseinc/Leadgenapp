@@ -102,9 +102,9 @@ We also record usage information: the searches you run, your lead counts, and ba
         heading: '3. Business information collected on your behalf',
         body: `When you run a search, we retrieve publicly listed business information from third-party sources — business name, category, address, phone number, website, ratings and review counts, and where published on the business's own website, a business email address and social media links.
 
-This is information businesses have published for the purpose of being contacted. We do not scrape private profiles, and we do not knowingly collect personal information about individuals such as named employees, their direct contact details or job titles.
+This is information businesses have published for the purpose of being contacted. We do not knowingly collect private profiles or personal information about named employees, their direct contact details, or job titles.
 
-If you believe a record relating to you or your business should be removed, email ${SUPPORT} and we will remove it from our systems.`,
+However, publicly listed business data may incidentally include personal data of identifiable individuals — for example, sole proprietors whose personal name or mobile number is the registered business contact, or names appearing in public reviews. Such incidental personal data is subject to the same access, correction, and deletion rights described in section 8 and the same removal process: email ${SUPPORT} with subject line "Data request" and we will remove it from our systems.`,
       },
       {
         heading: '4. Your role and ours',

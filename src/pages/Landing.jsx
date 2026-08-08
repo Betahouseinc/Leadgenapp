@@ -19,13 +19,13 @@ const T = {
 const features = [
   {
     icon: '🗺️',
-    title: 'Google Maps Scraping',
-    desc: 'Pull thousands of business leads from Google Maps by keyword and location in seconds.',
+    title: 'Business Directory Search',
+    desc: 'Retrieve thousands of publicly listed business leads by keyword and location in seconds.',
   },
   {
     icon: '🤖',
     title: 'AI Lead Scoring',
-    desc: 'Gemini AI scores every lead 0–100 and writes a personalized outreach summary automatically.',
+    desc: 'Our AI model scores every lead 0–100 and writes a personalised outreach summary automatically.',
   },
   {
     icon: '📊',
@@ -118,7 +118,7 @@ export default function Landing() {
           fontSize: 18, color: T.ink2, maxWidth: 520,
           margin: '0 auto 40px', lineHeight: 1.6,
         }}>
-          LeadgenAI scrapes Google Maps, scores every business with Gemini AI,
+          LeadgenAI aggregates publicly available business directory data, scores every listing with our AI model,
           and delivers a prioritised lead list — ready to export and outreach.
         </p>
 
@@ -276,8 +276,8 @@ export default function Landing() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32, textAlign: 'left' }}>
             {[
               { n: '1', title: 'Enter a keyword + city', desc: 'Type what you\'re looking for — "dental clinics in Mumbai" or "pharma distributors in Delhi".' },
-              { n: '2', title: 'We scrape Google Maps', desc: 'Our engine pulls business name, address, phone, website, rating, reviews — everything publicly available.' },
-              { n: '3', title: 'AI scores every lead', desc: 'Gemini AI reads each profile and assigns a quality score 0–100 plus a human-readable outreach summary.' },
+              { n: '2', title: 'We retrieve public listings', desc: 'Our engine pulls business name, address, phone, website, rating and reviews from publicly available business directories.' },
+              { n: '3', title: 'AI scores every lead', desc: 'Our AI model reads each profile and assigns a quality score 0–100 plus a human-readable outreach summary.' },
               { n: '4', title: 'You close deals', desc: 'Filter, sort, export to Excel, and start reaching out to your best prospects immediately.' },
             ].map(step => (
               <div key={step.n} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
@@ -395,7 +395,12 @@ export default function Landing() {
         padding: '14px 24px', textAlign: 'center',
         fontSize: 12.5, color: T.muted,
       }}>
-        Powered by <a href="https://exommerce.online" style={{ color: T.blue, textDecoration: 'none', fontWeight: 600 }}>Exommerce.online</a>
+        <p style={{ margin: '0 0 4px', fontSize: 11, color: T.muted }}>
+          Google Maps and Gemini are trademarks of Google LLC. LeadgenAI is not affiliated with, endorsed by, or sponsored by Google.
+        </p>
+        <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>
+          Powered by <a href="https://exommerce.online" style={{ color: T.blue, textDecoration: 'none', fontWeight: 600 }}>Exommerce.online</a>
+        </p>
       </div>
     </div>
   )

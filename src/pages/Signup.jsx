@@ -24,11 +24,13 @@ export default function Signup() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [compliance, setCompliance] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
+    if (!compliance) { setError('Please confirm the compliance statement to continue'); return }
     setLoading(true)
     const { data, error: err } = await supabase.auth.signUp({
       email,
@@ -48,7 +50,10 @@ export default function Signup() {
     }
     // Update profile with full name
     if (data?.user) {
-      await supabase.from('profiles').upsert({ id: data.user.id, email, full_name: fullName })
+      await supabase.from('profiles').upsert({
+        id: data.user.id, email, full_name: fullName,
+        terms_accepted_at: new Date().toISOString(),
+      })
     }
     setLoading(false)
     setDone(true)
@@ -113,16 +118,29 @@ export default function Signup() {
               }}>{error}</div>
             )}
 
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={compliance}
+                onChange={e => setCompliance(e.target.checked)}
+                style={{ marginTop: 3, flexShrink: 0, accentColor: T.blue, width: 15, height: 15 }}
+              />
+              <span style={{ fontSize: 12, color: T.ink2, lineHeight: 1.5 }}>
+                I confirm I will use exported data in compliance with applicable anti-spam, do-not-call,
+                and data protection laws, and that I am solely responsible for my outreach.
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !compliance}
               style={{
                 width: '100%', padding: '11px 0',
-                background: loading ? T.blueL : T.blue,
-                color: loading ? T.blue : '#FFF',
+                background: (loading || !compliance) ? T.blueL : T.blue,
+                color: (loading || !compliance) ? T.blue : '#FFF',
                 border: 'none', borderRadius: 8,
                 fontSize: 14, fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: (loading || !compliance) ? 'not-allowed' : 'pointer',
               }}
             >{loading ? 'Creating account…' : 'Start for free'}</button>
           </form>
