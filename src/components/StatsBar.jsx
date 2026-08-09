@@ -19,7 +19,7 @@ function StatCard({ label, value, accent = T.blue }) {
       borderRadius: 8,
       padding: '16px 20px',
       flex: '1 1 calc(50% - 6px)',
-      minWidth: 120,
+      minWidth: 0,
       maxWidth: '100%',
       boxSizing: 'border-box',
     }}>
@@ -56,6 +56,7 @@ export default function StatsBar({ leads }) {
       <StatCard label="High Score (70+)" value={highScore} accent={T.teal} />
       <StatCard label="In Pipeline" value={engaged} accent="#B45309" />
       <StatCard label="Avg Score" value={avgScore} accent="#7C3AED" />
+      <div style={{ flex: '1 1 calc(50% - 6px)', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
     </div>
   )
 }

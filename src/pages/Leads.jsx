@@ -257,9 +257,11 @@ export default function Leads() {
           .lg-quota-detail { display: none !important; }
           .lg-quota-bar { display: none !important; }
           .lg-username { display: none !important; }
-          .lg-logout { display: none !important; }
           .lg-run-btn span.lg-run-full { display: none !important; }
           .lg-run-btn span.lg-run-short { display: inline !important; }
+          .lg-filter-bar { flex-direction: column !important; }
+          .lg-filter-row1 { width: 100% !important; }
+          .lg-filter-row2 { width: 100% !important; }
         }
         @media (min-width: 501px) {
           .lg-run-btn span.lg-run-short { display: none !important; }
@@ -339,8 +341,12 @@ export default function Leads() {
               color: T.ink2,
               cursor: 'pointer',
             }}
-          className='lg-logout'
-        >Logout</button>
+          style={{
+            padding: '6px 10px', background: 'none',
+            border: `0.5px solid ${T.border}`, borderRadius: 8,
+            fontSize: 12, color: T.ink2, cursor: 'pointer', flexShrink: 0,
+          }}
+        >↩</button>
           </div>
         </div>
         {/* Row 2: quota meter — full width, only shown on mobile */}
