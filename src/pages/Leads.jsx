@@ -333,11 +333,12 @@ export default function Leads() {
           <button
             onClick={handleLogout}
             style={{
-              padding: '6px 10px', background: 'none',
+              padding: '6px 10px', background: '#FFF',
               border: `0.5px solid ${T.border}`, borderRadius: 8,
-              fontSize: 13, color: T.ink2, cursor: 'pointer', flexShrink: 0,
+              fontSize: 12, color: T.ink2, cursor: 'pointer', flexShrink: 0,
+              whiteSpace: 'nowrap',
             }}
-          >↩</button>
+          >Log out</button>
           </div>
         </div>
         {/* Row 2: quota meter — full width, only shown on mobile */}
