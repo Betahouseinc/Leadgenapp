@@ -308,6 +308,7 @@ export default function Leads() {
             </div>
           )}
           <button
+            className='lg-run-btn'
             onClick={() => setScrapeOpen(true)}
             style={{
               padding: '6px 14px',
@@ -318,6 +319,7 @@ export default function Leads() {
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
+              flexShrink: 0,
             }}
           ><span className='lg-run-full'>+ Run scrape</span><span className='lg-run-short'>+</span></button>
           <button
@@ -328,7 +330,7 @@ export default function Leads() {
               fontSize: 12, color: T.ink2, cursor: 'pointer', flexShrink: 0,
               whiteSpace: 'nowrap',
             }}
-          >Log out</button>
+          >Out</button>
           </div>
         </div>
         {/* Row 2: quota meter — full width, only shown on mobile */}
