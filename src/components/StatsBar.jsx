@@ -55,8 +55,15 @@ export default function StatsBar({ leads }) {
       <StatCard label="New Today" value={newToday} accent="#2D7DD2" />
       <StatCard label="High Score (70+)" value={highScore} accent={T.teal} />
       <StatCard label="In Pipeline" value={engaged} accent="#B45309" />
-      <StatCard label="Avg Score" value={avgScore} accent="#7C3AED" />
-      <div style={{ flex: '1 1 calc(50% - 6px)', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }} />
+      <div style={{
+        background: T.surface, border: `0.5px solid ${T.border}`,
+        borderRadius: 8, padding: '12px 20px',
+        flex: '1 1 100%', boxSizing: 'border-box',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ fontSize: 12, color: '#7C3AED', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Score</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: '#7C3AED' }}>{avgScore ?? '—'}</div>
+      </div>
     </div>
   )
 }

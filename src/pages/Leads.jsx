@@ -296,25 +296,15 @@ export default function Leads() {
           )}
 
           {profile && (
-            <div
-              title={profile.email}
-              style={{ display: 'flex', alignItems: 'center', gap: 7, marginRight: 2 }}
-            >
+            <div title={profile.email} style={{ flexShrink: 0 }}>
               <div style={{
-                width: 26, height: 26, borderRadius: '50%',
+                width: 28, height: 28, borderRadius: '50%',
                 background: T.blue, color: '#FFF',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 11.5, fontWeight: 700, flexShrink: 0,
+                fontSize: 12, fontWeight: 700,
               }}>
                 {(profile.full_name || profile.email || '?').trim().charAt(0).toUpperCase()}
               </div>
-              <span style={{
-                fontSize: 12.5, color: T.ink2, fontWeight: 600,
-                maxWidth: 130, overflow: 'hidden',
-                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {profile.full_name || profile.email}
-              </span>
             </div>
           )}
           <button
