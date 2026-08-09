@@ -21,6 +21,7 @@ function StatCard({ label, value, accent = T.blue }) {
       flex: '1 1 calc(50% - 6px)',
       minWidth: 120,
       maxWidth: '100%',
+      boxSizing: 'border-box',
     }}>
       <div style={{ fontSize: 12, color: T.ink2, marginBottom: 6, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         {label}

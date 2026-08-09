@@ -250,7 +250,22 @@ export default function Leads() {
       background: T.bg,
       fontFamily: 'system-ui, -apple-system, sans-serif',
       color: T.ink,
+      overflowX: 'hidden',
     }}>
+      <style>{`
+        @media (max-width: 500px) {
+          .lg-quota-detail { display: none !important; }
+          .lg-quota-bar { display: none !important; }
+          .lg-username { display: none !important; }
+          .lg-logout { display: none !important; }
+          .lg-run-btn span.lg-run-full { display: none !important; }
+          .lg-run-btn span.lg-run-short { display: inline !important; }
+        }
+        @media (min-width: 501px) {
+          .lg-run-btn span.lg-run-short { display: none !important; }
+          .lg-run-btn span.lg-run-full { display: inline !important; }
+        }
+      `}</style>
       {/* Top bar */}
       <div style={{
         background: T.surface,
@@ -267,7 +282,7 @@ export default function Leads() {
         <div style={{ fontSize: 18, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px' }}>
           LeadGen
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0, overflow: 'hidden', flexShrink: 1 }}>
           {/* Usage meter — values come from check_lead_quota so this always
               matches what the backend will actually permit. */}
           {quota && (
@@ -351,7 +366,7 @@ export default function Leads() {
               fontWeight: 600,
               cursor: 'pointer',
             }}
-          >+ Run scrape</button>
+          ><span className='lg-run-full'>+ Run scrape</span><span className='lg-run-short'>+</span></button>
           <button
             onClick={handleLogout}
             style={{
@@ -363,7 +378,8 @@ export default function Leads() {
               color: T.ink2,
               cursor: 'pointer',
             }}
-          >Logout</button>
+          className='lg-logout'
+        >Logout</button>
         </div>
       </div>
 
