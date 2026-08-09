@@ -270,66 +270,27 @@ export default function Leads() {
       <div style={{
         background: T.surface,
         borderBottom: `0.5px solid ${T.border}`,
-        padding: '0 clamp(12px, 3vw, 24px)',
-        height: 52,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        padding: '8px clamp(12px, 3vw, 24px)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
       }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px' }}>
-          LeadGen
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0, overflow: 'hidden', flexShrink: 1 }}>
-          {/* Usage meter — values come from check_lead_quota so this always
-              matches what the backend will actually permit. */}
-          {quota && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 4 }}>
-              <div>
-                <div style={{ fontSize: 11, color: T.muted, marginBottom: 2 }}>
-                  {quota.used} / {quota.unlimited ? '∞' : quota.limit} this month
-                  {quota.day_limit != null && (
-                    <> · <span style={{ color: quota.day_remaining === 0 ? '#B91C1C' : T.muted }}>
-                      {quota.day_used} / {quota.day_limit} today
-                    </span></>
-                  )}
-                  {' · '}
-                  <span style={{ fontWeight: 600, color: T.blue }}>{profile?.plans?.name || quota.plan}</span>
-                </div>
-                <div style={{ width: 110, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 4 }}>
-                  <div style={{
-                    height: '100%',
-                    borderRadius: 4,
-                    background: quota.allowed === 0 ? '#B91C1C'
-                      : quota.allowed <= 5 ? '#B45309'
-                      : T.blue,
-                    // Track whichever ceiling is closer, so the bar reflects what
-                    // actually constrains the next search.
-                    width: (() => {
-                      const monthPct = quota.unlimited ? 0 : (quota.used / Math.max(quota.limit, 1)) * 100
-                      const dayPct = quota.day_limit ? (quota.day_used / Math.max(quota.day_limit, 1)) * 100 : 0
-                      return `${Math.max(4, Math.min(100, Math.max(monthPct, dayPct)))}%`
-                    })(),
-                    transition: 'width 200ms',
-                  }} />
-                </div>
-              </div>
-              {(!quota.unlimited || quota.day_remaining === 0) && (
-                <Link to="/pricing" style={{
-                  padding: '4px 10px',
-                  background: quota.allowed === 0 ? T.blue : T.blueL,
-                  color: quota.allowed === 0 ? '#FFF' : T.blue,
-                  border: `0.5px solid ${T.blue}`,
-                  borderRadius: 20,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  whiteSpace: 'nowrap',
-                }}>Upgrade</Link>
-              )}
-            </div>
+        {/* Row 1: logo + action buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px', flexShrink: 0 }}>
+            LeadGen
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+          {/* Upgrade pill — compact, always visible if not unlimited */}
+          {quota && (!quota.unlimited || quota.day_remaining === 0) && (
+            <Link to="/pricing" style={{
+              padding: '4px 10px',
+              background: quota.allowed === 0 ? T.blue : T.blueL,
+              color: quota.allowed === 0 ? '#FFF' : T.blue,
+              border: `0.5px solid ${T.blue}`,
+              borderRadius: 20, fontSize: 11, fontWeight: 600,
+              textDecoration: 'none', whiteSpace: 'nowrap',
+            }}>Upgrade</Link>
           )}
 
           {profile && (
@@ -380,7 +341,27 @@ export default function Leads() {
             }}
           className='lg-logout'
         >Logout</button>
+          </div>
         </div>
+        {/* Row 2: quota meter — full width, only shown on mobile */}
+        {quota && (
+          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 4,
+                background: quota.allowed === 0 ? '#B91C1C' : quota.allowed <= 5 ? '#B45309' : T.blue,
+                width: (() => {
+                  const monthPct = quota.unlimited ? 0 : (quota.used / Math.max(quota.limit, 1)) * 100
+                  const dayPct = quota.day_limit ? (quota.day_used / Math.max(quota.day_limit, 1)) * 100 : 0
+                  return `${Math.max(4, Math.min(100, Math.max(monthPct, dayPct)))}%`
+                })(),
+              }} />
+            </div>
+            <span style={{ fontSize: 11, color: T.muted, whiteSpace: 'nowrap' }}>
+              {quota.used}/{quota.unlimited ? '∞' : quota.limit} · <span style={{ color: T.blue, fontWeight: 600 }}>{profile?.plans?.name || quota.plan}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Main */}
