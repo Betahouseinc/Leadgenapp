@@ -62,7 +62,7 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
   console.log(`Apify run ${run.id} finished in ${Math.round((Date.now()-begun)/1000)}s`)
 
   const dataRes = await fetch(
-    `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${apiKey}`
+    `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${apiKey}&limit=200`
   )
   if (!dataRes.ok) throw new Error('Failed to fetch Apify dataset')
   const items = await dataRes.json()
@@ -314,7 +314,13 @@ Deno.serve(async (req) => {
     })
 
     // Enrich with Gemini
-    const enriched: Record<string, unknown>[] = await enrichBatchWithGemini(unique, geminiKey, industry)
+    // Process in chunks of 10 to stay within edge function memory limits.
+    const CHUNK = 10
+    const enriched: Record<string, unknown>[] = []
+    for (let ci = 0; ci < unique.length; ci += CHUNK) {
+      const scored = await enrichBatchWithGemini(unique.slice(ci, ci + CHUNK), geminiKey, industry)
+      enriched.push(...scored)
+    }
 
     // Insert leads
     let savedCount = 0
