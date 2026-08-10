@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const T = {
-  bg: '#FAFAF7',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  muted: '#9C8E7A',
-  border: 'rgba(0,0,0,0.12)',
-  blue: '#2563EB',
-  blueD: '#1D4ED8',
-  blueL: '#EFF6FF',
-  teal: '#1A8A72',
-  tealL: '#E0F5F0',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  muted: '#6B7280',
+  border: 'rgba(11,13,12,0.12)',
+  blue: '#109840',
+  blueD: '#087A32',
+  blueL: '#EFF8F1',
+  teal: '#7BCF16',
+  tealL: '#F3FBEA',
 }
 
 const features = [
@@ -64,12 +64,12 @@ export default function Landing() {
 
 
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, sans-serif', background: T.bg, color: T.ink }}>
+    <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: T.bg, color: T.ink }}>
 
       {/* NAV */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(250,250,247,0.92)', backdropFilter: 'blur(10px)',
+        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(10px)',
         borderBottom: `0.5px solid ${T.border}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 32px', height: 56,
@@ -105,7 +105,7 @@ export default function Landing() {
         }}>AI-POWERED LEAD GENERATION</div>
 
         <h1 style={{
-          fontSize: 'clamp(36px, 6vw, 64px)',
+          fontFamily: "'Sora', sans-serif", fontSize: 'clamp(36px, 6vw, 64px)',
           fontWeight: 800, lineHeight: 1.1,
           color: T.ink, margin: '0 auto 24px',
           maxWidth: 700, letterSpacing: '-1.5px',
@@ -251,7 +251,7 @@ export default function Landing() {
       <section style={{ padding: '80px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Everything you need to fill your pipeline</h2>
+            <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Everything you need to fill your pipeline</h2>
             <p style={{ fontSize: 16, color: T.ink2, margin: 0 }}>From scraping to outreach, LeadgenAI handles the heavy lifting.</p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
@@ -272,7 +272,7 @@ export default function Landing() {
       {/* HOW IT WORKS */}
       <section style={{ background: T.blueL, padding: '80px 24px', borderTop: `0.5px solid rgba(37,99,235,0.15)`, borderBottom: `0.5px solid rgba(37,99,235,0.15)` }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 48px', letterSpacing: '-0.5px' }}>How it works</h2>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 48px', letterSpacing: '-0.5px' }}>How it works</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 32, textAlign: 'left' }}>
             {[
               { n: '1', title: 'Enter a keyword + city', desc: 'Type what you\'re looking for — "dental clinics in Mumbai" or "pharma distributors in Delhi".' },
@@ -300,7 +300,7 @@ export default function Landing() {
       {/* PRICING TEASER */}
       <section style={{ padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Start free, scale when ready</h2>
+          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Start free, scale when ready</h2>
           <p style={{ fontSize: 16, color: T.ink2, marginBottom: 40 }}>No credit card needed. Get 10 leads free, then upgrade for more.</p>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             {[
@@ -340,7 +340,7 @@ export default function Landing() {
       <section style={{
         background: T.blue, padding: '72px 24px', textAlign: 'center',
       }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: '#FFF', margin: '0 0 16px', letterSpacing: '-0.5px' }}>
+        <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: '#FFF', margin: '0 0 16px', letterSpacing: '-0.5px' }}>
           Ready to find your next 100 clients?
         </h2>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
