@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const KEY = 'leadgenai_cookie_consent'
-const T = { surface:'#FFFFFF', ink2:'#5C5240', border:'rgba(0,0,0,0.12)', blue:'#2563EB' }
+const T = { surface:'#FFFFFF', ink2:'#4B5560', border:'rgba(11,13,12,0.12)', blue:'#109840' }
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false)

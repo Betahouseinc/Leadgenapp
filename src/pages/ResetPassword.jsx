@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-const T = { bg: '#FAFAF7', surface: '#FFFFFF', ink: '#2C2416', ink2: '#5C5240', border: 'rgba(0,0,0,0.12)', blue: '#2563EB' }
+const T = { bg: '#FFFFFF', surface: '#FFFFFF', ink: '#0B0D0C', ink2: '#4B5560', border: 'rgba(11,13,12,0.12)', blue: '#109840' }
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
@@ -30,7 +30,7 @@ export default function ResetPassword() {
       <div style={{ background: T.surface, borderRadius: 12, padding: '36px 40px', border: `0.5px solid ${T.border}`, width: '100%', maxWidth: 420 }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: T.blue, textAlign: 'center', margin: '0 0 6px', letterSpacing: '-0.5px' }}>Set new password</h2>
         {done ? (
-          <p style={{ textAlign: 'center', color: '#1A8A72', marginTop: 20 }}>Password updated! Redirecting…</p>
+          <p style={{ textAlign: 'center', color: '#7BCF16', marginTop: 20 }}>Password updated! Redirecting…</p>
         ) : (
           <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
             <label style={{ display: 'block', marginBottom: 16 }}>

@@ -3,14 +3,14 @@ import { supabase } from '../lib/supabase'
 
 const T = {
   surface: '#FFFFFF',
-  bg: '#FAFAF7',
-  border: 'rgba(0,0,0,0.12)',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  muted: '#9C8E7A',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
-  teal: '#1A8A72',
+  bg: '#FFFFFF',
+  border: 'rgba(11,13,12,0.12)',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  muted: '#6B7280',
+  blue: '#109840',
+  blueL: '#EFF8F1',
+  teal: '#7BCF16',
   error: '#C44B4B',
   errorL: '#FDEAEA',
 }
@@ -245,8 +245,8 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
             <div style={labelStyle}>Source</div>
             <div style={{
               marginTop: 6, padding: '8px 12px',
-              background: '#EFF6FF', borderRadius: 8,
-              fontSize: 13, color: '#2563EB', fontWeight: 500,
+              background: '#EFF8F1', borderRadius: 8,
+              fontSize: 13, color: '#109840', fontWeight: 500,
             }}>
               📍 Google Maps
             </div>
@@ -411,7 +411,7 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
 const labelStyle = {
   fontSize: 12,
   fontWeight: 500,
-  color: '#5C5240',
+  color: '#4B5560',
   marginBottom: 4,
   textTransform: 'uppercase',
   letterSpacing: '0.4px',
@@ -420,11 +420,11 @@ const labelStyle = {
 const inputStyle = {
   width: '100%',
   padding: '9px 12px',
-  border: `0.5px solid rgba(0,0,0,0.12)`,
+  border: `0.5px solid rgba(11,13,12,0.12)`,
   borderRadius: 8,
   fontSize: 13,
-  color: '#2C2416',
-  background: '#FAFAF7',
+  color: '#0B0D0C',
+  background: '#FFFFFF',
   outline: 'none',
   boxSizing: 'border-box',
 }

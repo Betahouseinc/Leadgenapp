@@ -3,17 +3,17 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const T = {
-  bg: '#FAFAF7',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  border: 'rgba(0,0,0,0.12)',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  border: 'rgba(11,13,12,0.12)',
+  blue: '#109840',
+  blueL: '#EFF8F1',
   error: '#C44B4B',
   errorL: '#FDEAEA',
-  teal: '#1A8A72',
-  tealL: '#E0F5F0',
+  teal: '#7BCF16',
+  tealL: '#F3FBEA',
 }
 
 export default function Signup() {
@@ -158,7 +158,7 @@ export default function Signup() {
 function Field({ label, value, onChange, type = 'text', placeholder }) {
   return (
     <label style={{ display: 'block', marginBottom: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 500, color: '#2C2416', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: '#0B0D0C', marginBottom: 6 }}>{label}</div>
       <input
         type={type}
         value={value}
@@ -167,9 +167,9 @@ function Field({ label, value, onChange, type = 'text', placeholder }) {
         placeholder={placeholder}
         style={{
           width: '100%', padding: '10px 12px',
-          border: `0.5px solid rgba(0,0,0,0.12)`,
+          border: `0.5px solid rgba(11,13,12,0.12)`,
           borderRadius: 8, fontSize: 14,
-          color: '#2C2416', background: '#FAFAF7',
+          color: '#0B0D0C', background: '#FFFFFF',
           outline: 'none', boxSizing: 'border-box',
         }}
       />

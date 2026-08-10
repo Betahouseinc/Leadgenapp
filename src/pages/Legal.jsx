@@ -1,14 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom'
 
 const T = {
-  bg: '#FAFAF7',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  muted: '#9C8E7A',
-  border: 'rgba(0,0,0,0.12)',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  muted: '#6B7280',
+  border: 'rgba(11,13,12,0.12)',
+  blue: '#109840',
+  blueL: '#EFF8F1',
 }
 
 const COMPANY = 'Exommerce.online'

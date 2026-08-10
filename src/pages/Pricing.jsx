@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const T = {
-  bg: '#FAFAF7',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  muted: '#9C8E7A',
-  border: 'rgba(0,0,0,0.12)',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
-  teal: '#1A8A72',
-  tealL: '#E0F5F0',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  muted: '#6B7280',
+  border: 'rgba(11,13,12,0.12)',
+  blue: '#109840',
+  blueL: '#EFF8F1',
+  teal: '#7BCF16',
+  tealL: '#F3FBEA',
 }
 
 const PLANS = [
@@ -109,7 +109,7 @@ export default function Pricing() {
         description: `${order.plan_name} Plan`,
         order_id: order.order_id,
         prefill: { email: order.user_email },
-        theme: { color: '#2563EB' },
+        theme: { color: '#109840' },
         handler: () => {
           // Payment successful — webhook will update plan
           alert('Payment successful! Your plan will be upgraded in a moment.')

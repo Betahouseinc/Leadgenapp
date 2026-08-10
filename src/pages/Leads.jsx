@@ -8,15 +8,15 @@ import LeadDrawer from '../components/LeadDrawer'
 import ScrapeModal from '../components/ScrapeModal'
 
 const T = {
-  bg: '#FAFAF7',
+  bg: '#FFFFFF',
   surface: '#FFFFFF',
-  border: 'rgba(0,0,0,0.12)',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  muted: '#9C8E7A',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
-  teal: '#1A8A72',
+  border: 'rgba(11,13,12,0.12)',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  muted: '#6B7280',
+  blue: '#109840',
+  blueL: '#EFF8F1',
+  teal: '#7BCF16',
 }
 
 const INDUSTRIES = ['All', 'Real estate', 'IT Software', 'Manufacturing', 'Healthcare', 'Retail', 'Education', 'Pharma']
@@ -63,7 +63,7 @@ function sourceBadge(source) {
 }
 
 function ScoreBar({ score = 0 }) {
-  const color = score >= 75 ? '#2E7D32' : score >= 50 ? '#2563EB' : '#C44B4B'
+  const color = score >= 75 ? '#2E7D32' : score >= 50 ? '#109840' : '#C44B4B'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <div style={{
@@ -248,7 +248,7 @@ export default function Leads() {
     <div style={{
       minHeight: '100vh',
       background: T.bg,
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       color: T.ink,
       overflowX: 'hidden',
     }}>
@@ -279,7 +279,7 @@ export default function Leads() {
       }}>
         {/* Row 1: logo + action buttons */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px', flexShrink: 0 }}>
+          <div style={{ fontFamily: "'Sora', sans-serif", fontSize: 18, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px', flexShrink: 0 }}>
             LeadGen
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
@@ -737,17 +737,17 @@ function FAQ() {
   return (
     <div style={{ marginTop: 48 }}>
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: '#2C2416', letterSpacing: '-0.3px' }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#0B0D0C', letterSpacing: '-0.3px' }}>
           Frequently asked questions
         </div>
-        <div style={{ fontSize: 13, color: '#9C8E7A', marginTop: 4 }}>
+        <div style={{ fontSize: 13, color: '#6B7280', marginTop: 4 }}>
           Everything you need to know about using LeadgenAI.
         </div>
       </div>
 
       <div style={{
         background: '#FFFFFF',
-        border: '0.5px solid rgba(0,0,0,0.12)',
+        border: '0.5px solid rgba(11,13,12,0.12)',
         borderRadius: 8,
         overflow: 'hidden',
       }}>
@@ -771,13 +771,13 @@ function FAQ() {
                 gap: 16,
               }}
             >
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#2C2416', lineHeight: 1.4 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#0B0D0C', lineHeight: 1.4 }}>
                 {item.q}
               </span>
               <span style={{
                 flexShrink: 0,
                 fontSize: 18,
-                color: '#2563EB',
+                color: '#109840',
                 fontWeight: 300,
                 transition: 'transform 0.2s',
                 transform: open === i ? 'rotate(45deg)' : 'rotate(0deg)',
@@ -789,7 +789,7 @@ function FAQ() {
               <div style={{
                 padding: '0 20px 16px',
                 fontSize: 14,
-                color: '#5C5240',
+                color: '#4B5560',
                 lineHeight: 1.7,
               }}>
                 {item.a}
@@ -802,11 +802,11 @@ function FAQ() {
       <div style={{
         marginTop: 16,
         padding: '14px 20px',
-        background: '#EFF6FF',
+        background: '#EFF8F1',
         border: '0.5px solid rgba(37,99,235,0.2)',
         borderRadius: 8,
         fontSize: 13,
-        color: '#2563EB',
+        color: '#109840',
         display: 'flex',
         alignItems: 'center',
         gap: 8,
@@ -814,7 +814,7 @@ function FAQ() {
         <span>Still have questions?</span>
         <a
           href="mailto:admin@exommerce.online"
-          style={{ fontWeight: 600, color: '#2563EB', textDecoration: 'underline' }}
+          style={{ fontWeight: 600, color: '#109840', textDecoration: 'underline' }}
         >
           Email us
         </a>
@@ -830,7 +830,7 @@ function Th({ children, style = {} }) {
       textAlign: 'left',
       fontSize: 11,
       fontWeight: 600,
-      color: '#9C8E7A',
+      color: '#6B7280',
       textTransform: 'uppercase',
       letterSpacing: '0.4px',
       whiteSpace: 'nowrap',
@@ -848,7 +848,7 @@ function Td({ children, onClick, style = {} }) {
   )
 }
 
-function ActionBtn({ children, onClick, accent = '#2563EB' }) {
+function ActionBtn({ children, onClick, accent = '#109840' }) {
   return (
     <button
       onClick={onClick}
@@ -868,21 +868,21 @@ function ActionBtn({ children, onClick, accent = '#2563EB' }) {
 
 const ghostBtn = {
   padding: '5px 12px',
-  background: '#FAFAF7',
+  background: '#FFFFFF',
   border: '0.5px solid rgba(37,99,235,0.35)',
   borderRadius: 8,
   fontSize: 12,
   fontWeight: 600,
-  color: '#2563EB',
+  color: '#109840',
   cursor: 'pointer',
 }
 
 const selectStyle = {
   padding: '7px 10px',
-  border: `0.5px solid rgba(0,0,0,0.12)`,
+  border: `0.5px solid rgba(11,13,12,0.12)`,
   borderRadius: 8,
   fontSize: 13,
-  color: '#2C2416',
-  background: '#FAFAF7',
+  color: '#0B0D0C',
+  background: '#FFFFFF',
   outline: 'none',
 }

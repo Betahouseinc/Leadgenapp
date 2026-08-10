@@ -2,13 +2,13 @@ import { ENGAGED_STATUSES, normaliseStatus } from '../constants/leadStatus'
 
 const T = {
   surface: '#FFFFFF',
-  border: 'rgba(0,0,0,0.12)',
-  ink: '#2C2416',
-  ink2: '#5C5240',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
-  teal: '#1A8A72',
-  tealL: '#E0F5F0',
+  border: 'rgba(11,13,12,0.12)',
+  ink: '#0B0D0C',
+  ink2: '#4B5560',
+  blue: '#109840',
+  blueL: '#EFF8F1',
+  teal: '#7BCF16',
+  tealL: '#F3FBEA',
 }
 
 function StatCard({ label, value, accent = T.blue }) {
