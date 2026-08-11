@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const T = {
   surface: '#FFFFFF',
   bg: '#FAFAF7',
@@ -5,15 +7,15 @@ const T = {
   ink: '#2C2416',
   ink2: '#5C5240',
   muted: '#9C8E7A',
-  blue: '#2563EB',
-  blueL: '#EFF6FF',
+  blue: '#109840',
+  blueL: '#EFF8F1',
   teal: '#1A8A72',
   tealL: '#E0F5F0',
 }
 
 function ScoreColor(score) {
   if (score >= 75) return '#2E7D32'
-  if (score >= 50) return '#2563EB'
+  if (score >= 50) return '#109840'
   return '#C44B4B'
 }
 
@@ -26,8 +28,8 @@ function SourceBadge({ source }) {
       borderRadius: 20,
       fontSize: 12,
       fontWeight: 600,
-      background: isGmaps ? '#E8F5E9' : '#E8F2FC',
-      color: isGmaps ? '#2E7D32' : '#2D7DD2',
+      background: isGmaps ? '#E8F5E9' : '#E6F4EA',
+      color: isGmaps ? '#2E7D32' : '#087A32',
     }}>
       {isGmaps ? 'Google Maps' : 'LinkedIn'}
     </span>
@@ -36,8 +38,8 @@ function SourceBadge({ source }) {
 
 function StatusBadge({ status }) {
   const map = {
-    new: { bg: '#EFF6FF', color: '#2563EB' },
-    contacted: { bg: '#E8F2FC', color: '#2D7DD2' },
+    new: { bg: '#EFF8F1', color: '#109840' },
+    contacted: { bg: '#E6F4EA', color: '#087A32' },
     qualified: { bg: '#E0F5F0', color: '#1A8A72' },
     rejected: { bg: '#FDEAEA', color: '#C44B4B' },
   }
@@ -58,10 +60,31 @@ function StatusBadge({ status }) {
 }
 
 export default function LeadDrawer({ lead, onClose }) {
+  const [showMailboxes, setShowMailboxes] = useState(false)
+
   if (!lead) return null
 
-  const subject = encodeURIComponent(`Partnership opportunity - ${lead.company || lead.name}`)
-  const mailtoHref = `mailto:${lead.email || ''}?subject=${subject}`
+  const to = lead.email || ''
+  const subjectRaw = `Partnership opportunity - ${lead.company || lead.name}`
+  const bodyRaw = [
+    `Hi ${lead.name || 'there'},`,
+    '',
+    `I came across ${lead.company || lead.name}${lead.city ? ` in ${lead.city}` : ''} and wanted to get in touch.`,
+    '',
+    '',
+    'Best regards,',
+  ].join('\n')
+
+  const subject = encodeURIComponent(subjectRaw)
+  const body = encodeURIComponent(bodyRaw)
+
+  // mailto: does nothing on a machine with no mail client configured, which is
+  // most desktop browsers — so offer the webmail compose windows directly.
+  const mailboxes = [
+    { label: 'Gmail', href: `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subject}&body=${body}` },
+    { label: 'Outlook', href: `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}&subject=${subject}&body=${body}` },
+    { label: 'Default mail app', href: `mailto:${to}?subject=${subject}&body=${body}` },
+  ]
 
   return (
     <>
@@ -158,22 +181,62 @@ export default function LeadDrawer({ lead, onClose }) {
           flexDirection: 'column',
           gap: 8,
         }}>
-          <a
-            href={mailtoHref}
+          <button
+            onClick={() => setShowMailboxes(v => !v)}
             style={{
               display: 'block',
+              width: '100%',
               textAlign: 'center',
               padding: '10px 0',
               background: T.blue,
               color: '#FFF',
+              border: 'none',
               borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
-              textDecoration: 'none',
+              cursor: 'pointer',
             }}
           >
             Draft outreach email
-          </a>
+          </button>
+
+          {showMailboxes && (
+            <div style={{
+              display: 'grid',
+              gap: 6,
+              padding: 10,
+              background: T.blueL,
+              border: `1px solid ${T.blue}`,
+              borderRadius: 8,
+            }}>
+              <div style={{ fontSize: 12, color: T.ink2, marginBottom: 2 }}>
+                Open the draft in:
+              </div>
+              {mailboxes.map(m => (
+                <a
+                  key={m.label}
+                  href={m.href}
+                  target={m.label === 'Default mail app' ? undefined : '_blank'}
+                  rel="noopener noreferrer"
+                  onClick={() => setShowMailboxes(false)}
+                  style={{
+                    display: 'block',
+                    textAlign: 'center',
+                    padding: '9px 0',
+                    background: T.surface,
+                    color: T.ink,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  {m.label}
+                </a>
+              ))}
+            </div>
+          )}
           <button
             onClick={onClose}
             style={{

@@ -3,7 +3,7 @@
 
 export const LEAD_STATUSES = [
   { value: 'new',            label: 'New',            color: '#5C5240', bg: '#F1EFEA' },
-  { value: 'contacted',      label: 'Contacted',      color: '#2563EB', bg: '#EFF6FF' },
+  { value: 'contacted',      label: 'Contacted',      color: '#109840', bg: '#EFF8F1' },
   { value: 'follow_up',      label: 'Follow-up',      color: '#B45309', bg: '#FEF3C7' },
   { value: 'qualified',      label: 'Qualified',      color: '#1A8A72', bg: '#E0F5F0' },
   { value: 'not_interested', label: 'Not interested', color: '#B91C1C', bg: '#FEE2E2' },

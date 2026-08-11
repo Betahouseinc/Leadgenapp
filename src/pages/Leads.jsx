@@ -53,8 +53,8 @@ function sourceBadge(source) {
       borderRadius: 20,
       fontSize: 11,
       fontWeight: 600,
-      background: isGmaps ? '#E8F5E9' : '#E8F2FC',
-      color: isGmaps ? '#2E7D32' : '#2D7DD2',
+      background: isGmaps ? '#E8F5E9' : '#E6F4EA',
+      color: isGmaps ? '#2E7D32' : '#087A32',
       whiteSpace: 'nowrap',
     }}>
       {isGmaps ? 'GMaps' : 'LinkedIn'}

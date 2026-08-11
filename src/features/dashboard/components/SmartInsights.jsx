@@ -31,7 +31,7 @@ export default function SmartInsights({ rentsWithStatus = [], expenses = [], uni
   const TYPE_STYLE = {
     warning: { bg: "#FFF1F1", border: "#FF4D4D", dot: "#FF4D4D", textColor: "#7A0000" },
     risk:    { bg: "#FFF8E6", border: "#F59E0B", dot: "#F59E0B", textColor: "#7A4500" },
-    info:    { bg: "#EFF6FF", border: "#3B82F6", dot: "#3B82F6", textColor: "#1E3A5F" },
+    info:    { bg: "#EFF8F1", border: "#109840", dot: "#109840", textColor: "#1E3A5F" },
     success: { bg: "#F0FDF4", border: "#22C55E", dot: "#22C55E", textColor: "#14532D" },
   };
 
