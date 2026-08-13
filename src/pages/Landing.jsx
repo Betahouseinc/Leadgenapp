@@ -370,7 +370,7 @@ export default function Landing() {
       }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: T.blue }}>LeadgenAI</div>
         <div style={{ fontSize: 13, color: T.muted }}>
-          © 2026 Exommerce.online · <a href="mailto:admin@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>admin@exommerce.online</a>
+          © 2026 Exommerce.online · <a href="mailto:leadgen.support@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>leadgen.support@exommerce.online</a>
         </div>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
           {[

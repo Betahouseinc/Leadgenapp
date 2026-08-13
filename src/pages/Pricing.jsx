@@ -76,7 +76,7 @@ export default function Pricing() {
     if (!session) { navigate('/login?redirect=pricing'); return }
     if (plan.id === 'free') { navigate('/leads'); return }
     if (plan.id === 'agency') {
-      window.location.href = 'mailto:admin@exommerce.online?subject=Agency Plan Enquiry'
+      window.location.href = 'mailto:leadgen.sales@exommerce.online?subject=Agency Plan Enquiry'
       return
     }
 
@@ -225,7 +225,7 @@ export default function Pricing() {
           at the start of each calendar month and do not carry over.<br />
           Each plan also has a daily ceiling, which resets at midnight IST. It exists to keep
           usage predictable and protect service quality for everyone.<br />
-          Questions? Email <a href="mailto:admin@exommerce.online" style={{ color: T.blue }}>admin@exommerce.online</a>
+          Questions? Email <a href="mailto:leadgen.billing@exommerce.online" style={{ color: T.blue }}>leadgen.billing@exommerce.online</a>
         </div>
 
         <div style={{

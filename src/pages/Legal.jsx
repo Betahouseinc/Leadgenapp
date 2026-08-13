@@ -13,7 +13,12 @@ const T = {
 
 const COMPANY = 'Exommerce.online'
 const BRAND = 'LeadgenAI'
-const SUPPORT = 'admin@exommerce.online'
+const SUPPORT = 'leadgen.support@exommerce.online'
+// Data-subject requests carry a statutory response clock, and billing requests
+// need whoever holds the Razorpay account — neither should sit in the general
+// support queue waiting to be forwarded.
+const PRIVACY = 'privacy@exommerce.online'
+const BILLING = 'leadgen.billing@exommerce.online'
 const UPDATED = '4 August 2026'
 
 const LEGAL_PAGES = {
@@ -104,7 +109,7 @@ We also record usage information: the searches you run, your lead counts, and ba
 
 This is information businesses have published for the purpose of being contacted. We do not knowingly collect private profiles or personal information about named employees, their direct contact details, or job titles.
 
-However, publicly listed business data may incidentally include personal data of identifiable individuals — for example, sole proprietors whose personal name or mobile number is the registered business contact, or names appearing in public reviews. Such incidental personal data is subject to the same access, correction, and deletion rights described in section 8 and the same removal process: email ${SUPPORT} with subject line "Data request" and we will remove it from our systems.`,
+However, publicly listed business data may incidentally include personal data of identifiable individuals — for example, sole proprietors whose personal name or mobile number is the registered business contact, or names appearing in public reviews. Such incidental personal data is subject to the same access, correction, and deletion rights described in section 8 and the same removal process: email ${PRIVACY} with subject line "Data request" and we will remove it from our systems.`,
       },
       {
         heading: '4. Your role and ours',
@@ -139,7 +144,7 @@ Data is stored on infrastructure located outside India. By using the Service you
         heading: '8. Your rights',
         body: `You may request access to the personal data we hold about you, ask us to correct it, ask us to delete it, or withdraw consent. You can export your own leads at any time from the dashboard using CSV or Excel export.
 
-To make a request, email ${SUPPORT}. We aim to respond within 30 days.`,
+To make a request, email ${PRIVACY}. We aim to respond within 30 days.`,
       },
       {
         heading: '9. Security',
@@ -153,7 +158,7 @@ No system is perfectly secure. If we become aware of a breach affecting your dat
       },
       {
         heading: '11. Changes and contact',
-        body: `We will post any material change to this policy on this page and update the date above. Questions: ${SUPPORT}`,
+        body: `We will post any material change to this policy on this page and update the date above. Questions: ${PRIVACY}`,
       },
     ],
   },
@@ -168,7 +173,7 @@ No system is perfectly secure. If we become aware of a breach affecting your dat
       },
       {
         heading: '2. Cancelling a subscription',
-        body: `You may cancel at any time from your account settings, or by emailing ${SUPPORT}. Cancellation stops future billing. Your plan remains active until the end of the period you have already paid for, and your leads remain accessible during that time.`,
+        body: `You may cancel at any time from your account settings, or by emailing ${BILLING}. Cancellation stops future billing. Your plan remains active until the end of the period you have already paid for, and your leads remain accessible during that time.`,
       },
       {
         heading: '3. Refunds',
@@ -190,7 +195,7 @@ We will refund in full, regardless of the above, where:
       },
       {
         heading: '6. Requesting a refund',
-        body: `Email ${SUPPORT} with your account email address and the reason for the request. We aim to respond within 3 working days.`,
+        body: `Email ${BILLING} with your account email address and the reason for the request. We aim to respond within 3 working days.`,
       },
     ],
   },
@@ -212,11 +217,11 @@ Bengaluru, Karnataka, India`,
       },
       {
         heading: 'Privacy, data and removal requests',
-        body: `To access, correct or delete your data, or to request removal of a business record, email ${SUPPORT} with the subject line "Data request".`,
+        body: `To access, correct or delete your data, or to request removal of a business record, email ${PRIVACY}.`,
       },
       {
         heading: 'Billing and refunds',
-        body: `For invoices, cancellations or refund requests, email ${SUPPORT} with the subject line "Billing".`,
+        body: `For invoices, cancellations or refund requests, email ${BILLING}.`,
       },
     ],
   },
