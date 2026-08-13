@@ -28,6 +28,52 @@ const INDUSTRY_SEARCH_MAP: Record<string, string> = {
   'Travel & Hospitality':         'travel agency hotel hospitality',
 }
 
+// Gemini returns the industry as free text, so "Real estate" and "Real Estate"
+// used to land as separate tags — and the dashboard filter, which hardcoded one
+// spelling, matched neither reliably. Squash to alphanumerics and map back to
+// the canonical label. Mirrors public.normalise_industry() in the database.
+const INDUSTRY_BY_KEY = new Map<string, string>()
+for (const label of Object.keys(INDUSTRY_SEARCH_MAP)) {
+  INDUSTRY_BY_KEY.set(industryKey(label), label)
+}
+for (const [variant, label] of [
+  ['Real Estate Agency', 'Real Estate'],
+  ['Software', 'IT Software'],
+  ['IT', 'IT Software'],
+  ['Information Technology', 'IT Software'],
+  ['Ecommerce', 'E-commerce'],
+  ['Health Care', 'Healthcare'],
+  ['Food and Beverage', 'Food & Beverage'],
+  ['Media and Production', 'Media & Production'],
+  ['HR and Staffing', 'HR & Staffing'],
+  ['Logistics', 'Logistics & Supply Chain'],
+  ['Construction', 'Construction & Infrastructure'],
+]) {
+  INDUSTRY_BY_KEY.set(industryKey(variant), label)
+}
+
+function industryKey(v: string) {
+  return (v || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+// An unrecognised label is kept (trimmed) rather than dropped — losing a tag we
+// do not know about is worse than showing an untidy one.
+function normaliseIndustry(v: string, fallback: string): string {
+  return INDUSTRY_BY_KEY.get(industryKey(v)) || (v || '').trim() || fallback
+}
+
+// Mirrors the generated dedup_key column on leads.
+function dedupKey(name: unknown, city: unknown) {
+  const squash = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+  return `${squash(name)}|${squash(city)}`
+}
+
+function normalisePhone(v: unknown) {
+  const digits = String(v ?? '').replace(/\D/g, '')
+  // Compare on the last 10 digits so +91-80-1234 5678 and 08012345678 match.
+  return digits.length > 10 ? digits.slice(-10) : digits
+}
+
 async function runApifyAndWait(actorId: string, input: unknown, apiKey: string): Promise<Record<string, unknown>[]> {
   // Start the run without blocking. waitForFinish caps at 60s, but enabling
   // scrapeContacts pushes many runs past that, so we poll instead of waiting once.
@@ -70,7 +116,33 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
   return items
 }
 
-async function enrichBatchWithGemini(leads: Record<string, unknown>[], geminiKey: string, industry: string) {
+// A lead that could not be scored is never persisted. Scoring is the product's
+// core value, so a half-scored batch is worse than no batch: the previous code
+// papered over failures with a hardcoded score of 40, which shipped garbage to
+// the customer and billed them for it. Failing loudly is the deliberate choice.
+class ScoringError extends Error {}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+// Free-tier keys rate-limit aggressively (429) and Gemini intermittently 5xxs.
+// Both are transient and earn a retry. A 400/403 means a malformed request or a
+// bad key and will never succeed, so it drops straight to the fallback model
+// instead of burning the backoff budget waiting.
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504])
+
+const MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash-lite']
+const BACKOFF_MS = [0, 2000, 5000]
+
+// Chunks are fired sequentially. With no gap between them a free-tier key 429s
+// from the second chunk onward — which is precisely what produced whole runs of
+// identically-scored leads.
+const INTER_CHUNK_MS = 1500
+
+// Scoring must leave room for Apify inside the function's wall-clock budget, so
+// retries are bounded by a deadline rather than being allowed to run forever.
+const SCORING_BUDGET_MS = 90 * 1000
+
+function buildScoringPrompt(leads: Record<string, unknown>[]) {
   const industryList = Object.keys(INDUSTRY_SEARCH_MAP).join(' / ')
   const slim = leads.map((l, i) => ({
     i,
@@ -81,7 +153,7 @@ async function enrichBatchWithGemini(leads: Record<string, unknown>[], geminiKey
     rating: l.rating,
     review_count: l.review_count,
   }))
-  const prompt = `You are scoring sales leads. For EACH business below, return an object with:
+  return `You are scoring sales leads. For EACH business below, return an object with:
 - i: the same index given
 - industry: classify into one of: ${industryList}
 - score: integer 0-100. Higher = better lead. Reward having a website, phone, address, high rating and many reviews. Vary the scores meaningfully; do NOT give everything the same number.
@@ -90,10 +162,19 @@ async function enrichBatchWithGemini(leads: Record<string, unknown>[], geminiKey
 Businesses: ${JSON.stringify(slim)}
 
 Return JSON only: an array of objects. No markdown, no explanation.`
+}
 
-  const attempt = async (modelName: string) => {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`,
+// Distinguishes "ask again" from "this will never work", so the caller knows
+// whether a retry is worth the remaining time budget.
+async function requestScores(
+  model: string,
+  prompt: string,
+  geminiKey: string,
+): Promise<{ arr: Record<string, unknown>[] | null; retryable: boolean }> {
+  let res: Response
+  try {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
@@ -103,81 +184,110 @@ Return JSON only: an array of objects. No markdown, no explanation.`
         }),
       }
     )
-    if (!res.ok) {
-      const errText = await res.text()
-      console.error('Gemini batch error', modelName, res.status, errText.substring(0, 300))
-      return null
-    }
-    const body = await res.json()
-    const text = body.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
-    try {
-      const parsed = JSON.parse(text)
-      return Array.isArray(parsed) ? parsed : (parsed.leads || parsed.results || null)
-    } catch (e) {
-      console.error('Gemini batch parse failed', String(e))
-      return null
-    }
+  } catch (e) {
+    console.error('Gemini network error', model, String(e))
+    return { arr: null, retryable: true }
   }
 
-  // primary model, then a lighter-quota fallback, with one short retry for 429s
-  let arr = await attempt('gemini-3.6-flash')
-  if (!arr) {
-    await new Promise(r => setTimeout(r, 3000))
-    arr = await attempt('gemini-3.5-flash-lite')
-  }
-  if (!arr) {
-    console.error('Gemini scoring FAILED for all models - leads saved unscored')
-    return leads.map(l => ({ ...l, industry, score: 40, summary: '[AI scoring unavailable]' }))
+  if (!res.ok) {
+    const errText = await res.text()
+    console.error('Gemini error', model, res.status, errText.substring(0, 300))
+    return { arr: null, retryable: RETRYABLE_STATUS.has(res.status) }
   }
 
+  const body = await res.json()
+  const text = body.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  try {
+    const parsed = JSON.parse(text)
+    const arr = Array.isArray(parsed) ? parsed : (parsed.leads || parsed.results || null)
+    // A truncated or oddly-shaped reply is usually transient — worth one more go.
+    return { arr: Array.isArray(arr) ? arr : null, retryable: !Array.isArray(arr) }
+  } catch (e) {
+    console.error('Gemini parse failed', model, String(e))
+    return { arr: null, retryable: true }
+  }
+}
+
+// Returns null if the model skipped any lead or gave it an unusable score.
+// Partial results are rejected wholesale rather than backfilled with a default,
+// which is what the old flat-40 behaviour amounted to.
+function mergeScores(
+  leads: Record<string, unknown>[],
+  arr: Record<string, unknown>[],
+  industry: string,
+): Record<string, unknown>[] | null {
   const byIndex = new Map<number, Record<string, unknown>>()
   for (const o of arr) {
     if (o && typeof o.i === 'number') byIndex.set(o.i, o)
   }
-  return leads.map((l, i) => {
+
+  const out: Record<string, unknown>[] = []
+  for (let i = 0; i < leads.length; i++) {
     const ai = byIndex.get(i)
-    if (!ai) return { ...l, industry, score: 40, summary: '[AI scoring unavailable]' }
+    if (!ai) return null
     const s = Number(ai.score)
-    return {
-      ...l,
-      industry: (ai.industry as string) || industry,
-      score: Number.isFinite(s) ? Math.max(0, Math.min(100, Math.round(s))) : 40,
+    if (!Number.isFinite(s)) return null
+    out.push({
+      ...leads[i],
+      industry: normaliseIndustry(ai.industry as string, industry),
+      score: Math.max(0, Math.min(100, Math.round(s))),
       summary: (ai.summary as string) || '',
-    }
-  })
+    })
+  }
+  return out
 }
 
-async function enrichWithGemini(lead: Record<string, unknown>, geminiKey: string, industry: string) {
-  const industryList = Object.keys(INDUSTRY_SEARCH_MAP).join(' / ')
-  const prompt = `Given this business data: ${JSON.stringify(lead)}.
-Return JSON only with these exact fields:
-- industry: classify into one of: ${industryList}
-- score: integer 0-100 (higher = more complete: has phone, website, address, reviews)
-- summary: one line description max 12 words
-No explanation, no markdown, just raw JSON.`
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json' },
-        }),
+// Walks primary model → fallback model, retrying each with exponential backoff,
+// and throws ScoringError once every option is exhausted or the budget is spent.
+async function scoreChunk(
+  leads: Record<string, unknown>[],
+  geminiKey: string,
+  industry: string,
+  deadline: number,
+): Promise<Record<string, unknown>[]> {
+  const prompt = buildScoringPrompt(leads)
+
+  for (const model of MODELS) {
+    for (let attempt = 0; attempt < BACKOFF_MS.length; attempt++) {
+      if (Date.now() > deadline) {
+        throw new ScoringError('AI scoring ran out of time before every lead could be scored. Please try a smaller batch.')
       }
-    )
-    if (!res.ok) { const errText = await res.text(); console.error('Gemini API error', res.status, errText); return { industry, score: 40, summary: '[AI scoring unavailable]' } }
-    const body = await res.json()
-    const text = body.candidates?.[0]?.content?.parts?.[0]?.text || '{}'
-    const parsed = JSON.parse(text)
-    return {
-      industry: parsed.industry || industry,
-      score: typeof parsed.score === 'number' ? parsed.score : 40,
-      summary: parsed.summary || '',
+      if (BACKOFF_MS[attempt]) await sleep(BACKOFF_MS[attempt])
+
+      const { arr, retryable } = await requestScores(model, prompt, geminiKey)
+
+      if (arr) {
+        const merged = mergeScores(leads, arr, industry)
+        if (merged) return merged
+        console.warn(`Gemini ${model} returned an incomplete batch - retrying`)
+        continue
+      }
+      // Nothing a retry can fix; give the fallback model its turn instead.
+      if (!retryable) break
     }
-  } catch {
-    return { industry, score: 40, summary: '' }
+  }
+
+  throw new ScoringError('AI scoring is temporarily unavailable, so no leads were saved and your allowance was not used. This is usually a rate limit — please try again in a few minutes.')
+}
+
+// Best-effort: monitoring must never be the reason a scrape fails, so a failed
+// write here is swallowed after being logged to stdout.
+// deno-lint-ignore no-explicit-any
+async function logError(
+  db: any,
+  entry: { source: string; stage?: string; message: string; detail?: unknown; user_id?: string | null; scrape_run_id?: string | null },
+) {
+  try {
+    await db.from('error_log').insert({
+      source: entry.source,
+      stage: entry.stage ?? null,
+      message: entry.message.slice(0, 2000),
+      detail: entry.detail ? JSON.parse(JSON.stringify(entry.detail)) : null,
+      user_id: entry.user_id ?? null,
+      scrape_run_id: entry.scrape_run_id ?? null,
+    })
+  } catch (e) {
+    console.error('error_log write failed', String(e))
   }
 }
 
@@ -192,14 +302,27 @@ Deno.serve(async (req) => {
   let userId: string | null = null
 
   try {
-    const { industry, city, sources, limit } = await req.json()
+    const body = await req.json()
+    const { industry, city, sources, limit } = body
     const apifyKey = Deno.env.get('APIFY_API_KEY') || ''
     const geminiKey = Deno.env.get('GEMINI_API_KEY') || ''
 
-    const authHeader = req.headers.get('Authorization') || ''
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user } } = await db.auth.getUser(token)
-    userId = user?.id || null
+    // Two ways in. Normally the caller's JWT identifies the user. The scheduled
+    // job has no user session, so it presents a shared secret and names the
+    // user explicitly — which is why the secret must be compared before the
+    // body's user_id is trusted at all.
+    const cronSecret = Deno.env.get('CRON_SECRET') || ''
+    const presentedSecret = req.headers.get('x-cron-secret') || ''
+    const isCron = cronSecret.length > 0 && presentedSecret === cronSecret
+
+    if (isCron) {
+      userId = (body.user_id as string) || null
+    } else {
+      const authHeader = req.headers.get('Authorization') || ''
+      const token = authHeader.replace('Bearer ', '')
+      const { data: { user } } = await db.auth.getUser(token)
+      userId = user?.id || null
+    }
 
     // --- Quota enforcement (reject if request exceeds remaining allowance) ---
     if (!userId) {
@@ -302,45 +425,135 @@ Deno.serve(async (req) => {
     const results = await Promise.allSettled(tasks)
     for (const r of results) {
       if (r.status === 'fulfilled') raw = raw.concat(r.value)
+      else {
+        // Previously discarded in silence: a source that failed looked
+        // identical to a source that legitimately returned nothing.
+        console.error('Source failed:', r.reason)
+        await logError(db, {
+          source: 'scrape-leads', stage: 'apify',
+          message: `Source failed: ${r.reason?.message || String(r.reason)}`,
+          user_id: userId, scrape_run_id: scrapeRunId,
+        })
+      }
     }
 
-    // Dedup by name+city
+    // Every source failed — surface it rather than reporting a successful run
+    // that happened to find nothing.
+    if (raw.length === 0 && results.every(r => r.status === 'rejected')) {
+      throw new Error('The lead source could not be reached. Please try again shortly.')
+    }
+
+    // --- Dedup, in two passes ---
+    // Pass 1: within this run. Two sources, or one source paginating, routinely
+    // return the same business twice.
     const seen = new Set<string>()
-    const unique = raw.filter(l => {
-      const key = `${String(l.name).toLowerCase()}|${String(l.city).toLowerCase()}`
-      if (!l.name || seen.has(key)) return false
+    const withinRun = raw.filter(l => {
+      if (!l.name) return false
+      const key = dedupKey(l.name, l.city)
+      if (seen.has(key)) return false
       seen.add(key)
       return true
     })
 
-    // Enrich with Gemini
-    // Process in chunks of 10 to stay within edge function memory limits.
+    // Pass 2: against what this user already has. This is the pass that was
+    // missing entirely — every re-run of a search previously re-inserted the
+    // same businesses and charged the customer's quota for them. Name+city is
+    // the primary key; phone and email catch the same business relisted under a
+    // slightly different trading name.
+    const unique = await (async () => {
+      const keys = withinRun.map(l => dedupKey(l.name, l.city))
+      const phones = withinRun.map(l => normalisePhone(l.phone)).filter(p => p.length >= 10)
+      const emails = withinRun.map(l => String(l.email ?? '').toLowerCase().trim()).filter(Boolean)
+
+      const inList = (col: string, vals: string[]) =>
+        vals.length ? `${col}.in.(${[...new Set(vals)].map(v => JSON.stringify(v)).join(',')})` : null
+
+      const { data: existing, error: existErr } = await db
+        .from('leads')
+        .select('dedup_key, phone_key, email')
+        .eq('user_id', userId)
+        .or([
+          inList('dedup_key', keys),
+          inList('phone_key', phones),
+          inList('email', emails),
+        ].filter(Boolean).join(','))
+
+      if (existErr) {
+        // Fail open. A dedup lookup that errors (most likely because the
+        // 20260813 migration has not been applied yet) must not take the whole
+        // scrape down with it — the unique index is the real backstop.
+        console.error('Dedup lookup failed, continuing without it:', existErr.message)
+        await logError(db, {
+          source: 'scrape-leads', stage: 'dedup',
+          message: `Dedup lookup failed, continued without it: ${existErr.message}`,
+          user_id: userId, scrape_run_id: scrapeRunId,
+        })
+        return withinRun
+      }
+
+      const seenKeys = new Set((existing || []).map(r => r.dedup_key).filter(Boolean))
+      const seenPhones = new Set((existing || []).map(r => r.phone_key).filter(p => p && p.length >= 10))
+      const seenEmails = new Set((existing || []).map(r => String(r.email ?? '').toLowerCase()).filter(Boolean))
+
+      const kept = withinRun.filter(l => {
+        if (seenKeys.has(dedupKey(l.name, l.city))) return false
+        const phone = normalisePhone(l.phone)
+        if (phone.length >= 10 && seenPhones.has(phone)) return false
+        const email = String(l.email ?? '').toLowerCase().trim()
+        if (email && seenEmails.has(email)) return false
+        return true
+      })
+
+      console.log(`Dedup: ${raw.length} scraped -> ${withinRun.length} unique in run -> ${kept.length} new for user`)
+      return kept
+    })()
+
+    // Everything the search returned was already in the customer's list. Stop
+    // before Gemini: scoring leads that will not be inserted burns quota on the
+    // AI key and, on a free tier, is exactly what triggers the rate limiting.
+    if (unique.length === 0) {
+      if (scrapeRunId) {
+        await db
+          .from('scrape_runs')
+          .update({ status: 'completed', leads_found: 0, leads_saved: 0 })
+          .eq('id', scrapeRunId)
+      }
+      return new Response(
+        JSON.stringify({ success: true, count: 0, saved: 0, duplicates: withinRun.length, run_id: scrapeRunId }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Enrich with Gemini.
+    // Chunks of 10 stay within edge function memory limits; the pause between
+    // them keeps a free-tier key under its per-minute request ceiling. Any chunk
+    // that cannot be scored aborts the whole run — see ScoringError.
     const CHUNK = 10
+    const scoringDeadline = Date.now() + SCORING_BUDGET_MS
     const enriched: Record<string, unknown>[] = []
     for (let ci = 0; ci < unique.length; ci += CHUNK) {
-      const scored = await enrichBatchWithGemini(unique.slice(ci, ci + CHUNK), geminiKey, industry)
+      if (ci > 0) await sleep(INTER_CHUNK_MS)
+      const scored = await scoreChunk(unique.slice(ci, ci + CHUNK), geminiKey, industry, scoringDeadline)
       enriched.push(...scored)
     }
 
     // Insert leads
     let savedCount = 0
     if (enriched.length > 0) {
+      // Upsert against the unique index rather than plain insert. The dedup pass
+      // above already removed known duplicates; this closes the race where two
+      // concurrent runs scrape the same business, and means one collision no
+      // longer aborts the entire batch the way a plain insert did.
       const { data: inserted, error: insertErr } = await db
         .from('leads')
-        .insert(enriched)
+        .upsert(enriched, { onConflict: 'user_id,dedup_key', ignoreDuplicates: true })
         .select('id')
 
       if (insertErr) {
         console.error('Insert error:', insertErr.message)
-        // Fallback: upsert ignoring duplicates
-        const { data: upserted } = await db
-          .from('leads')
-          .upsert(enriched, { onConflict: 'name,city', ignoreDuplicates: true })
-          .select('id')
-        savedCount = upserted?.length || 0
-      } else {
-        savedCount = inserted?.length || 0
+        throw new Error(`Leads could not be saved: ${insertErr.message}`)
       }
+      savedCount = inserted?.length || 0
 
       if (userId && savedCount > 0) {
         await db.rpc('increment_leads_used', { user_id: userId, amount: savedCount })
@@ -366,9 +579,27 @@ Deno.serve(async (req) => {
         .update({ status: 'failed', error_message: (err as Error).message })
         .eq('id', scrapeRunId)
     }
+    // A scoring failure is a transient upstream problem, not a bug in the
+    // request, and nothing was saved or billed — 503 says "try again" where a
+    // 500 would suggest the request itself was at fault.
+    const scoringFailed = err instanceof ScoringError
+
+    await logError(db, {
+      source: 'scrape-leads',
+      stage: scoringFailed ? 'scoring' : 'run',
+      message: (err as Error).message,
+      detail: { stack: (err as Error).stack?.slice(0, 1000) },
+      user_id: userId,
+      scrape_run_id: scrapeRunId,
+    })
+
     return new Response(
-      JSON.stringify({ error: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: scoringFailed ? 'scoring_unavailable' : (err as Error).message,
+        message: (err as Error).message,
+        retryable: scoringFailed,
+      }),
+      { status: scoringFailed ? 503 : 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

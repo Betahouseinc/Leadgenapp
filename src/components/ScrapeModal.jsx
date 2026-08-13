@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { INDUSTRY_GROUPS as INDUSTRIES } from '../constants/industries'
 
 const T = {
   surface: '#FFFFFF',
@@ -15,17 +16,6 @@ const T = {
   errorL: '#FDEAEA',
 }
 
-// Keys must match INDUSTRY_SEARCH_MAP in supabase/functions/scrape-leads.
-// Anything not in that map falls back to searching the raw label, which gives
-// noticeably worse Google Maps results — keep the two lists in step.
-const INDUSTRIES = {
-  'Technology': ['IT Software', 'EdTech', 'FinTech', 'E-commerce'],
-  'Marketing & Media': ['Digital Marketing', 'Social Media Marketing', 'Media & Production', 'Events & Entertainment'],
-  'Business Services': ['HR & Staffing', 'Legal Services', 'Logistics & Supply Chain', 'Travel & Hospitality'],
-  'Traditional': ['Real Estate', 'Manufacturing', 'Construction & Infrastructure', 'Food & Beverage'],
-  'Social Sectors': ['Healthcare', 'Education', 'Pharma', 'Retail'],
-}
-
 const INDIAN_CITIES = [
   'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
   'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
@@ -38,7 +28,9 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
   const [city, setCity] = useState('Bengaluru')
   const [useCustomCity, setUseCustomCity] = useState(false)
   const [customCity, setCustomCity] = useState('')
-  const [sources, setSources] = useState({ gmaps: true })
+  // Google Maps is the only source; LinkedIn was removed from the UI. Kept as
+  // an object so the request shape stays the same if a second source returns.
+  const [sources] = useState({ gmaps: true })
   const [limit, setLimit] = useState(10)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -47,8 +39,6 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
   const [overQuota, setOverQuota] = useState(false)
   const [saved, setSaved] = useState(null)
   const [done, setDone] = useState(false)
-
-  const toggleSource = (key) => setSources(s => ({ ...s, [key]: !s[key] }))
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category)

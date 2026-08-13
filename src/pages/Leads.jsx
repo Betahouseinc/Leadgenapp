@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LEAD_STATUSES, normaliseStatus, statusMeta } from '../constants/leadStatus'
+import { scoreBand } from '../constants/score'
+import { INDUSTRY_FILTER_OPTIONS } from '../constants/industries'
 import { exportCsv, exportExcel } from '../utils/exportLeads'
 import StatsBar from '../components/StatsBar'
 import LeadDrawer from '../components/LeadDrawer'
@@ -19,7 +21,6 @@ const T = {
   teal: '#7BCF16',
 }
 
-const INDUSTRIES = ['All', 'Real estate', 'IT Software', 'Manufacturing', 'Healthcare', 'Retail', 'Education', 'Pharma']
 const SOURCES = ['All', 'Google Maps']
 const SORTS = [
   { value: 'newest',      label: 'Newest first',  col: 'created_at', asc: false },
@@ -29,7 +30,17 @@ const SORTS = [
   { value: 'name_asc',    label: 'Name A-Z',      col: 'name',       asc: true },
 ]
 
-const PAGE = 1000
+const PAGE_SIZE = 50
+
+// Exports still need every matching row, not just the visible page, so they
+// page through server-side. 1000 is Supabase's per-request ceiling.
+const EXPORT_PAGE = 1000
+
+// PostgREST's or() filter is comma-delimited, so these characters would be read
+// as syntax rather than as part of the search term.
+function sanitiseSearch(q) {
+  return q.replace(/[,()%\\]/g, ' ').trim()
+}
 
 function relativeTime(v) {
   if (!v) return null
@@ -62,8 +73,24 @@ function sourceBadge(source) {
   )
 }
 
-function ScoreBar({ score = 0 }) {
-  const color = score >= 75 ? '#2E7D32' : score >= 50 ? '#109840' : '#C44B4B'
+function ScoreBar({ score }) {
+  // A null score means AI scoring never ran for this lead. Rendering it as 0
+  // would read as "terrible lead" rather than "no data", which is the exact
+  // confusion the old hardcoded 40 created.
+  if (score == null) {
+    return (
+      <span
+        title="This lead was saved before it could be scored. Re-run the search to score it."
+        style={{
+          fontSize: 11, fontWeight: 600, color: T.muted,
+          background: 'rgba(0,0,0,0.05)', borderRadius: 20,
+          padding: '2px 9px', whiteSpace: 'nowrap',
+        }}
+      >Unscored</span>
+    )
+  }
+
+  const { color } = scoreBand(score)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <div style={{
@@ -85,6 +112,10 @@ export default function Leads() {
   const [drawer, setDrawer] = useState(null)
   const [scrapeOpen, setScrapeOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [stats, setStats] = useState(null)
   const [industry, setIndustry] = useState('All')
   const [source, setSource] = useState('All')
   const [minScore, setMinScore] = useState(0)
@@ -123,59 +154,95 @@ export default function Leads() {
     })
   }, [navigate, refreshQuota])
 
-  const buildQuery = useCallback(() => {
+  // Every filter is applied by Postgres. Previously the page downloaded the
+  // whole table and filtered in JavaScript, which cost one round trip per 1000
+  // rows on every render and does not survive a few thousand leads.
+  const buildQuery = useCallback((select, opts) => {
     const s = SORTS.find(x => x.value === sort) || SORTS[0]
-    let q = supabase.from('leads').select('*')
-    if (status !== 'All') q = q.eq('status', status)
-    return q.order(s.col, { ascending: s.asc, nullsFirst: false })
-  }, [status, sort])
+    // Reads go through leads_view, which masks email and phone for free-plan
+    // users. Writes still target `leads` directly — the view is read-only.
+    let q = supabase.from('leads_view').select(select, opts)
 
-  // Supabase caps a request at 1000 rows; page through so filters and exports
-  // always operate on the complete set, never a silent first page.
-  const fetchAllRows = useCallback(async () => {
-    const out = []
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await buildQuery().range(from, from + PAGE - 1)
-      if (error) throw error
-      out.push(...(data || []))
-      if (!data || data.length < PAGE) break
-    }
-    return out
-  }, [buildQuery])
+    if (status !== 'All') q = q.eq('status', status)
+    if (industry !== 'All') q = q.eq('industry', industry)
+    if (source === 'Google Maps') q = q.in('source', ['gmaps', 'Google Maps'])
+    else if (source === 'LinkedIn') q = q.in('source', ['linkedin', 'LinkedIn'])
+
+    // Only constrain the score when the user actually asked for a floor. A bare
+    // `score >= 0` is NULL for unscored leads, which would silently hide them.
+    if (minScore > 0) q = q.gte('score', minScore)
+
+    const term = sanitiseSearch(debouncedSearch)
+    if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+
+    return q.order(s.col, { ascending: s.asc, nullsFirst: false })
+  }, [status, sort, industry, source, minScore, debouncedSearch])
 
   const fetchLeads = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      setLeads(await fetchAllRows())
+      const from = page * PAGE_SIZE
+      const { data, count, error: e } = await buildQuery('*', { count: 'exact' })
+        .range(from, from + PAGE_SIZE - 1)
+      if (e) throw e
+      setLeads(data || [])
+      setTotal(count ?? 0)
     } catch (e) {
       setError(e.message || 'Could not load leads. Please refresh.')
+      setLeads([])
+      setTotal(0)
     } finally {
       setLoading(false)
     }
-  }, [fetchAllRows])
+  }, [buildQuery, page])
 
   useEffect(() => { fetchLeads() }, [fetchLeads])
 
-  const filtered = useMemo(() => {
-    return leads.filter(l => {
-      const q = search.toLowerCase()
-      const matchSearch = !q ||
-        (l.name || '').toLowerCase().includes(q) ||
-        (l.company || '').toLowerCase().includes(q) ||
-        (l.email || '').toLowerCase().includes(q)
-      const matchIndustry = industry === 'All' || l.industry === industry
-      const matchSource = source === 'All' ||
-        (source === 'Google Maps' && (l.source === 'gmaps' || l.source === 'Google Maps')) ||
-        (source === 'LinkedIn' && (l.source === 'linkedin' || l.source === 'LinkedIn'))
-      const matchScore = (l.score || 0) >= minScore
-      return matchSearch && matchIndustry && matchSource && matchScore
-    })
-  }, [leads, search, industry, source, minScore])
+  // Aggregates come from the database now — the client only holds one page and
+  // could not compute totals over the full set.
+  const refreshStats = useCallback(async () => {
+    const { data } = await supabase.rpc('lead_stats')
+    if (data && !data.error) setStats(data)
+  }, [])
 
+  useEffect(() => { refreshStats() }, [refreshStats])
+
+  // Typing must not fire a query per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(id)
+  }, [search])
+
+  // Any filter change invalidates the current page number.
+  useEffect(() => {
+    setPage(0)
+  }, [status, industry, source, minScore, debouncedSearch, sort])
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  // Drives the empty state: "no leads yet" and "no leads match your filters"
+  // need different wording and different buttons.
+  const hasActiveFilters =
+    search !== '' || industry !== 'All' || source !== 'All' || status !== 'All' || minScore > 0
+
+  const clearFilters = () => {
+    setSearch('')
+    setIndustry('All')
+    setSource('All')
+    setStatus('All')
+    setMinScore(0)
+  }
+
+  // Selection is per-page: "select all" cannot mean 40,000 unseen rows.
+  const allOnPageSelected = leads.length > 0 && leads.every(l => selected.has(l.id))
   const toggleAll = () => {
-    if (selected.size === filtered.length) setSelected(new Set())
-    else setSelected(new Set(filtered.map(l => l.id)))
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (allOnPageSelected) leads.forEach(l => next.delete(l.id))
+      else leads.forEach(l => next.add(l.id))
+      return next
+    })
   }
 
   const toggleRow = (id) => {
@@ -191,7 +258,7 @@ export default function Leads() {
     const { error: e } = await supabase.from('leads').update({ status: next }).in('id', ids)
     if (e) { setError(`Could not update status: ${e.message}`); return }
     // last_contacted_at is stamped by a DB trigger, so re-read to reflect it.
-    const { data } = await supabase.from('leads').select('*').in('id', ids)
+    const { data } = await supabase.from('leads_view').select('*').in('id', ids)
     const byId = Object.fromEntries((data || []).map(r => [r.id, r]))
     setLeads(prev => prev.map(l => byId[l.id] ? byId[l.id] : l))
   }
@@ -218,15 +285,33 @@ export default function Leads() {
     setTimeout(() => setNoteMsg(null), 2000)
   }
 
+  // Exports cover every row matching the current filters, not just the visible
+  // page, so they fetch server-side rather than reading component state.
+  const fetchAllMatching = useCallback(async () => {
+    const out = []
+    for (let from = 0; ; from += EXPORT_PAGE) {
+      const { data, error: e } = await buildQuery('*').range(from, from + EXPORT_PAGE - 1)
+      if (e) throw e
+      out.push(...(data || []))
+      if (!data || data.length < EXPORT_PAGE) break
+    }
+    return out
+  }, [buildQuery])
+
   const runExport = async (kind, scope) => {
     setError(null)
     setExporting(kind)
     try {
       let rows
       if (scope === 'selected') {
-        rows = filtered.filter(l => selected.has(l.id))
+        // Selections can span pages, so read them from the database by id
+        // rather than from the rows that happen to be on screen.
+        const ids = Array.from(selected)
+        const { data, error: e } = await supabase.from('leads_view').select('*').in('id', ids)
+        if (e) throw e
+        rows = data || []
       } else {
-        rows = filtered.length === leads.length ? filtered : filtered
+        rows = await fetchAllMatching()
       }
       if (!rows.length) { setError('Nothing to export.'); return }
       kind === 'csv' ? exportCsv(rows) : exportExcel(rows)
@@ -330,7 +415,7 @@ export default function Leads() {
               fontSize: 12, color: T.ink2, cursor: 'pointer', flexShrink: 0,
               whiteSpace: 'nowrap',
             }}
-          >Out</button>
+          >Log Out</button>
           </div>
         </div>
         {/* Row 2: quota meter — full width, only shown on mobile */}
@@ -356,7 +441,7 @@ export default function Leads() {
 
       {/* Main */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: 'clamp(12px, 3vw, 24px) clamp(12px, 3vw, 24px) 80px' }}>
-        <StatsBar leads={leads} />
+        <StatsBar stats={stats} />
 
         {/* Filter bar */}
         <div style={{
@@ -372,7 +457,7 @@ export default function Leads() {
         }}>
           <input
             type="search"
-            placeholder="Search name, company, email…"
+            placeholder="Search name or email…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{
@@ -391,7 +476,7 @@ export default function Leads() {
             onChange={e => setIndustry(e.target.value)}
             style={selectStyle}
           >
-            {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+            {INDUSTRY_FILTER_OPTIONS.map(i => <option key={i}>{i}</option>)}
           </select>
 
           <select
@@ -456,15 +541,30 @@ export default function Leads() {
           }}>{error}</div>
         )}
 
+        {/* Contacts are masked by the database for free plans; this only
+            explains why. Removing it would not reveal anything. */}
+        {leads.length > 0 && leads[0].contacts_masked && (
+          <div style={{
+            marginBottom: 12, padding: '10px 14px', borderRadius: 8,
+            background: T.blueL, border: `0.5px solid ${T.blue}`,
+            fontSize: 12.5, color: T.blue, lineHeight: 1.6,
+          }}>
+            Email and phone are partially hidden on the free plan.{' '}
+            <Link to="/pricing" style={{ color: T.blue, fontWeight: 700 }}>
+              Upgrade to reveal full contact details →
+            </Link>
+          </div>
+        )}
+
         {/* Export all filtered — visible when nothing is hand-selected */}
-        {!loading && selected.size === 0 && filtered.length > 0 && (
+        {!loading && selected.size === 0 && total > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
             marginBottom: 12, padding: '10px 14px',
             background: T.surface, border: `0.5px solid ${T.border}`, borderRadius: 8,
           }}>
             <span style={{ fontSize: 13, color: T.ink2 }}>
-              Export all {filtered.length} result{filtered.length === 1 ? '' : 's'}
+              Export all {total.toLocaleString('en-IN')} result{total === 1 ? '' : 's'}
             </span>
             <button onClick={() => runExport('csv', 'all')} disabled={!!exporting} style={ghostBtn}>
               {exporting === 'csv' ? 'Preparing…' : 'CSV'}
@@ -486,13 +586,13 @@ export default function Leads() {
           overflow: 'auto',
         }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
-              Loading leads…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: T.muted, fontSize: 14 }}>
-              No leads found.
-            </div>
+            <TableSkeleton />
+          ) : leads.length === 0 ? (
+            <EmptyState
+              filtered={hasActiveFilters}
+              onClear={clearFilters}
+              onScrape={() => setScrapeOpen(true)}
+            />
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
@@ -500,8 +600,9 @@ export default function Leads() {
                   <Th style={{ width: 36 }}>
                     <input
                       type="checkbox"
-                      checked={selected.size === filtered.length && filtered.length > 0}
+                      checked={allOnPageSelected}
                       onChange={toggleAll}
+                      title="Select all on this page"
                       style={{ accentColor: T.blue }}
                     />
                   </Th>
@@ -518,7 +619,7 @@ export default function Leads() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(lead => (
+                {leads.map(lead => (
                   <Fragment key={lead.id}>
                   <tr
                     onClick={() => setDrawer(lead)}
@@ -548,7 +649,7 @@ export default function Leads() {
                     </Td>
                     <Td>{lead.industry || '—'}</Td>
                     <Td>{sourceBadge(lead.source)}</Td>
-                    <Td><ScoreBar score={lead.score || 0} /></Td>
+                    <Td><ScoreBar score={lead.score ?? null} /></Td>
                     <Td>{lead.city || '—'}</Td>
                     <Td onClick={e => e.stopPropagation()}>
                       <select
@@ -588,12 +689,14 @@ export default function Leads() {
                         }}
                       >{lead.notes ? '✎' : '+'}</button>
                     </Td>
-                  </tr>
-                  <Td>
+                    {/* Was previously outside the <tr>, which detached it from
+                        its row and left the Date Added column unpopulated. */}
+                    <Td>
                       <span style={{ fontSize: 11.5, color: T.muted, whiteSpace: 'nowrap' }}>
                         {lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' }) : '—'}
                       </span>
                     </Td>
+                  </tr>
                   {notesOpen === lead.id && (
                     <tr>
                       <td colSpan={11} style={{ padding: '0 14px 14px', background: T.bg }}>
@@ -644,6 +747,53 @@ export default function Leads() {
               </tbody>
             </table>
           )}
+        </div>
+
+        {/* Pager */}
+        {!loading && total > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+            marginTop: 12, padding: '10px 14px',
+            background: T.surface, border: `0.5px solid ${T.border}`, borderRadius: 8,
+          }}>
+            <span style={{ fontSize: 12.5, color: T.ink2 }}>
+              {(page * PAGE_SIZE + 1).toLocaleString('en-IN')}–
+              {Math.min((page + 1) * PAGE_SIZE, total).toLocaleString('en-IN')}
+              {' of '}{total.toLocaleString('en-IN')}
+            </span>
+            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', alignItems: 'center' }}>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                style={{ ...pagerBtn, opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? 'default' : 'pointer' }}
+              >← Prev</button>
+              <span style={{ fontSize: 12.5, color: T.muted, padding: '0 4px' }}>
+                Page {page + 1} of {pageCount.toLocaleString('en-IN')}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))}
+                disabled={page >= pageCount - 1}
+                style={{ ...pagerBtn, opacity: page >= pageCount - 1 ? 0.4 : 1, cursor: page >= pageCount - 1 ? 'default' : 'pointer' }}
+              >Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Where the data comes from — disclosed in-product, not only in the
+            legal pages, because this is where the data is actually used. */}
+        <div style={{
+          marginTop: 12, fontSize: 11.5, color: T.muted, lineHeight: 1.6,
+        }}>
+          Leads are compiled from publicly listed business information on Google Maps and
+          scored by an AI model. Details may be outdated or incomplete — verify before
+          acting on them. You are responsible for the lawfulness of your outreach.{' '}
+          <Link to="/legal/privacy" style={{ color: T.blue, textDecoration: 'none' }}>
+            Privacy Policy
+          </Link>
+          {' · '}
+          <Link to="/legal/terms" style={{ color: T.blue, textDecoration: 'none' }}>
+            Terms
+          </Link>
         </div>
 
         {/* FAQ Section */}
@@ -706,7 +856,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How is the AI score calculated?',
-    a: 'Each lead is scored 0–100 by our AI model based on profile completeness and outreach-readiness. 80–100 (green bar) means the business has a phone, website, strong rating and reviews — high priority. 60–79 (blue) has most details — worth contacting. Below 60 (red) has a sparse profile — lower priority. The AI also writes a one-line summary explaining the score, visible in the AI Summary export column.',
+    a: 'Each lead is scored 0–100 by our AI model based on how complete and reachable its public listing is — phone, website, address, rating and review count. 70–100 (green) is a complete, easily contactable listing. 40–69 (amber) is partial. Below 40 (red) is sparse. Leads marked "Unscored" were saved before scoring could run — re-run that search to score them. Note that this measures listing completeness, not how likely a business is to buy. The AI also writes a one-line summary, visible in the AI Summary export column.',
   },
   {
     q: 'Can I export my leads to Excel?',
@@ -813,7 +963,7 @@ function FAQ() {
       }}>
         <span>Still have questions?</span>
         <a
-          href="mailto:admin@exommerce.online"
+          href="mailto:leadgen.support@exommerce.online"
           style={{ fontWeight: 600, color: '#109840', textDecoration: 'underline' }}
         >
           Email us
@@ -834,8 +984,62 @@ function Th({ children, style = {} }) {
       textTransform: 'uppercase',
       letterSpacing: '0.4px',
       whiteSpace: 'nowrap',
+      // Header stays put while the rows scroll. The offset clears the sticky
+      // top bar above it; without it the header hides underneath.
+      position: 'sticky',
+      top: 0,
+      zIndex: 2,
+      background: '#FFFFFF',
+      boxShadow: 'inset 0 -0.5px 0 rgba(11,13,12,0.12)',
       ...style,
     }}>{children}</th>
+  )
+}
+
+// Mirrors the real table's shape so the layout does not jump when rows arrive.
+function TableSkeleton({ rows = 8 }) {
+  return (
+    <div style={{ padding: '14px 16px' }} aria-busy="true" aria-label="Loading leads">
+      <style>{`@keyframes lgpulse { 0%,100% { opacity: 0.45 } 50% { opacity: 0.9 } }`}</style>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 0' }}>
+          {[18, '22%', '20%', '12%', 70, '10%'].map((w, j) => (
+            <div key={j} style={{
+              height: 11, width: w, borderRadius: 4,
+              background: 'rgba(11,13,12,0.09)',
+              animation: `lgpulse 1.4s ease-in-out ${i * 0.06}s infinite`,
+            }} />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EmptyState({ filtered, onClear, onScrape }) {
+  return (
+    <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 28, marginBottom: 10 }}>{filtered ? '🔍' : '📋'}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: '#0B0D0C', marginBottom: 6 }}>
+        {filtered ? 'No leads match these filters' : 'No leads yet'}
+      </div>
+      <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 18, lineHeight: 1.6 }}>
+        {filtered
+          ? 'Try widening the score range, or clearing the filters to see everything.'
+          : 'Run your first search to start building your lead list.'}
+      </div>
+      {filtered ? (
+        <button onClick={onClear} style={{
+          padding: '8px 16px', background: '#109840', color: '#FFF',
+          border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        }}>Clear all filters</button>
+      ) : (
+        <button onClick={onScrape} style={{
+          padding: '8px 16px', background: '#109840', color: '#FFF',
+          border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+        }}>+ Run your first scrape</button>
+      )}
+    </div>
   )
 }
 
@@ -875,6 +1079,16 @@ const ghostBtn = {
   fontWeight: 600,
   color: '#109840',
   cursor: 'pointer',
+}
+
+const pagerBtn = {
+  padding: '5px 12px',
+  background: '#FFFFFF',
+  border: '0.5px solid rgba(11,13,12,0.12)',
+  borderRadius: 8,
+  fontSize: 12.5,
+  fontWeight: 600,
+  color: '#4B5560',
 }
 
 const selectStyle = {
