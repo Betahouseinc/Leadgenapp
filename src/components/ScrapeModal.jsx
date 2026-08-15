@@ -52,10 +52,10 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
   //
   // Two different ceilings apply and they mean different things. The plan quota
   // is what the customer has left; MAX_PER_RUN is how much one search can
-  // physically do in a single pass, and the slider previously went to 200 —
-  // four times what the backend can finish. Keep this in step with
-  // MAX_LEADS_PER_RUN in supabase/functions/scrape-leads/index.ts.
-  const MAX_PER_RUN = 50
+  // physically do in a single pass. Keep this in step with MAX_LEADS_PER_RUN in
+  // supabase/functions/scrape-leads/index.ts — 10 is the only size measured to
+  // complete against production; 50 was killed mid-run.
+  const MAX_PER_RUN = 10
   const allowed = quota
     ? (quota.unlimited ? MAX_PER_RUN : Math.min(quota.allowed ?? 0, MAX_PER_RUN))
     : MAX_PER_RUN
@@ -276,9 +276,12 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
               <span>Limit</span>
               <span style={{ color: T.blue, fontWeight: 600 }}>{limit}</span>
             </div>
+            {/* Step of 10 was fine when the ceiling was 200; with a ceiling of
+                10 it would collapse min and max onto the same value and leave a
+                slider that cannot move. Below 20, step in ones. */}
             <input
               type="range"
-              min={Math.min(10, sliderMax)} max={sliderMax} step={sliderMax < 10 ? 1 : 10}
+              min={Math.min(5, sliderMax)} max={sliderMax} step={sliderMax < 20 ? 1 : 10}
               value={limit}
               onChange={e => setLimit(Number(e.target.value))}
               disabled={running || sliderMax === 0}

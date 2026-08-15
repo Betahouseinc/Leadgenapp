@@ -77,16 +77,22 @@ function normalisePhone(v: unknown) {
 // The most a single run may collect.
 //
 // One invocation must start the Apify run, wait it out, score every lead and
-// insert them, all inside one worker's lifetime. The slider used to go to 200,
-// which no invocation can survive: Google Maps with scrapeContacts visits all
-// 200 business websites, and the scoring loop cannot cover 200 leads inside any
-// budget that also leaves room for Apify. 50 is the size the observed 60-90s
-// end-to-end timing is built around.
+// insert them, all inside one worker's lifetime.
+//
+// 10 is the only size with evidence behind it. Measured 2026-08-15 against
+// production: two runs at 10 completed in roughly two minutes each; a run at 50
+// was killed mid-flight and left its scrape_runs row stranded in 'running' with
+// nothing saved. 11-49 is untested.
+//
+// Two minutes for ten leads points at the platform's wall clock being far lower
+// than the 400s these budgets were written for — a killed worker never reaches
+// the catch block, so neither deadline below ever got the chance to fire. Do not
+// raise this on the strength of the budgets; raise it only after watching a run
+// at the new size complete, and check scrape_runs for rows stuck in 'running'.
 //
 // Plan allowances are daily, not per-run (starter 100/day, pro 300, agency
 // 1000), so this costs a customer extra runs, never leads they paid for.
-// Raise it only after verifying a run at the new size actually completes.
-const MAX_LEADS_PER_RUN = 50
+const MAX_LEADS_PER_RUN = 10
 
 // Wall-clock budget. Supabase kills a worker that runs past its ceiling, and
 // the Apify poll and the Gemini scoring share one invocation — so their two
