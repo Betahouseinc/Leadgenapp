@@ -103,7 +103,11 @@ Deno.serve(async (req) => {
           sources: ['gmaps'],
           // Reuse the size the user last asked for, bounded so an old 200-lead
           // request does not silently become a nightly 200-lead request.
-          limit: Math.min(Number(s.last_limit) || 20, 50),
+          //
+          // The bound must not exceed MAX_LEADS_PER_RUN in scrape-leads, which
+          // rejects anything larger with a 400 — at 50 every nightly run would
+          // have been turned away the moment that cap dropped. Keep in step.
+          limit: Math.min(Number(s.last_limit) || 10, 10),
         }),
       })
 
