@@ -74,7 +74,39 @@ function normalisePhone(v: unknown) {
   return digits.length > 10 ? digits.slice(-10) : digits
 }
 
-async function runApifyAndWait(actorId: string, input: unknown, apiKey: string): Promise<Record<string, unknown>[]> {
+// The most a single run may collect.
+//
+// One invocation must start the Apify run, wait it out, score every lead and
+// insert them, all inside one worker's lifetime. The slider used to go to 200,
+// which no invocation can survive: Google Maps with scrapeContacts visits all
+// 200 business websites, and the scoring loop cannot cover 200 leads inside any
+// budget that also leaves room for Apify. 50 is the size the observed 60-90s
+// end-to-end timing is built around.
+//
+// Plan allowances are daily, not per-run (starter 100/day, pro 300, agency
+// 1000), so this costs a customer extra runs, never leads they paid for.
+// Raise it only after verifying a run at the new size actually completes.
+const MAX_LEADS_PER_RUN = 50
+
+// Wall-clock budget. Supabase kills a worker that runs past its ceiling, and
+// the Apify poll and the Gemini scoring share one invocation — so their two
+// budgets must add up to less than the ceiling, with room left for the inserts.
+// They previously totalled 450s, which is over it on its own.
+const APIFY_DEADLINE_MS = 200 * 1000
+const SCORING_BUDGET_MS = 120 * 1000
+
+async function runApifyAndWait(
+  actorId: string,
+  input: unknown,
+  apiKey: string,
+  // Apify projects the dataset server-side, so this is the difference between
+  // parsing a few hundred KB and parsing tens of MB. A Google Maps item carries
+  // opening hours, popular-times histograms, image URLs and review metadata that
+  // this function never reads; pulling all 200 of them in full is what exhausts
+  // the worker's memory and gets it killed with "not enough compute resources".
+  fields: string[],
+  itemLimit: number,
+): Promise<Record<string, unknown>[]> {
   // Start the run without blocking. waitForFinish caps at 60s, but enabling
   // scrapeContacts pushes many runs past that, so we poll instead of waiting once.
   const runRes = await fetch(
@@ -89,7 +121,7 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
   const { data: started } = await runRes.json()
 
   const TERMINAL = ['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']
-  const DEADLINE_MS = 6 * 60 * 1000   // hard stop well under the function limit
+  const DEADLINE_MS = APIFY_DEADLINE_MS
   const POLL_MS = 5000
   const begun = Date.now()
 
@@ -107,8 +139,15 @@ async function runApifyAndWait(actorId: string, input: unknown, apiKey: string):
   if (run.status !== 'SUCCEEDED') throw new Error(`Apify actor ${run.status}`)
   console.log(`Apify run ${run.id} finished in ${Math.round((Date.now()-begun)/1000)}s`)
 
+  const params = new URLSearchParams({
+    token: apiKey,
+    limit: String(Math.max(1, Math.min(itemLimit, 200))),
+    fields: fields.join(','),
+    // Drops empty records and Apify's internal #-prefixed keys.
+    clean: 'true',
+  })
   const dataRes = await fetch(
-    `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?token=${apiKey}&limit=200`
+    `https://api.apify.com/v2/datasets/${run.defaultDatasetId}/items?${params}`
   )
   if (!dataRes.ok) throw new Error('Failed to fetch Apify dataset')
   const items = await dataRes.json()
@@ -140,7 +179,8 @@ const INTER_CHUNK_MS = 1500
 
 // Scoring must leave room for Apify inside the function's wall-clock budget, so
 // retries are bounded by a deadline rather than being allowed to run forever.
-const SCORING_BUDGET_MS = 90 * 1000
+// SCORING_BUDGET_MS is declared alongside APIFY_DEADLINE_MS above, where the two
+// halves of the budget can be read together.
 
 function buildScoringPrompt(leads: Record<string, unknown>[]) {
   const industryList = Object.keys(INDUSTRY_SEARCH_MAP).join(' / ')
@@ -303,7 +343,30 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { industry, city, sources, limit } = body
+    const { industry, city, sources } = body
+
+    // Clamp rather than trust the caller. The UI caps its own slider, but the
+    // function is a public HTTP endpoint and the scheduled job posts to it too,
+    // so the ceiling has to be enforced where it cannot be bypassed. An
+    // oversized request is the one input that reliably kills the worker, and a
+    // killed worker never reaches the catch block below — no error is logged,
+    // the scrape_runs row is stranded in 'running', and the customer is left
+    // with a raw platform error. Rejecting here keeps every failure legible.
+    const requested = Number(body.limit)
+    if (!Number.isFinite(requested) || requested < 1) {
+      return new Response(
+        JSON.stringify({ error: 'invalid_limit', message: 'Please choose how many leads to collect.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    if (requested > MAX_LEADS_PER_RUN) {
+      return new Response(JSON.stringify({
+        error: 'limit_too_large',
+        message: `A single search can collect up to ${MAX_LEADS_PER_RUN} leads. Run it again — or change the city or industry — to collect more.`,
+        max_per_run: MAX_LEADS_PER_RUN,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    const limit = Math.floor(requested)
     const apifyKey = Deno.env.get('APIFY_API_KEY') || ''
     const geminiKey = Deno.env.get('GEMINI_API_KEY') || ''
 
@@ -384,7 +447,7 @@ Deno.serve(async (req) => {
           skipClosedPlaces: true,
           maxImages: 0,
           maxReviews: 0,
-        }, apifyKey)
+        }, apifyKey, ['title', 'emails', 'phone', 'website', 'address', 'totalScore', 'reviewsCount'], limit)
         return items.map(item => ({
           name: (item.title as string) || '',
           // scrapeContacts returns emails[] on the item; take the first business address.
@@ -405,7 +468,7 @@ Deno.serve(async (req) => {
         const items = await runApifyAndWait('taHaRcqil3scbchuI', {
           keyword: `${searchTerm} ${city}`,
           maxResults: Math.min(limit, 40),
-        }, apifyKey)
+        }, apifyKey, ['name', 'companyName', 'website', 'companyWebsite', 'location', 'headquarter'], limit)
         return items
           .filter((item: Record<string, unknown>) => item.name || item.companyName)
           .map((item: Record<string, unknown>) => ({
@@ -525,10 +588,16 @@ Deno.serve(async (req) => {
     }
 
     // Enrich with Gemini.
-    // Chunks of 10 stay within edge function memory limits; the pause between
-    // them keeps a free-tier key under its per-minute request ceiling. Any chunk
-    // that cannot be scored aborts the whole run — see ScoringError.
-    const CHUNK = 10
+    // The pause between chunks keeps a free-tier key under its per-minute
+    // request ceiling. Any chunk that cannot be scored aborts the whole run —
+    // see ScoringError.
+    //
+    // 25 per chunk, not 10: chunks are scored strictly sequentially, so the
+    // round trips — not the payload — are what spend the budget. At 10 a full
+    // run needed five calls plus four pauses where it now needs two and one.
+    // The reply per lead is four short fields, so a chunk of 25 is still a
+    // couple of KB and nowhere near a truncation risk.
+    const CHUNK = 25
     const scoringDeadline = Date.now() + SCORING_BUDGET_MS
     const enriched: Record<string, unknown>[] = []
     for (let ci = 0; ci < unique.length; ci += CHUNK) {

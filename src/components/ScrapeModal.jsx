@@ -49,7 +49,17 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
   // impossible option and then rejecting it is a worse experience than simply
   // not offering it — a new free user hitting an error on their first click has
   // no way to tell a broken product from a plan limit.
-  const allowed = quota ? (quota.unlimited ? 200 : Math.min(quota.allowed ?? 0, 200)) : 200
+  //
+  // Two different ceilings apply and they mean different things. The plan quota
+  // is what the customer has left; MAX_PER_RUN is how much one search can
+  // physically do in a single pass, and the slider previously went to 200 —
+  // four times what the backend can finish. Keep this in step with
+  // MAX_LEADS_PER_RUN in supabase/functions/scrape-leads/index.ts.
+  const MAX_PER_RUN = 50
+  const allowed = quota
+    ? (quota.unlimited ? MAX_PER_RUN : Math.min(quota.allowed ?? 0, MAX_PER_RUN))
+    : MAX_PER_RUN
+  const cappedByRun = allowed === MAX_PER_RUN && (!quota || quota.unlimited || (quota.allowed ?? 0) > MAX_PER_RUN)
   const sliderMax = Math.max(allowed, 0)
 
   useEffect(() => {
@@ -121,6 +131,24 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
         if (res.status === 402) {
           setOverQuota(true)
           throw new Error(body?.message || 'You have reached your plan limit for this month.')
+        }
+        // Supabase answers with its own platform-shaped body — a `code` we
+        // never send — for several unrelated conditions, so match the specific
+        // one rather than the shape. An expired session and a killed worker
+        // both arrive as {code, message}, and telling someone their session
+        // lapsed because "the search was too large" sends them to fix the
+        // wrong thing.
+        if (res.status === 401 || body?.code === 'UNAUTHORIZED_NO_AUTH_HEADER') {
+          throw new Error('Your session has expired. Please sign in again and retry.')
+        }
+        // Worker killed for exceeding its memory or time limits. The raw text
+        // ("Function failed due to not having enough compute resources")
+        // reached customers verbatim. Nothing was saved and no quota was spent,
+        // so say that, in words that describe their situation.
+        if (res.status === 546 || body?.code === 'WORKER_LIMIT') {
+          throw new Error(
+            'This search grew too large to finish in one pass, so nothing was saved and none of your allowance was used. Try a smaller number of leads, or a more specific city.'
+          )
         }
         throw new Error(body?.message || body?.error || `Something went wrong (HTTP ${res.status}). Please try again.`)
       }
@@ -264,6 +292,14 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
                     </span>
                   : <>You can request up to {allowed} right now ({quota.remaining} left this month
                       {quota.day_limit != null && `, ${quota.day_remaining} today`}).</>}
+              </div>
+            )}
+            {/* Said only when the run size, not the plan, is what is binding —
+                otherwise it reads as a plan restriction the customer just paid
+                to remove. */}
+            {allowed > 0 && cappedByRun && (
+              <div style={{ fontSize: 11.5, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
+                Up to {MAX_PER_RUN} leads per search — run it again to collect more.
               </div>
             )}
           </div>
