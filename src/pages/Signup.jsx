@@ -24,6 +24,7 @@ export default function Signup() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [needsConfirm, setNeedsConfirm] = useState(false)
   const [compliance, setCompliance] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -32,11 +33,18 @@ export default function Signup() {
     if (password.length < 8) { setError('Password must be at least 8 characters'); return }
     if (!compliance) { setError('Please confirm the compliance statement to continue'); return }
     setLoading(true)
+
+    const acceptedAt = new Date().toISOString()
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { full_name: fullName },
+        // Both values go through auth metadata rather than a follow-up write to
+        // `profiles`. Signup returns no session while email confirmation is on,
+        // so a client write here would run as `anon` and be refused by RLS —
+        // which is exactly how full_name and the compliance timestamp were
+        // being lost. The on_auth_user_created trigger copies these across.
+        data: { full_name: fullName, terms_accepted_at: acceptedAt },
         // Without this the confirmation link falls back to the Site URL, which
         // drops a freshly confirmed user on the marketing page with no sign
         // they are actually signed in.
@@ -48,13 +56,34 @@ export default function Signup() {
       setLoading(false)
       return
     }
-    // Update profile with full name
-    if (data?.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id, email, full_name: fullName,
-        terms_accepted_at: new Date().toISOString(),
-      })
+
+    // Signing up with an address that already exists is not an error — Supabase
+    // returns a user with an empty identities array so the endpoint cannot be
+    // used to test which emails are registered. Without this check that case
+    // renders as "Account created!" and the user waits for a mail that the
+    // server deliberately never sent.
+    if (data?.user && data.user.identities?.length === 0) {
+      setError('An account with this email already exists. Sign in instead.')
+      setLoading(false)
+      return
     }
+
+    // A session comes back only when email confirmation is off. When it is on,
+    // redirecting to /leads hits the auth guard and bounces to /login, which
+    // reads as a failed signup. Ask for the confirmation instead.
+    if (!data?.session) {
+      setLoading(false)
+      setNeedsConfirm(true)
+      return
+    }
+
+    // Confirmation is off, so we have a session and the profile row already
+    // exists from the trigger. Fill in anything an older trigger missed.
+    const { error: profileErr } = await supabase.from('profiles').upsert({
+      id: data.user.id, email, full_name: fullName, terms_accepted_at: acceptedAt,
+    })
+    if (profileErr) console.error('Profile update after signup failed:', profileErr.message)
+
     setLoading(false)
     setDone(true)
     setTimeout(() => navigate('/leads'), 1500)
@@ -92,7 +121,30 @@ export default function Signup() {
           }}>10 free leads — no credit card needed</div>
         </div>
 
-        {done ? (
+        {needsConfirm ? (
+          <div style={{
+            background: T.tealL,
+            border: `0.5px solid ${T.teal}`,
+            borderRadius: 8,
+            padding: '18px 16px',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: T.teal, marginBottom: 8 }}>
+              ✓ Check your inbox
+            </div>
+            <div style={{ fontSize: 13.5, color: T.ink2, lineHeight: 1.6 }}>
+              We sent a confirmation link to <strong style={{ color: T.ink }}>{email}</strong>.
+              Click it to activate your account and your 10 free leads.
+            </div>
+            <div style={{ fontSize: 12.5, color: T.ink2, marginTop: 12, lineHeight: 1.6 }}>
+              Nothing after a minute? Check spam, or{' '}
+              <Link to="/login" style={{ color: T.blue, fontWeight: 600, textDecoration: 'none' }}>
+                sign in
+              </Link>{' '}
+              once confirmed.
+            </div>
+          </div>
+        ) : done ? (
           <div style={{
             background: T.tealL,
             border: `0.5px solid ${T.teal}`,
@@ -146,10 +198,12 @@ export default function Signup() {
           </form>
         )}
 
-        <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: T.ink2 }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ color: T.blue, fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-        </div>
+        {!needsConfirm && (
+          <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: T.ink2 }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: T.blue, fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
+          </div>
+        )}
       </div>
     </div>
   )
