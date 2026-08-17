@@ -28,3 +28,5 @@ Creds.txt
 *.njsproj
 *.sln
 *.sw?
+.vercel
+leadgenai-test-leads.csv

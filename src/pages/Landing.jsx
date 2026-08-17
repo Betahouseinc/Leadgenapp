@@ -1,228 +1,125 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { useNavigate, Link } from 'react-router-dom'
+
+// Built from leadgenai_ui_preview.html, section for section.
+//
+// The mock windows are labelled "Sample" wherever they show lead rows or
+// counts. They illustrate the interface, and a visitor should not have to guess
+// whether the companies in them are real customers — they are not.
 
 const T = {
-  bg: '#FFFFFF',
-  surface: '#FFFFFF',
-  ink: '#0B0D0C',
-  ink2: '#4B5560',
-  muted: '#6B7280',
-  border: 'rgba(11,13,12,0.12)',
-  blue: '#109840',
-  blueD: '#087A32',
-  blueL: '#EFF8F1',
-  teal: '#7BCF16',
-  tealL: '#F3FBEA',
+  green: '#109840',
+  greenD: '#0E7D40',
+  soft: '#EAF8EF',
+  ink: '#151817',
+  ink2: '#3F4945',
+  muted: '#66706A',
+  line: '#E7ECE9',
+  bg: '#F7F9F8',
+  card: '#FFFFFF',
 }
 
-const features = [
-  {
-    icon: '🗺️',
-    title: 'Business Directory Search',
-    desc: 'Find publicly listed business leads by industry and location, with contact details enriched from their own websites.',
-  },
-  {
-    icon: '🤖',
-    title: 'AI Lead Scoring',
-    desc: 'Our AI model scores every lead 0–100 and writes a personalised outreach summary automatically.',
-  },
-  {
-    icon: '📊',
-    title: 'Smart Dashboard',
-    desc: 'Filter by industry, score, and source. See your hottest leads at a glance.',
-  },
-  {
-    icon: '📥',
-    title: 'Excel Export',
-    desc: 'Download your leads as a clean Excel file ready to share with your team.',
-  },
-  {
-    icon: '🔒',
-    title: 'Your Data Only',
-    desc: 'Each account sees only its own leads. Full multi-tenant isolation built in.',
-  },
-  {
-    icon: '💳',
-    title: 'Pay-as-you-grow',
-    desc: 'Start free with 10 leads. Upgrade to Starter, Pro, or Agency as your pipeline grows.',
-  },
+const STEPS = [
+  { n: 1, title: 'Define',   body: 'Tell LeadGenAI what industry, roles and locations you want to reach.' },
+  { n: 2, title: 'Filter',   body: 'Set your target profile, how many leads you need and what data matters.' },
+  { n: 3, title: 'Generate', body: 'Watch discovery, contact enrichment and AI scoring happen in real time.' },
+  { n: 4, title: 'Act',      body: 'Review, export, draft outreach with AI or send leads onward.' },
 ]
 
-const industries = ['Real Estate', 'Healthcare', 'Pharma', 'Retail', 'Finance', 'Legal', 'Education', 'Hospitality', 'Construction', 'Technology']
+// Illustrative rows for the hero window. Deliberately generic names — inventing
+// company names and work email addresses on a marketing page reads as a
+// customer list, and these are not customers.
+const SAMPLE = [
+  { what: 'Software company',   industry: 'IT Software',    city: 'Pune',    contact: 'Website · phone · email', score: 98 },
+  { what: 'Real estate agency', industry: 'Real Estate',    city: 'Delhi',   contact: 'Website · phone · email', score: 96 },
+  { what: 'Manufacturing firm', industry: 'Manufacturing',  city: 'Chennai', contact: 'Website · phone',         score: 88 },
+  { what: 'Diagnostics clinic', industry: 'Healthcare',     city: 'Mumbai',  contact: 'Website · phone · email', score: 81 },
+]
 
 export default function Landing() {
   const navigate = useNavigate()
 
-  // A confirmed user arriving from the email link lands here with a live
-  // session; without this they see the marketing page and assume signup failed.
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate('/leads', { replace: true })
-    })
-  }, [navigate])
-
-
   return (
-    <div style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif", background: T.bg, color: T.ink }}>
+    <div style={{ background: T.bg, color: T.ink, fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif', textAlign: 'left' }}>
+      <style>{`
+        /* index.css centres every line via #root { text-align:center } and caps
+           it at 1126px. A marketing page sets its own measure. */
+        #root { width: 100% !important; max-width: none !important; text-align: left !important; border-inline: none !important; }
+        .lg-wrap { max-width: 1180px; margin: auto; padding: 0 28px; }
+        .lg-hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 60px; align-items: center; }
+        .lg-steps { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
+        .lg-gen { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        .lg-dash { display: grid; grid-template-columns: 210px minmax(0,1fr); }
+        .lg-dashgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .lg-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+        .lg-navlinks { display: flex; gap: 28px; }
+        .lg-tablewrap { overflow-x: auto; }
+        @media (max-width: 900px) {
+          .lg-hero, .lg-gen, .lg-dashgrid { grid-template-columns: minmax(0,1fr) !important; }
+          .lg-steps, .lg-kpis, .lg-stages { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+          .lg-dash { grid-template-columns: minmax(0,1fr) !important; }
+          .lg-side { display: none !important; }
+          .lg-navlinks { display: none !important; }
+          .lg-wrap { padding: 0 18px; }
+        }
+      `}</style>
 
-      {/* NAV */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(10px)',
-        borderBottom: `0.5px solid ${T.border}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: 56,
-      }}>
-        <div style={{ fontSize: 20, fontWeight: 800, color: T.blue, letterSpacing: '-0.5px' }}>LeadgenAI</div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            onClick={() => navigate('/pricing')}
-            style={{ background: 'none', border: 'none', fontSize: 14, fontWeight: 500, color: T.ink2, cursor: 'pointer', padding: '8px 12px' }}
-          aria-label="Pricing"
-          >Pricing</button>
-          <button
-            onClick={() => navigate('/login')}
-            style={{ background: 'none', border: `1px solid ${T.border}`, fontSize: 14, fontWeight: 500, color: T.ink, cursor: 'pointer', padding: '8px 16px', borderRadius: 8 }}
-          aria-label="Sign in"
-          >Sign in</button>
-          <button
-            onClick={() => navigate('/signup')}
-            style={{ background: T.blue, border: 'none', fontSize: 14, fontWeight: 600, color: '#FFF', cursor: 'pointer', padding: '8px 18px', borderRadius: 8 }}
-          aria-label="Get started free"
-          >Get started free</button>
-        </div>
-      </nav>
-
-      {/* HERO */}
-      <section style={{ textAlign: 'center', padding: '88px 24px 64px' }}>
-        <div style={{
-          display: 'inline-block',
-          background: T.blueL, color: T.blue,
-          fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
-          padding: '4px 14px', borderRadius: 20, marginBottom: 24,
-          border: `1px solid rgba(37,99,235,0.2)`,
-        }}>AI-POWERED LEAD GENERATION</div>
-
-        <h1 style={{
-          fontFamily: "'Sora', sans-serif", fontSize: 'clamp(36px, 6vw, 64px)',
-          fontWeight: 800, lineHeight: 1.1,
-          color: T.ink, margin: '0 auto 24px',
-          maxWidth: 700, letterSpacing: '-1.5px',
-        }}>
-          Find qualified leads<br />
-          <span style={{ color: T.blue }}>with AI</span>
-        </h1>
-
-        <p style={{
-          fontSize: 18, color: T.ink2, maxWidth: 520,
-          margin: '0 auto 40px', lineHeight: 1.6,
-        }}>
-          LeadgenAI aggregates publicly available business directory data, scores every listing with our AI model,
-          and delivers a prioritised lead list — ready to export and outreach.
-        </p>
-
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => navigate('/signup')}
-            onMouseEnter={e => { e.currentTarget.style.background = T.blueD; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = T.blue; e.currentTarget.style.transform = 'none' }}
-            style={{
-              background: T.blue, color: '#FFF',
-              border: 'none', borderRadius: 10,
-              fontSize: 16, fontWeight: 700,
-              padding: '14px 32px', cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(37,99,235,0.35)',
-              transition: 'all 0.15s ease',
-            }}
-          >Start for free →</button>
-          <button
-            onClick={() => navigate('/pricing')}
-            style={{
-              background: T.surface, color: T.blue,
-              border: `1px solid ${T.border}`, borderRadius: 10,
-              fontSize: 16, fontWeight: 600,
-              padding: '14px 32px', cursor: 'pointer',
-            }}
-          >See pricing</button>
-        </div>
-
-        <p style={{ marginTop: 16, fontSize: 13, color: T.muted }}>No credit card required · 10 free leads included</p>
-      </section>
-
-      {/* MOCK DASHBOARD PREVIEW */}
-      <section style={{ padding: '0 24px 80px' }}>
-        <div style={{
-          maxWidth: 900, margin: '0 auto',
-          background: T.surface,
-          border: `0.5px solid ${T.border}`,
-          borderRadius: 16,
-          overflow: 'hidden',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.08)',
-        }}>
-          {/* fake browser chrome */}
-          <div style={{
-            background: '#F0F0ED', borderBottom: `0.5px solid ${T.border}`,
-            padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FF5F57' }} />
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#FEBC2E' }} />
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28C840' }} />
-            <div style={{
-              flex: 1, textAlign: 'center', fontSize: 12, color: T.muted,
-              background: T.surface, borderRadius: 6, padding: '3px 12px',
-              marginLeft: 12, maxWidth: 280, margin: '0 auto',
-            }}>leadgenai.exommerce.online/leads</div>
+      {/* ---------- Nav ---------- */}
+      <header style={{ height: 72, background: '#fff', borderBottom: `1px solid ${T.line}`, position: 'sticky', top: 0, zIndex: 50 }}>
+        <div className="lg-wrap" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontWeight: 800, fontSize: 20 }}>Lead<span style={{ color: T.green }}>Gen</span>AI</div>
+          <nav className="lg-navlinks" style={{ color: T.ink2, fontSize: 14 }}>
+            <a href="#how" style={link}>How it works</a>
+            <a href="#product" style={link}>Product</a>
+            <a href="#reliable" style={link}>Reliability</a>
+            <Link to="/pricing" style={link}>Pricing</Link>
+          </nav>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <Link to="/login" style={{ ...link, fontSize: 14 }}>Sign in</Link>
+            <button onClick={() => navigate('/signup')} style={btnPrimary}>Get started</button>
           </div>
-          {/* fake dashboard */}
-          <div style={{ padding: 24 }}>
-            {/* stats row */}
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-              {[
-                { label: 'Total Leads', val: '247' },
-                { label: 'New Today', val: '38' },
-                { label: 'Qualified (70+)', val: '112' },
-                { label: 'Avg Score', val: '74' },
-              ].map(s => (
-                <div key={s.label} style={{
-                  flex: '1 1 100px', background: T.bg,
-                  border: `0.5px solid ${T.border}`, borderRadius: 8, padding: '14px 16px',
-                }}>
-                  <div style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: T.blue }}>{s.val}</div>
-                </div>
+        </div>
+      </header>
+
+      {/* ---------- Hero ---------- */}
+      <section style={{ background: '#fff', padding: '78px 0 66px' }}>
+        <div className="lg-wrap lg-hero">
+          <div>
+            <span style={eyebrow}>AI-POWERED LEAD GENERATION</span>
+            <h1 style={{ fontSize: 'clamp(38px, 5.5vw, 56px)', lineHeight: 1.04, letterSpacing: '-2px', margin: '20px 0 18px', fontWeight: 800, color: T.ink }}>
+              Find qualified leads<br /><span style={{ color: T.green }}>with AI</span>
+            </h1>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, maxWidth: 540, margin: 0 }}>
+              Discover relevant companies, enrich their contact details, score every
+              opportunity with AI and export a sales-ready list — from one workflow.
+            </p>
+            <div style={{ display: 'flex', gap: 12, margin: '28px 0', flexWrap: 'wrap' }}>
+              <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, padding: '13px 20px', fontSize: 15 }}>Start finding leads</button>
+              <a href="#how" style={{ ...btnGhost, padding: '13px 20px', fontSize: 15 }}>See how it works</a>
+            </div>
+            <div style={{ display: 'flex', gap: 20, fontSize: 12.5, color: T.muted, flexWrap: 'wrap' }}>
+              {['No credit card', 'Real generation progress', 'Export anytime'].map(t => (
+                <span key={t}><b style={{ color: T.green, marginRight: 6 }}>✓</b>{t}</span>
               ))}
             </div>
-            {/* leads table rows */}
-            <div style={{ border: `0.5px solid ${T.border}`, borderRadius: 8, overflow: 'hidden' }}>
-              <div style={{
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 60px',
-                background: T.bg, padding: '8px 16px',
-                fontSize: 11, fontWeight: 600, color: T.muted, gap: 8,
-              }}>
-                <span>BUSINESS NAME</span><span>INDUSTRY</span><span>LOCATION</span><span>SCORE</span>
+          </div>
+
+          {/* Product window */}
+          <div style={{ background: T.bg, border: `1px solid ${T.line}`, borderRadius: 18, padding: 18, boxShadow: '0 18px 50px rgba(22,59,38,0.07)' }}>
+            <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 12, padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ fontWeight: 800, fontSize: 13 }}>Lead<span style={{ color: T.green }}>Gen</span>AI</div>
+                <span style={{ ...chip, background: T.soft, color: T.greenD }}>SAMPLE RESULTS</span>
               </div>
-              {[
-                { name: 'Apex Pharma Solutions', ind: 'Pharma', loc: 'Mumbai', score: 92, color: '#1A8A72' },
-                { name: 'CityMed Clinic', ind: 'Healthcare', loc: 'Delhi', score: 87, color: '#1A8A72' },
-                { name: 'BuildRight Constructions', ind: 'Construction', loc: 'Pune', score: 73, color: T.blue },
-                { name: 'Premier Legal Associates', ind: 'Legal', loc: 'Bangalore', score: 68, color: T.blue },
-                { name: 'GreenLeaf Retail Co.', ind: 'Retail', loc: 'Hyderabad', score: 55, color: T.muted },
-              ].map((row, i) => (
-                <div key={i} style={{
-                  display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 60px',
-                  padding: '10px 16px', gap: 8, alignItems: 'center',
-                  borderTop: `0.5px solid ${T.border}`,
-                  fontSize: 13,
+              {SAMPLE.map((s, i) => (
+                <div key={s.what} style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) auto', gap: 12,
+                  padding: '13px 0', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`, fontSize: 12,
                 }}>
-                  <span style={{ fontWeight: 500, color: T.ink }}>{row.name}</span>
-                  <span style={{ color: T.ink2 }}>{row.ind}</span>
-                  <span style={{ color: T.ink2 }}>{row.loc}</span>
-                  <span style={{
-                    fontWeight: 700, color: row.color,
-                    background: row.color + '18', borderRadius: 6,
-                    padding: '2px 8px', textAlign: 'center', fontSize: 12,
-                  }}>{row.score}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <b style={{ color: T.ink }}>{s.what} · {s.city}</b>
+                    <small style={{ display: 'block', color: '#8A938E', marginTop: 3 }}>{s.contact}</small>
+                  </div>
+                  <span style={{ ...chip, background: T.soft, color: T.greenD, alignSelf: 'center' }}>{s.score}</span>
                 </div>
               ))}
             </div>
@@ -230,178 +127,189 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* INDUSTRIES */}
-      <section style={{ background: T.surface, borderTop: `0.5px solid ${T.border}`, borderBottom: `0.5px solid ${T.border}`, padding: '32px 24px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T.muted, marginBottom: 16, letterSpacing: '0.5px' }}>WORKS ACROSS EVERY INDUSTRY</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
-            {industries.map(ind => (
-              <span key={ind} style={{
-                background: T.blueL, color: T.blue,
-                border: `1px solid rgba(37,99,235,0.15)`,
-                borderRadius: 20, padding: '5px 14px',
-                fontSize: 13, fontWeight: 500,
-              }}>{ind}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section style={{ padding: '80px 24px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Everything you need to fill your pipeline</h2>
-            <p style={{ fontSize: 16, color: T.ink2, margin: 0 }}>From scraping to outreach, LeadgenAI handles the heavy lifting.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
-            {features.map(f => (
-              <div key={f.title} style={{
-                background: T.surface, border: `0.5px solid ${T.border}`,
-                borderRadius: 12, padding: '24px',
-              }}>
-                <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 8 }}>{f.title}</div>
-                <div style={{ fontSize: 14, color: T.ink2, lineHeight: 1.6 }}>{f.desc}</div>
+      {/* ---------- How it works ---------- */}
+      <section id="how" style={{ padding: '72px 0' }}>
+        <div className="lg-wrap">
+          <Head title="One workflow. No guesswork." sub="Stay on the job instead of navigating a complicated interface." />
+          <div className="lg-steps">
+            {STEPS.map(s => (
+              <div key={s.n} style={panel}>
+                <div style={{ width: 30, height: 30, borderRadius: '50%', background: T.soft, color: T.greenD, display: 'grid', placeItems: 'center', fontWeight: 800, marginBottom: 18 }}>{s.n}</div>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, color: T.ink }}>{s.title}</h3>
+                <p style={{ margin: 0, color: T.muted, fontSize: 13, lineHeight: 1.55 }}>{s.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section style={{ background: T.blueL, padding: '80px 24px', borderTop: `0.5px solid rgba(37,99,235,0.15)`, borderBottom: `0.5px solid rgba(37,99,235,0.15)` }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 48px', letterSpacing: '-0.5px' }}>How it works</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 32, textAlign: 'left' }}>
-            {[
-              { n: '1', title: 'Enter a keyword + city', desc: 'Type what you\'re looking for — "dental clinics in Mumbai" or "pharma distributors in Delhi".' },
-              { n: '2', title: 'We retrieve public listings', desc: 'Our engine pulls business name, address, phone, website, rating and reviews from publicly available business directories.' },
-              { n: '3', title: 'AI scores every lead', desc: 'Our AI model reads each profile and assigns a quality score 0–100 plus a human-readable outreach summary.' },
-              { n: '4', title: 'You close deals', desc: 'Filter, sort, export to Excel, and start reaching out to your best prospects immediately.' },
-            ].map(step => (
-              <div key={step.n} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                <div style={{
-                  flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                  background: T.blue, color: '#FFF',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 16, fontWeight: 800,
-                }}>{step.n}</div>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{step.title}</div>
-                  <div style={{ fontSize: 14, color: T.ink2, lineHeight: 1.6 }}>{step.desc}</div>
+      {/* ---------- Product / dashboard ---------- */}
+      <section id="product" style={{ padding: '0 0 72px' }}>
+        <div className="lg-wrap">
+          <Head title="A dashboard that answers “what next?”" sub="Four useful numbers, your recent searches and clear actions." />
+          <div className="lg-dash" style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 16px 45px rgba(22,59,38,0.06)' }}>
+            <aside className="lg-side" style={{ background: '#17201C', color: '#DFE8E2', padding: 20 }}>
+              <div style={{ fontWeight: 800, marginBottom: 26, fontSize: 14 }}>Lead<span style={{ color: '#53D788' }}>Gen</span>AI</div>
+              {['Dashboard', 'Find Leads', 'Leads', 'AI Scoring', 'Outreach', 'Integrations'].map((s, i) => (
+                <div key={s} style={{
+                  padding: '11px 12px', borderRadius: 8, margin: '3px 0', fontSize: 13,
+                  background: i === 0 ? T.green : 'transparent', color: i === 0 ? '#fff' : '#AEB9B2',
+                }}>{s}</div>
+              ))}
+            </aside>
+            <div style={{ padding: 24, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 12, letterSpacing: '.4px' }}>SAMPLE DASHBOARD</div>
+              <div className="lg-kpis" style={{ marginBottom: 16 }}>
+                {[['Total leads', '1,240'], ['New today', '87'], ['High score', '312'], ['Avg. score', '74']].map(([l, v]) => (
+                  <div key={l} style={{ border: `1px solid ${T.line}`, borderRadius: 11, padding: 16, minWidth: 0 }}>
+                    <small style={{ color: T.muted, fontSize: 11 }}>{l}</small>
+                    <strong style={{ display: 'block', fontSize: 22, marginTop: 7 }}>{v}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="lg-dashgrid">
+                <div style={panel}>
+                  <h3 style={panelH}>Recent searches</h3>
+                  {[['IT Software — Bengaluru', '50 leads'], ['Real Estate — Delhi', '25 leads'], ['Healthcare — Mumbai', '50 leads']].map(([a, b], i) => (
+                    <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`, fontSize: 12 }}>
+                      <b>{a}</b><span style={{ color: T.muted }}>{b}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={panel}>
+                  <h3 style={panelH}>Leads by score</h3>
+                  <div style={{ fontSize: 13, lineHeight: 2.1 }}>
+                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>80–100</span> 312 leads</div>
+                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>50–79</span> 616 leads</div>
+                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>0–49</span> 312 leads</div>
+                  </div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING TEASER */}
-      <section style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px', letterSpacing: '-0.5px' }}>Start free, scale when ready</h2>
-          <p style={{ fontSize: 16, color: T.ink2, marginBottom: 40 }}>No credit card needed. Get 10 leads free, then upgrade for more.</p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {[
-              { name: 'Free', price: '₹0', desc: '10 leads/month', highlight: false },
-              { name: 'Starter', price: '₹999/mo', desc: '500 leads/month', highlight: true },
-              { name: 'Pro', price: '₹2,999/mo', desc: '2,000 leads/month', highlight: false },
-              { name: 'Agency', price: '₹7,999/mo', desc: 'Unlimited leads', highlight: false },
-            ].map(p => (
-              <div key={p.name} style={{
-                flex: '1 1 120px', maxWidth: 160,
-                background: p.highlight ? T.blue : T.surface,
-                border: p.highlight ? `2px solid ${T.blue}` : `0.5px solid ${T.border}`,
-                borderRadius: 10, padding: '20px 16px',
-                color: p.highlight ? '#FFF' : T.ink,
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>{p.name}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>{p.price}</div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>{p.desc}</div>
+      {/* ---------- Reliability ---------- */}
+      <section id="reliable" style={{ padding: '0 0 72px' }}>
+        <div className="lg-wrap">
+          <Head
+            title="Generation should feel reliable."
+            sub="Even when a provider slows down or fails, you keep the leads that already completed — and you can resume."
+          />
+          <div className="lg-gen">
+            <div style={panel}>
+              <h3 style={{ ...panelH, marginBottom: 4 }}>Define your search</h3>
+              {[['What are you looking for?', 'IT Services Companies'], ['Location', 'Bengaluru, India'], ['Lead count', '50 leads']].map(([l, v]) => (
+                <div key={l}>
+                  <div style={{ fontSize: 12, fontWeight: 700, margin: '16px 0 7px' }}>{l}</div>
+                  <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 13, background: '#fff', color: T.ink2, fontSize: 13 }}>{v}</div>
+                </div>
+              ))}
+              <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, marginTop: 22, padding: '12px 18px' }}>Start generation →</button>
+            </div>
+
+            <div style={panel}>
+              <h3 style={{ ...panelH, marginBottom: 4 }}>Generating your leads…</h3>
+              <div style={{ fontSize: 44, fontWeight: 800, margin: '18px 0 5px', color: T.ink }}>45/50</div>
+              <div style={{ color: T.muted, fontSize: 13, marginBottom: 12 }}>90% scored</div>
+              <div style={{ height: 9, background: '#E9EEEB', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ width: '90%', height: '100%', background: T.green }} />
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 32 }}>
-            <button
-              onClick={() => navigate('/pricing')}
-              style={{
-                background: T.blue, color: '#FFF',
-                border: 'none', borderRadius: 10,
-                fontSize: 15, fontWeight: 700,
-                padding: '12px 28px', cursor: 'pointer',
-              }}
-            >View full pricing →</button>
+              <div className="lg-stages" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10, marginTop: 22 }}>
+                {[['✓', 'Companies', 'saved'], ['✓', 'Contacts', 'enriched'], ['◉', 'AI scoring', 'in progress'], ['○', 'Finishing', 'pending']].map(([i, a, b]) => (
+                  <div key={a} style={{ fontSize: 11.5, color: T.muted }}>
+                    <b style={{ display: 'block', color: T.greenD, marginBottom: 4 }}>{i}</b>{a}<br />{b}
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 22, padding: 12, background: '#F3FAF5', borderRadius: 9, fontSize: 12.5, color: '#4F5A54', lineHeight: 1.55 }}>
+                You can close this page. Your job keeps running and your results are
+                saved as they arrive.
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA BANNER */}
-      <section style={{
-        background: T.blue, padding: '72px 24px', textAlign: 'center',
-      }}>
-        <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 32, fontWeight: 800, color: '#FFF', margin: '0 0 16px', letterSpacing: '-0.5px' }}>
-          Ready to find your next 100 clients?
+      {/* ---------- Results ---------- */}
+      <section style={{ padding: '0 0 72px' }}>
+        <div className="lg-wrap">
+          <Head title="Results built for action" sub="Every lead easy to scan, qualify and act on." />
+          <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <b style={{ fontSize: 14 }}>50 leads found <span style={{ color: T.muted, fontWeight: 400 }}>· sample</span></b>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <span style={btnGhost}>Export</span>
+                <span style={btnPrimary}>Draft outreach</span>
+              </div>
+            </div>
+            <div className="lg-tablewrap">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 620 }}>
+                <thead>
+                  <tr>{['Company', 'Industry', 'Contact', 'City', 'Score'].map(h => (
+                    <th key={h} style={{ textAlign: 'left', padding: '14px 16px', borderTop: `1px solid ${T.line}`, color: '#727B76', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {SAMPLE.map(s => (
+                    <tr key={s.what}>
+                      <td style={td}><b>{s.what}</b></td>
+                      <td style={td}>{s.industry}</td>
+                      <td style={td}>{s.contact}</td>
+                      <td style={td}>{s.city}</td>
+                      <td style={td}><span style={{ ...chip, background: T.soft, color: T.greenD }}>{s.score}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- CTA ---------- */}
+      <section style={{ background: T.green, padding: '68px 24px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'clamp(24px,4vw,32px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', letterSpacing: '-.5px' }}>
+          Ready to fill your pipeline?
         </h2>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,.85)', marginBottom: 30 }}>
           Create your free account and run your first AI-scored lead search.
         </p>
-        <button
-          onClick={() => navigate('/signup')}
-          onMouseEnter={e => { e.currentTarget.style.background = T.blueL; e.currentTarget.style.transform = 'translateY(-1px)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#FFF'; e.currentTarget.style.transform = 'none' }}
-          style={{
-            background: '#FFF', color: T.blue,
-            border: 'none', borderRadius: 10,
-            fontSize: 16, fontWeight: 700,
-            padding: '14px 32px', cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >Get started free →</button>
+        <button onClick={() => navigate('/signup')} style={{ background: '#fff', color: T.green, border: 'none', borderRadius: 10, padding: '14px 26px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+          Get started free →
+        </button>
       </section>
 
-      {/* FOOTER */}
-      <footer style={{
-        background: T.surface,
-        borderTop: `0.5px solid ${T.border}`,
-        padding: '32px 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: 12,
-      }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: T.blue }}>LeadgenAI</div>
-        <div style={{ fontSize: 13, color: T.muted }}>
-          © 2026 Exommerce.online · <a href="mailto:leadgen.support@exommerce.online" style={{ color: T.blue, textDecoration: 'none' }}>leadgen.support@exommerce.online</a>
-        </div>
-        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-          {[
-            ['Pricing', '/pricing'],
-            ['Terms', '/legal/terms'],
-            ['Privacy', '/legal/privacy'],
-            ['Refunds', '/legal/refunds'],
-            ['Contact', '/legal/contact'],
-            ['Sign in', '/login'],
-          ].map(([label, to]) => (
-            <button
-              key={to}
-              onClick={() => navigate(to)}
-              style={{ background: 'none', border: 'none', fontSize: 13, color: T.ink2, cursor: 'pointer', padding: 0 }}
-            >{label}</button>
-          ))}
+      {/* ---------- Footer ---------- */}
+      <footer style={{ padding: '32px 0', background: '#fff', borderTop: `1px solid ${T.line}`, color: '#7A827E', fontSize: 12.5 }}>
+        <div className="lg-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+          <span>LeadGenAI · AI-powered lead generation · Exommerce.online</span>
+          <span style={{ display: 'flex', gap: 18 }}>
+            <Link to="/pricing" style={link}>Pricing</Link>
+            <Link to="/legal/privacy" style={link}>Privacy</Link>
+            <Link to="/legal/terms" style={link}>Terms</Link>
+          </span>
         </div>
       </footer>
-
-      <div style={{
-        background: T.surface, borderTop: `0.5px solid ${T.border}`,
-        padding: '14px 24px', textAlign: 'center',
-        fontSize: 12.5, color: T.muted,
-      }}>
-        <p style={{ margin: '0 0 4px', fontSize: 11, color: T.muted }}>
-          Google Maps and Gemini are trademarks of Google LLC. LeadgenAI is not affiliated with, endorsed by, or sponsored by Google.
-        </p>
-        <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>
-          Powered by <a href="https://exommerce.online" style={{ color: T.blue, textDecoration: 'none', fontWeight: 600 }}>Exommerce.online</a>
-        </p>
-      </div>
     </div>
   )
 }
+
+function Head({ title, sub }) {
+  return (
+    <div style={{ textAlign: 'center', maxWidth: 650, margin: '0 auto 34px' }}>
+      <h2 style={{ fontSize: 'clamp(24px,3.4vw,34px)', letterSpacing: '-1px', margin: '0 0 10px', color: T.ink, fontWeight: 800 }}>{title}</h2>
+      <p style={{ color: T.muted, lineHeight: 1.6, margin: 0 }}>{sub}</p>
+    </div>
+  )
+}
+
+const link = { color: 'inherit', textDecoration: 'none' }
+const panel = { background: T.card, border: `1px solid ${T.line}`, borderRadius: 14, padding: 22, minWidth: 0 }
+const panelH = { fontSize: 14, margin: '0 0 16px', color: T.ink }
+const td = { textAlign: 'left', padding: '14px 16px', borderTop: `1px solid ${T.line}`, color: T.ink2 }
+const chip = { display: 'inline-block', borderRadius: 99, padding: '4px 8px', fontSize: 10.5, fontWeight: 800, whiteSpace: 'nowrap' }
+const eyebrow = { display: 'inline-flex', background: T.soft, color: T.greenD, padding: '7px 11px', borderRadius: 99, fontSize: 12, fontWeight: 700 }
+const btnPrimary = { background: T.green, border: `1px solid ${T.green}`, color: '#fff', padding: '10px 16px', borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }
+const btnGhost = { border: `1px solid ${T.line}`, background: '#fff', color: T.ink2, padding: '10px 16px', borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }
