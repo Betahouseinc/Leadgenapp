@@ -5,6 +5,7 @@ import './index.css'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Leads from './pages/Leads.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import Signup from './pages/Signup.jsx'
 import Pricing from './pages/Pricing.jsx'
 import Legal from './pages/Legal.jsx'
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/legal" element={<Navigate to="/legal/terms" replace />} />

@@ -114,3 +114,11 @@ code {
 @keyframes lgspin {
   to { transform: rotate(360deg); }
 }
+
+/* Indeterminate bar, used while a job is discovering businesses. Apify reports
+   its results only at the end, so there is no fraction to draw during that
+   phase — this shows motion instead of inventing a percentage. */
+@keyframes lgslide {
+  0%   { left: -35%; }
+  100% { left: 100%; }
+}

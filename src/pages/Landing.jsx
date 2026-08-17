@@ -20,7 +20,7 @@ const features = [
   {
     icon: '🗺️',
     title: 'Business Directory Search',
-    desc: 'Retrieve thousands of publicly listed business leads by keyword and location in seconds.',
+    desc: 'Find publicly listed business leads by industry and location, with contact details enriched from their own websites.',
   },
   {
     icon: '🤖',
@@ -111,7 +111,7 @@ export default function Landing() {
           maxWidth: 700, letterSpacing: '-1.5px',
         }}>
           Find qualified leads<br />
-          <span style={{ color: T.blue }}>in under 60 seconds</span>
+          <span style={{ color: T.blue }}>with AI</span>
         </h1>
 
         <p style={{
@@ -344,7 +344,7 @@ export default function Landing() {
           Ready to find your next 100 clients?
         </h2>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
-          Create your free account and run your first lead search in 60 seconds.
+          Create your free account and run your first AI-scored lead search.
         </p>
         <button
           onClick={() => navigate('/signup')}

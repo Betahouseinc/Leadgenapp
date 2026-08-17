@@ -38,8 +38,17 @@ const REQUIRED = {
     ['leads', 'company',           'leads_view and the lead drawer'],
     ['leads', 'email',             'dedup lookup and the dashboard contact column'],
     ['leads', 'score',             'lead_stats, score filter, high-score export'],
+    ['leads', 'place_id',          'scrape-worker dedup on the stable Google Maps id'],
     ['profiles', 'role',           'can_see_contacts and the error_log read policy'],
     ['profiles', 'plan_id',        'can_see_contacts — decides contact masking'],
+    // Job columns. A slice that cannot record where it got to cannot be resumed,
+    // so the whole sliced pipeline is dead without these.
+    ['scrape_runs', 'apify_run_id',     'scrape-worker resumes the Apify run an earlier slice started'],
+    ['scrape_runs', 'stage',            'scrape-worker slice dispatch and the progress display'],
+    ['scrape_runs', 'discovered_count', 'real progress — companies found'],
+    ['scrape_runs', 'scored_count',     'real progress, and where a resumed scoring slice restarts'],
+    ['scrape_runs', 'attempts',         'caps the self-invoking slice chain'],
+    ['scrape_runs', 'heartbeat_at',     'stalled-job detection — without it a broken chain looks like a working one'],
   ],
   relations: [
     ['leads',        'Leads.jsx writes, scrape-leads inserts'],
@@ -56,9 +65,11 @@ const REQUIRED = {
     ['mask_phone',        'leads_view masking'],
     ['check_lead_quota',  'scrape-leads quota gate — every scrape 500s without it'],
     ['increment_leads_used', 'scrape-leads quota accounting'],
+    ['reap_stalled_scrape_runs', 'closes jobs whose slice chain broke; without it they sit in running forever'],
   ],
   indexes: [
     ['uq_leads_user_dedup_key', 'the unique index upsert onConflict resolves against'],
+    ['uq_leads_user_place_id',  'per-user uniqueness on the stable Google Maps id'],
   ],
 }
 
