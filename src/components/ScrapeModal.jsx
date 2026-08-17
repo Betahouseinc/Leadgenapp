@@ -245,6 +245,9 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
           maxHeight: '90vh',
           overflowY: 'auto',
           fontFamily: 'system-ui, -apple-system, sans-serif',
+          // index.css centres every line in the app via `#root { text-align:
+          // center }`. A form reads badly that way, and the modal inherits it.
+          textAlign: 'left',
         }}
       >
         <div style={{ fontSize: 17, fontWeight: 700, color: T.ink, marginBottom: 20 }}>

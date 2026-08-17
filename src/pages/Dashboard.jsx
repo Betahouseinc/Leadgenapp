@@ -160,6 +160,18 @@ export default function Dashboard() {
   return (
     <div className="lg-shell" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,230px) minmax(0,1fr)', minHeight: '100vh', background: T.bg }}>
       <style>{`
+        /* index.css still carries a leftover template rule —
+           #root { width: 1126px; text-align: center } — which caps the app at
+           1126px and centres every line of text in it. An application shell
+           needs the full viewport and left-aligned copy. Scoped here rather
+           than fixed globally so the existing pages keep the layout they have
+           today; this style element only exists while the dashboard is mounted. */
+        #root {
+          width: 100% !important;
+          max-width: none !important;
+          text-align: left !important;
+          border-inline: none !important;
+        }
         @media (max-width: 1000px) {
           .lg-shell { grid-template-columns: 64px minmax(0,1fr) !important; }
           .lg-navlabel { display: none !important; }
@@ -258,7 +270,9 @@ export default function Dashboard() {
           </div>
 
           {/* Daily run + targeting */}
-          <div className="lg-grid2" style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 14, marginTop: 14 }}>
+          {/* alignItems:start so each card is as tall as its own content —
+              stretching leaves a large empty panel next to the taller one. */}
+          <div className="lg-grid2" style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 14, marginTop: 14, alignItems: 'start' }}>
             <Card id="sec-schedules" title="Daily Lead Run" right={
               <span style={{ ...pill, background: T.amberL, color: T.amber }}>Not scheduled</span>
             }>
@@ -269,7 +283,7 @@ export default function Dashboard() {
               </div>
               <p style={{ fontSize: 11.5, color: T.muted, lineHeight: 1.55, margin: '13px 0 0' }}>
                 Automatic daily runs are <b>not active</b>. The nightly job is deployed but
-                its scheduler extension (<code>pg_cron</code>) is not enabled on this project,
+                its scheduler extension (pg_cron) is not enabled on this project,
                 so nothing triggers it. Searches you run stay available to repeat here.
               </p>
             </Card>
@@ -287,6 +301,10 @@ export default function Dashboard() {
                       width: '100%', border: `1px solid ${T.line}`, borderRadius: 7,
                       padding: '7px 9px', fontSize: 12, color: T.ink, resize: 'vertical',
                       fontFamily: 'inherit', boxSizing: 'border-box', marginTop: 4,
+                      // Explicit: index.css declares `color-scheme: light dark`,
+                      // so an unstyled textarea renders on a dark field when the
+                      // viewer's OS is in dark mode — unreadable against this card.
+                      background: '#FFFFFF',
                     }}
                   />
                 </div>
@@ -330,7 +348,9 @@ export default function Dashboard() {
           </Card>
 
           {/* Opportunities + scoring */}
-          <div className="lg-grid2" style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 14, marginTop: 14 }}>
+          {/* alignItems:start so each card is as tall as its own content —
+              stretching leaves a large empty panel next to the taller one. */}
+          <div className="lg-grid2" style={{ display: 'grid', gridTemplateColumns: '1.35fr 0.65fr', gap: 14, marginTop: 14, alignItems: 'start' }}>
             <Card id="sec-outreach" title="Top opportunities" right={
               <Link to="/leads" style={linkStyle}>View all</Link>
             }>
