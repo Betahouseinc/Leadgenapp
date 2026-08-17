@@ -6,33 +6,40 @@
 
 ---
 
-## ⚠️ ONE ACTION REQUIRED BEFORE THE DEMO
+## ✅ PRODUCTION IS LIVE AND VERIFIED — but GitHub is behind
 
-**The backend is deployed and verified in production. The frontend is committed but NOT pushed.**
+**Frontend and backend are both deployed and verified end to end.** A 10-lead
+Pharma/Kolkata search started from the production UI chained four slices and
+finished `completed` — 10 discovered, 10 saved, 10 scored.
 
-`git push` was refused: the machine's stored GitHub credential is `rentai-admin`,
-which lacks write access to `Betahouseinc/Leadgenapp`. Switching to the
-`bhavinf16` account requires a credential action I am not permitted to perform.
+### ⚠️ The one thing left: the commits are not on GitHub
 
-Production is therefore running the **new backend with the old frontend**, and
-those two disagree: the old modal expects the scrape to finish inside one HTTP
-request, but the new endpoint returns a job id in ~3 seconds. Leads still save
-correctly — the worker does that in the background — but the old UI will report
-"complete" immediately and the list will look empty until the job finishes a
-minute or two later.
+`git push` is refused for **both** accounts on this machine. `bhavinf16` has
+`push: false` on `Betahouseinc/Leadgenapp` (read-only — confirmed via the API);
+`rentai-admin` has no access at all. The repo is owned by the separate
+`Betahouseinc` account, whose credentials are not on this machine.
 
-**Fix it with one command** (from the repo root, as an account with write access):
+The frontend therefore reached production via the **Vercel CLI**
+(`vercel --prod`, authenticated as `betahouseincorporation-1658`), not via a
+git-triggered deploy. Production is correct; the GitHub repo is three commits
+behind it:
+
+| | |
+|---|---|
+| `f8ef690` | Slice lead generation into resumable jobs that persist as they go |
+| `0189488` | Add the event readiness report, and fix two things testing found |
+| `36c5062` | Fix dashboard layout bugs that only showed up in a screenshot |
+
+**This matters: the next git-triggered deploy will overwrite production with the
+older code in the repo, silently undoing tonight's work.** Do not merge or push
+anything to `main` until these commits are in it.
+
+To fix it, either grant `bhavinf16` write access to the repo, or run this as the
+`Betahouseinc` account:
 
 ```bash
 git push origin main
 ```
-
-Vercel auto-deploys from `main`. Verify afterwards that
-https://leadgenapp.vercel.app shows "Find qualified leads **with AI**" (not "in
-under 60 seconds") and that `/dashboard` loads.
-
-If you cannot push before the demo, roll the backend back instead so the halves
-match again — see [Rollback](#rollback).
 
 ---
 
@@ -241,25 +248,37 @@ forbid inventing facts, contact names or job titles.
 - **Deployed edge functions:** `scrape-leads`, `scrape-worker`, `draft-outreach` ✅
 - **Migrations applied:** both ✅
 - **Secret added:** `CRON_SECRET` (was missing) ✅
-- **Frontend:** committed `f8ef690`, **not pushed** ⛔
+- **Frontend:** deployed via Vercel CLI ✅ — commits **not yet on GitHub** ⚠️
+
+A `.vercelignore` was added because a CLI deploy uploads the working directory
+as-is: without it, the gitignored `Creds.txt` and several gigabytes of unrelated
+checkouts sitting inside this repo would have been uploaded.
+
+### Verified on production
+
+Landing copy · `/dashboard` renders with real data · login · a full 10-lead
+search run from the live UI (`completed`, 10/10/10) · no horizontal scroll ·
+integration states correct · no secrets in the bundle.
 
 ### Rollback
 
-The frontend was never pushed, so there is nothing to roll back there.
+**Frontend** — redeploy the previous build from the Vercel dashboard
+(Deployments → the entry before `dpl_G1tMk3tf…` → Promote to Production), or
+`npx vercel rollback` from the repo root.
 
-To revert the backend to the previous single-request engine:
+**Backend** — to revert to the previous single-request engine:
 
 ```bash
-git revert f8ef690
+git revert 36c5062 0189488 f8ef690
 npx supabase functions deploy scrape-leads
 ```
 
 The migrations are **additive and safe to leave** — the old function ignores the
 new columns. Do not drop them; `place_id` and the job columns hold real data now.
 
-If you need the old and new halves to match *without* pushing the frontend, this
-revert is the way to do it: it restores the blocking endpoint the deployed UI
-expects. You lose the reliability fix, so prefer pushing the frontend.
+Roll back both halves together. The old UI expects a blocking response the new
+endpoint does not give, and the new UI expects a job id the old endpoint does not
+return, so a half rollback leaves them mismatched.
 
 ---
 

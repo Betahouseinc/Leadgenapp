@@ -1,0 +1,26 @@
+# What NOT to upload when deploying with the Vercel CLI.
+#
+# Git-triggered deploys only ever see tracked files, so this file exists for
+# CLI deploys (`vercel --prod`), which upload the working directory as-is.
+# Without it, a CLI deploy would send up gitignored credentials and several
+# gigabytes of unrelated checkouts that happen to live inside this repo.
+
+# Credentials — never leaves this machine.
+Creds.txt
+.env
+.env.*
+
+# Untracked scratch checkouts that sit inside the repo: agent worktrees, a
+# clone, and an unrelated project's source under Downloads.
+.claude
+.clone
+Downloads
+
+# Built or installed locally; Vercel builds its own.
+node_modules
+dist
+
+# Backend — deployed with the Supabase CLI, not with the frontend.
+supabase
+
+*.log
