@@ -38,6 +38,7 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
   const [error, setError] = useState('')
   const [overQuota, setOverQuota] = useState(false)
   const [saved, setSaved] = useState(null)
+  const [updated, setUpdated] = useState(0)
   const [done, setDone] = useState(false)
 
   const handleCategoryChange = (category) => {
@@ -102,6 +103,7 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
     setError('')
     setOverQuota(false)
     setSaved(null)
+    setUpdated(0)
     setRunning(true)
     setProgress(6)
 
@@ -154,6 +156,7 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
       }
 
       setSaved(typeof body?.saved === 'number' ? body.saved : null)
+      setUpdated(typeof body?.updated === 'number' ? body.updated : 0)
       setDone(true)
       setTimeout(() => { onDone(); onClose() }, 2200)
 
@@ -357,10 +360,15 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
 
           {done && (
             <div style={{ color: T.teal, fontSize: 13, marginBottom: 12, fontWeight: 600 }}>
+              {/* A re-run of the same search is a normal outcome, not a failure:
+                  say what was added and what was already held and refreshed,
+                  rather than reporting nothing happened. */}
               {saved === 0
-                ? '✓ Finished — no new leads. Every result was already in your list.'
+                ? updated > 0
+                  ? `✓ Finished — no new leads. All ${updated} result${updated === 1 ? ' was' : 's were'} already in your list; details refreshed.`
+                  : '✓ Finished — no new leads. Every result was already in your list.'
                 : saved != null
-                  ? `✓ Added ${saved} new lead${saved === 1 ? '' : 's'}. Loading…`
+                  ? `✓ Added ${saved} new lead${saved === 1 ? '' : 's'}${updated > 0 ? ` · ${updated} already in your list, refreshed` : ''}. Loading…`
                   : '✓ Scrape complete! Loading leads…'}
             </div>
           )}

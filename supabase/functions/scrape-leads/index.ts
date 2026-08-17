@@ -529,7 +529,14 @@ Deno.serve(async (req) => {
     // same businesses and charged the customer's quota for them. Name+city is
     // the primary key; phone and email catch the same business relisted under a
     // slightly different trading name.
-    const unique = await (async () => {
+    //
+    // It returns the split rather than just the survivors: a business the
+    // customer already holds is no longer dropped on the floor, it gets its
+    // scraped fields refreshed below and is reported back as "already in your
+    // list".
+    type HeldLead = Record<string, unknown>
+    const { unique, dupes } = await (async () => {
+      const none: { lead: Record<string, unknown>; held: HeldLead }[] = []
       const keys = withinRun.map(l => dedupKey(l.name, l.city))
       const phones = withinRun.map(l => normalisePhone(l.phone)).filter(p => p.length >= 10)
       const emails = withinRun.map(l => String(l.email ?? '').toLowerCase().trim()).filter(Boolean)
@@ -539,7 +546,10 @@ Deno.serve(async (req) => {
 
       const { data: existing, error: existErr } = await db
         .from('leads')
-        .select('dedup_key, phone_key, email')
+        // id, name and city are selected so a matched row can be refreshed in
+        // place; the contact columns so a blank scrape value can fall back to
+        // what is already on file instead of erasing it.
+        .select('id, name, city, dedup_key, phone_key, email, phone, website, address, rating, review_count')
         .eq('user_id', userId)
         .or([
           inList('dedup_key', keys),
@@ -557,25 +567,89 @@ Deno.serve(async (req) => {
           message: `Dedup lookup failed, continued without it: ${existErr.message}`,
           user_id: userId, scrape_run_id: scrapeRunId,
         })
-        return withinRun
+        return { unique: withinRun, dupes: none }
       }
 
-      const seenKeys = new Set((existing || []).map(r => r.dedup_key).filter(Boolean))
-      const seenPhones = new Set((existing || []).map(r => r.phone_key).filter(p => p && p.length >= 10))
-      const seenEmails = new Set((existing || []).map(r => String(r.email ?? '').toLowerCase()).filter(Boolean))
+      const byKey = new Map<string, HeldLead>()
+      const byPhone = new Map<string, HeldLead>()
+      const byEmail = new Map<string, HeldLead>()
+      for (const r of (existing || []) as HeldLead[]) {
+        const k = String(r.dedup_key ?? '')
+        if (k) byKey.set(k, r)
+        const p = String(r.phone_key ?? '')
+        if (p.length >= 10) byPhone.set(p, r)
+        const e = String(r.email ?? '').toLowerCase().trim()
+        if (e) byEmail.set(e, r)
+      }
 
-      const kept = withinRun.filter(l => {
-        if (seenKeys.has(dedupKey(l.name, l.city))) return false
+      const kept: Record<string, unknown>[] = []
+      const matched: { lead: Record<string, unknown>; held: HeldLead }[] = []
+      for (const l of withinRun) {
         const phone = normalisePhone(l.phone)
-        if (phone.length >= 10 && seenPhones.has(phone)) return false
         const email = String(l.email ?? '').toLowerCase().trim()
-        if (email && seenEmails.has(email)) return false
-        return true
-      })
+        const hit =
+          byKey.get(dedupKey(l.name, l.city)) ||
+          (phone.length >= 10 ? byPhone.get(phone) : undefined) ||
+          (email ? byEmail.get(email) : undefined)
+        if (hit) matched.push({ lead: l, held: hit })
+        else kept.push(l)
+      }
 
-      console.log(`Dedup: ${raw.length} scraped -> ${withinRun.length} unique in run -> ${kept.length} new for user`)
-      return kept
+      console.log(`Dedup: ${raw.length} scraped -> ${withinRun.length} unique in run -> ${kept.length} new, ${matched.length} already held`)
+      return { unique: kept, dupes: matched }
     })()
+
+    // Refresh the ones the customer already has, in place.
+    //
+    // Only fields that come straight off the scrape are touched, and only where
+    // the scrape actually has a value — a run that returns no phone must not
+    // blank the phone already on file. score and summary are deliberately left
+    // alone: re-scoring a duplicate would spend Gemini quota and invocation
+    // budget on a lead nobody is billed for, and MAX_LEADS_PER_RUN exists
+    // precisely because that budget is tight.
+    let updatedCount = 0
+    if (dupes.length > 0) {
+      const pick = (fresh: unknown, held: unknown) => {
+        const v = typeof fresh === 'string' ? fresh.trim() : fresh
+        return v === '' || v === null || v === undefined ? (held ?? null) : v
+      }
+      // One fixed column set on purpose: PostgREST unions the keys of a bulk
+      // payload, so a row missing a key writes NULL over a stored value. The
+      // conflict target is the primary key, so every row here takes the DO
+      // UPDATE branch; name and city come from the stored row so the insert
+      // branch stays valid even if one were deleted mid-run.
+      const refresh = dupes.map(({ lead, held }) => ({
+        id: held.id,
+        user_id: userId,
+        name: held.name,
+        city: held.city,
+        phone: pick(lead.phone, held.phone),
+        email: pick(lead.email, held.email),
+        website: pick(lead.website, held.website),
+        address: pick(lead.address, held.address),
+        rating: pick(lead.rating, held.rating),
+        review_count: pick(lead.review_count, held.review_count),
+        last_scraped_at: new Date().toISOString(),
+      }))
+
+      const { error: refreshErr } = await db
+        .from('leads')
+        .upsert(refresh, { onConflict: 'id' })
+
+      if (refreshErr) {
+        // Fail open, same reasoning as the dedup lookup. The customer's new
+        // leads matter more than the refresh, and last_scraped_at does not
+        // exist until 20260817_drop_global_name_city_unique.sql is applied.
+        console.error('Duplicate refresh failed, continuing:', refreshErr.message)
+        await logError(db, {
+          source: 'scrape-leads', stage: 'refresh',
+          message: `Duplicate refresh failed, continued without it: ${refreshErr.message}`,
+          user_id: userId, scrape_run_id: scrapeRunId,
+        })
+      } else {
+        updatedCount = refresh.length
+      }
+    }
 
     // Everything the search returned was already in the customer's list. Stop
     // before Gemini: scoring leads that will not be inserted burns quota on the
@@ -588,7 +662,14 @@ Deno.serve(async (req) => {
           .eq('id', scrapeRunId)
       }
       return new Response(
-        JSON.stringify({ success: true, count: 0, saved: 0, duplicates: withinRun.length, run_id: scrapeRunId }),
+        JSON.stringify({
+          success: true,
+          count: 0,
+          saved: 0,
+          updated: updatedCount,
+          duplicates: withinRun.length,
+          run_id: scrapeRunId,
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -615,13 +696,50 @@ Deno.serve(async (req) => {
     // Insert leads
     let savedCount = 0
     if (enriched.length > 0) {
-      // Upsert against the unique index rather than plain insert. The dedup pass
-      // above already removed known duplicates; this closes the race where two
-      // concurrent runs scrape the same business, and means one collision no
-      // longer aborts the entire batch the way a plain insert did.
+      // Normalised to one fixed column set. The sources do not agree on shape —
+      // a LinkedIn lead carries no phone, rating or review count — and
+      // PostgREST unions the keys of a bulk payload, so an un-normalised batch
+      // writes NULL into whichever columns the other source happened to omit.
+      // That matters more now the upsert updates on conflict instead of
+      // skipping. last_scraped_at is deliberately absent: created_at already
+      // records first sight, and leaving it out keeps this insert working on a
+      // database where 20260817 has not been applied yet.
+      const rows = enriched.map(l => ({
+        user_id: userId,
+        name: l.name,
+        city: l.city ?? city,
+        industry: l.industry ?? industry,
+        source: l.source,
+        status: l.status ?? 'new',
+        email: l.email ?? null,
+        phone: l.phone ?? null,
+        website: l.website ?? null,
+        address: l.address ?? null,
+        rating: l.rating ?? null,
+        review_count: l.review_count ?? null,
+        score: l.score ?? 0,
+        summary: l.summary ?? '',
+        scrape_run_id: scrapeRunId,
+      }))
+
+      // Upsert against the per-user unique index rather than plain insert. The
+      // dedup pass above already routed known duplicates to the refresh; this
+      // closes the race where two concurrent runs scrape the same business, and
+      // means one collision no longer aborts the entire batch.
+      //
+      // DO UPDATE, not DO NOTHING: a row that loses the race should end up with
+      // the freshly scraped data rather than being silently dropped. The cost is
+      // that .select() also returns those rows, so a genuine race can count one
+      // or two leads against quota twice — much the better trade against losing
+      // scraped data outright.
+      //
+      // The conflict target is (user_id, dedup_key) — NOT (name, city). The old
+      // global leads_name_city_unique is dropped in 20260817: it had no user_id
+      // in it, so conflicting on it would let one customer's scrape overwrite
+      // another customer's lead.
       const { data: inserted, error: insertErr } = await db
         .from('leads')
-        .upsert(enriched, { onConflict: 'user_id,dedup_key', ignoreDuplicates: true })
+        .upsert(rows, { onConflict: 'user_id,dedup_key' })
         .select('id')
 
       if (insertErr) {
@@ -643,7 +761,14 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, count: enriched.length, saved: savedCount, run_id: scrapeRunId }),
+      JSON.stringify({
+        success: true,
+        count: enriched.length,
+        saved: savedCount,
+        updated: updatedCount,
+        duplicates: updatedCount,
+        run_id: scrapeRunId,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (err) {

@@ -106,6 +106,13 @@ Deno.serve(async (req) => {
     )
 
     // Upsert to DB
+    //
+    // BROKEN AS WRITTEN — this function is not deployed and must not be until
+    // it is rewritten (it is also still the unauthenticated version). The
+    // onConflict target below names leads_name_city_unique, which 20260817
+    // drops: that index had no user_id in it, so conflicting on it let one
+    // customer's scrape overwrite another customer's lead. The per-user target
+    // is (user_id, dedup_key), and these rows carry no user_id to use it with.
     if (enriched.length > 0) {
       const db = createClient(supabaseUrl, supabaseKey)
       const { error } = await db
