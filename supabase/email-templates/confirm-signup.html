@@ -1,0 +1,64 @@
+<!--
+  Supabase → Authentication → Email Templates → "Confirm signup"
+  Paste the markup below into the Message body field.
+
+  Why this exists: the stock template is a heading plus one bare link, with no
+  sender identity, no plain-language context and no footer. That shape is close
+  to a phishing mail and Gmail scores it accordingly — both real signups so far
+  landed in spam despite correct DKIM, SPF and bounce-MX records.
+
+  Deliverability rules this template follows. Keep them if you edit it:
+    - One call-to-action link, plus the same URL in plain text. Multiple
+      distinct destinations look like bulk mail.
+    - No images, no tracking pixels, no external CSS. Every remote fetch is a
+      signal, and image-only mails score badly.
+    - Real sending identity and a postal line in the footer. Absence of both is
+      a strong spam indicator.
+    - States why the mail was received and what to do if it was unexpected.
+    - Inline styles only, table-free, so it degrades to readable text.
+-->
+<div style="margin:0;padding:24px;background:#F6F7F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid #E3E6E3;border-radius:10px;padding:32px 36px;">
+
+    <div style="font-size:19px;font-weight:700;color:#109840;letter-spacing:-0.3px;">LeadgenAI</div>
+
+    <h1 style="margin:22px 0 12px;font-size:19px;line-height:1.35;font-weight:600;color:#0B0D0C;">
+      Confirm your email address
+    </h1>
+
+    <p style="margin:0 0 14px;font-size:14.5px;line-height:1.65;color:#3F4A44;">
+      Thanks for signing up. Confirm this address and your account goes live
+      straight away, with 10 free leads ready to use — no card required.
+    </p>
+
+    <p style="margin:0 0 26px;font-size:14.5px;line-height:1.65;color:#3F4A44;">
+      The link is valid for 24 hours.
+    </p>
+
+    <a href="{{ .ConfirmationURL }}"
+       style="display:inline-block;background:#109840;color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:600;padding:13px 30px;border-radius:8px;">
+      Confirm my email
+    </a>
+
+    <p style="margin:26px 0 6px;font-size:12.5px;line-height:1.6;color:#6B756F;">
+      If the button does not work, paste this into your browser:
+    </p>
+    <p style="margin:0 0 26px;font-size:12px;line-height:1.6;color:#3F4A44;word-break:break-all;">
+      {{ .ConfirmationURL }}
+    </p>
+
+    <hr style="border:none;border-top:1px solid #E9ECE9;margin:0 0 18px;">
+
+    <p style="margin:0 0 10px;font-size:12.5px;line-height:1.6;color:#6B756F;">
+      You are receiving this because someone used this address to create a
+      LeadgenAI account. If that was not you, ignore this email — the address
+      will not be activated and no account will exist.
+    </p>
+
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#8A938D;">
+      LeadgenAI by Exommerce · exommerce.online<br>
+      Sent by admin@exommerce.online
+    </p>
+
+  </div>
+</div>
