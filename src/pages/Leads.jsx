@@ -392,6 +392,22 @@ export default function Leads() {
               </div>
             </div>
           )}
+          {/* The dashboard had no entry point anywhere in the app — it was
+              routed and reachable only by typing the URL. */}
+          <Link
+            to="/dashboard"
+            style={{
+              padding: '6px 12px',
+              border: `0.5px solid ${T.border}`,
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              color: T.ink2,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >Dashboard</Link>
           <button
             className='lg-run-btn'
             onClick={() => setScrapeOpen(true)}

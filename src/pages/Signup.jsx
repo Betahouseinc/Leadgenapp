@@ -86,7 +86,7 @@ export default function Signup() {
 
     setLoading(false)
     setDone(true)
-    setTimeout(() => navigate('/leads'), 1500)
+    setTimeout(() => navigate('/dashboard'), 1500)
   }
 
   return (

@@ -17,7 +17,7 @@ const T = {
 export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || 'leads'
+  const redirectTo = searchParams.get('redirect') || 'dashboard'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
