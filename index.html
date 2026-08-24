@@ -25,19 +25,21 @@
 
     <!-- Google Analytics — loaded only after cookie consent (see CookieConsent component) -->
     <script>
-      window.__GA_IDS = ['GT-NMCG4HWT', 'G-ZY9GJDKR9Y'];
+      window.__GA_ID = 'G-6Y7V342NV8';
       window.__loadGA = function() {
         if (window.__gaLoaded) return;
         window.__gaLoaded = true;
         var s = document.createElement('script');
         s.async = true;
-        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__GA_IDS[0];
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.__GA_ID;
         document.head.appendChild(s);
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         window.gtag = gtag;
         gtag('js', new Date());
-        window.__GA_IDS.forEach(function(id){ gtag('config', id); });
+        // page_view is sent by src/components/RouteAnalytics.jsx so that React
+        // Router navigations are counted too — see the note in that file.
+        gtag('config', window.__GA_ID, { send_page_view: false });
       };
       // Auto-load if consent was previously given
       try {

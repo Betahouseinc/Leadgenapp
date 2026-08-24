@@ -14,6 +14,8 @@ export default function CookieConsent() {
   const accept = () => {
     localStorage.setItem(KEY, 'accepted')
     if (window.__loadGA) window.__loadGA()
+    // GA missed this page's view while it was unloaded — record it now.
+    if (window.__gaPageView) window.__gaPageView()
     setVisible(false)
   }
 
