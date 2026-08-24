@@ -23,4 +23,10 @@ dist
 # Backend — deployed with the Supabase CLI, not with the frontend.
 supabase
 
+# Lead data. Gitignored, so nothing here caught it before, but a CLI deploy
+# uploads the working directory: this shipped 439 rows of names, emails and
+# phone numbers to a public URL. Nothing resembling lead data ships.
+*.csv
+*.xlsx
+
 *.log
