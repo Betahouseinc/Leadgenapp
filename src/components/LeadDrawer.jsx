@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 const T = {
   surface: '#FFFFFF',
@@ -59,12 +60,48 @@ function StatusBadge({ status }) {
   )
 }
 
-export default function LeadDrawer({ lead, onClose }) {
+export default function LeadDrawer({ lead, onClose, onEnriched }) {
   const [showMailboxes, setShowMailboxes] = useState(false)
+  const [enriching, setEnriching] = useState(false)
+  const [enrichNote, setEnrichNote] = useState('')
+  // Held locally so the address appears the moment it is found, without waiting
+  // for the parent list to refetch.
+  const [foundEmail, setFoundEmail] = useState('')
 
   if (!lead) return null
 
-  const to = lead.email || ''
+  const email = foundEmail || lead.email || ''
+
+  const findEmail = async () => {
+    setEnriching(true)
+    setEnrichNote('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enrich-lead`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ lead_id: lead.id }),
+        },
+      )
+      const body = await res.json().catch(() => null)
+      if (body?.email) {
+        setFoundEmail(body.email)
+        onEnriched?.()
+      }
+      setEnrichNote(body?.message || 'Could not check this lead right now.')
+    } catch {
+      setEnrichNote('Could not check this lead right now. Please try again.')
+    } finally {
+      setEnriching(false)
+    }
+  }
+
+  const to = email
   const subjectRaw = `Partnership opportunity - ${lead.company || lead.name}`
   const bodyRaw = [
     `Hi ${lead.name || 'there'},`,
@@ -149,10 +186,32 @@ export default function LeadDrawer({ lead, onClose }) {
           <Row label="Industry" value={lead.industry} />
 
           <Row label="Email" value={
-            lead.email
-              ? <a href={`mailto:${lead.email}`} style={{ color: T.blue }}>{lead.email}</a>
-              : '—'
+            email
+              ? <a href={`mailto:${email}`} style={{ color: T.blue }}>{email}</a>
+              : (
+                <button
+                  onClick={findEmail}
+                  disabled={enriching}
+                  style={{
+                    background: enriching ? T.bg : T.blueL,
+                    border: `0.5px solid ${T.border}`,
+                    borderRadius: 6,
+                    padding: '5px 12px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: enriching ? T.muted : T.blue,
+                    cursor: enriching ? 'default' : 'pointer',
+                  }}
+                >
+                  {enriching ? 'Looking…' : 'Find email'}
+                </button>
+              )
           } />
+          {enrichNote && !email && (
+            <div style={{ fontSize: 12, color: T.muted, margin: '-4px 0 10px' }}>
+              {enrichNote}
+            </div>
+          )}
           <Row label="Phone" value={lead.phone || '—'} />
 
           <Row label="Source" value={<SourceBadge source={lead.source} />} />

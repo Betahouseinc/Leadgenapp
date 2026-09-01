@@ -853,7 +853,7 @@ export default function Leads() {
         </div>
       )}
 
-      {drawer && <LeadDrawer lead={drawer} onClose={() => setDrawer(null)} />}
+      {drawer && <LeadDrawer lead={drawer} onClose={() => setDrawer(null)} onEnriched={fetchLeads} />}
       {scrapeOpen && (
         <ScrapeModal
           quota={quota}

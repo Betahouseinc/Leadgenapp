@@ -22,7 +22,8 @@ import {
   corsHeaders, json, logEvent, fetchWithTimeout, sleep,
   dedupKey, normalisePhone, domainOf, scoreChunk,
   SLICE_BUDGET_MS, MAX_ATTEMPTS, SCORING_CHUNK, INSERT_CHUNK,
-  APIFY_POLL_MS, INTER_CHUNK_MS, SCORING_GIVE_UP_MS, SCORING_RETRY_GAP_MS,
+  INTER_CHUNK_MS, SCORING_GIVE_UP_MS, SCORING_RETRY_GAP_MS,
+  INDUSTRY_SEARCH_MAP, MAX_LEADS_PER_RUN,
 } from '../_shared/pipeline.ts'
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined
@@ -31,16 +32,27 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined
 type Row = Record<string, any>
 
 const TERMINAL_JOB = ['completed', 'partial', 'failed', 'cancelled']
-const TERMINAL_APIFY = ['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']
 
-// The Google Maps item carries opening hours, popular-times histograms, image
-// URLs and review metadata this pipeline never reads. Apify projects the dataset
-// server-side, so naming the seven fields we use is the difference between
-// parsing a few hundred KB and tens of MB — which is what once exhausted the
-// worker's memory.
-const GMAPS_FIELDS = [
-  'placeId', 'title', 'emails', 'phone', 'website', 'address', 'totalScore', 'reviewsCount',
-]
+// Google Places API (New), Text Search. The field mask decides both what comes
+// back and which SKU the call is billed against; this set sits in the tier that
+// carries 5,000 free calls a month, which at 20 places per call is far more than
+// this product consumes.
+const PLACES_ENDPOINT = 'https://places.googleapis.com/v1/places:searchText'
+const PLACES_FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.nationalPhoneNumber',
+  'places.websiteUri',
+  'places.rating',
+  'places.userRatingCount',
+  'nextPageToken',
+].join(',')
+
+// Text Search returns at most 20 places per page over at most 3 pages, so 60 is
+// the hard ceiling for a single query. MAX_LEADS_PER_RUN is 50, inside it.
+const PLACES_PAGE_SIZE = 20
+const PLACES_MAX_PAGES = 3
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -52,7 +64,7 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  const apifyKey = Deno.env.get('APIFY_API_KEY') || ''
+  const placesKey = Deno.env.get('GOOGLE_PLACES_API_KEY') || ''
   const geminiKey = Deno.env.get('GEMINI_API_KEY') || ''
   const db = createClient(supabaseUrl, serviceKey)
 
@@ -100,14 +112,17 @@ Deno.serve(async (req) => {
     // comfortably share one slice.
     while (!done && budgetLeft() > 5_000) {
       if (stage === 'discovering') {
-        const outcome = await pollApify(db, run, apifyKey, budgetLeft)
-        if (outcome === 'pending') break                    // hand over, still running
-        if (outcome === 'failed') { done = true; break }
-        stage = 'saving'
+        // Places answers in about a second, so discovery and saving are one
+        // step now rather than a poll loop feeding a separate stage. Repeating
+        // it is safe: the dedup pass treats a second sighting as a refresh.
+        const found = await discoverPlaces(db, run, placesKey)
+        await saveDiscovered(db, run, found)
+        stage = 'scoring'
         await db.from('scrape_runs').update({ stage }).eq('id', runId)
 
       } else if (stage === 'saving') {
-        await saveDiscovered(db, run, apifyKey)
+        // Only reachable for a job queued before the Places switch, whose rows
+        // were already written by the old saving stage. Nothing left to do.
         stage = 'scoring'
         await db.from('scrape_runs').update({ stage }).eq('id', runId)
 
@@ -174,70 +189,90 @@ Deno.serve(async (req) => {
 // Stage: discovering — wait on the Apify run a previous slice started
 // ---------------------------------------------------------------------------
 
-async function pollApify(
-  db: any, run: Row, apifyKey: string, budgetLeft: () => number,
-): Promise<'ready' | 'pending' | 'failed'> {
-  if (!run.apify_run_id) {
-    await finish(db, run, 'failed', 'The lead source did not start correctly. Please try again.')
-    return 'failed'
-  }
+// ---------------------------------------------------------------------------
+// Stage: discovering - Google Places API (New), Text Search
+// ---------------------------------------------------------------------------
+//
+// This replaces the Apify actor that used to run this stage. Two things change,
+// and both suit a product this size: Places answers in about a second rather
+// than minutes, so there is no run to poll and no hand-off between slices, and
+// the free monthly call allowance is far larger than this product's usage.
+//
+// The cost is email harvesting. Apify visited each business's website to scrape
+// contacts; Places does not, so leads now arrive with phone, website, address
+// and rating, and no email.
 
-  while (budgetLeft() > APIFY_POLL_MS + 3_000) {
-    const res = await fetchWithTimeout(
-      `https://api.apify.com/v2/actor-runs/${run.apify_run_id}?token=${apifyKey}`,
-    )
-    if (!res.ok) {
-      // Transient upstream trouble: let the next slice try again rather than
-      // failing a job whose data may be minutes from ready.
-      console.warn('Apify status check failed', res.status)
-      return 'pending'
+async function discoverPlaces(db: any, run: Row, placesKey: string): Promise<Row[]> {
+  const searchTerm = INDUSTRY_SEARCH_MAP[run.industry] || run.industry
+  const wanted = Math.max(1, Math.min(run.limit_requested || 50, MAX_LEADS_PER_RUN))
+
+  const collected: Row[] = []
+  let pageToken: string | undefined
+  let pages = 0
+
+  // Every field except pageToken must match the first request on a paged call,
+  // so the page size is fixed for the whole walk and the tail is trimmed after.
+  const pageSize = Math.min(PLACES_PAGE_SIZE, wanted)
+
+  while (collected.length < wanted && pages < PLACES_MAX_PAGES) {
+    const body: Record<string, unknown> = {
+      // Location goes in the query rather than a bias box: a text query naming
+      // the city is what Places is tuned for, and it needs no coordinates.
+      textQuery: `${searchTerm} in ${run.city}, India`,
+      pageSize,
+      languageCode: 'en',
+      regionCode: 'IN',
     }
-    const { data: state } = await res.json()
+    if (pageToken) body.pageToken = pageToken
 
-    if (TERMINAL_APIFY.includes(state.status)) {
-      if (state.status === 'SUCCEEDED') return 'ready'
-      await finish(db, run, 'failed', 'The lead source could not complete this search. Please try again shortly.')
+    const res = await fetchWithTimeout(PLACES_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': placesKey,
+        'X-Goog-FieldMask': PLACES_FIELD_MASK,
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 300)
       await logEvent(db, {
         source: 'scrape-worker', stage: 'discovering',
-        message: `Apify run ended ${state.status}`,
+        message: `Places search failed: HTTP ${res.status}`,
+        detail: { body: detail, page: pages + 1 },
         user_id: run.user_id, scrape_run_id: run.id,
       })
-      return 'failed'
+      // A first page that fails leaves nothing to save. A later one still has
+      // the pages before it, so keep those rather than lose the run to one bad
+      // page.
+      if (collected.length === 0) {
+        throw new Error('Could not reach the lead source. Please try again shortly.')
+      }
+      break
     }
 
-    await db.from('scrape_runs').update({ heartbeat_at: new Date().toISOString() }).eq('id', run.id)
-    await sleep(APIFY_POLL_MS)
+    const payload = await res.json()
+    const places: Row[] = Array.isArray(payload.places) ? payload.places : []
+    collected.push(...places)
+    pages++
+
+    pageToken = payload.nextPageToken || undefined
+    if (!pageToken || places.length === 0) break
   }
-  return 'pending'
-}
 
-// ---------------------------------------------------------------------------
-// Stage: saving — persist companies BEFORE any scoring happens
-// ---------------------------------------------------------------------------
-
-async function saveDiscovered(db: any, run: Row, apifyKey: string) {
-  const params = new URLSearchParams({
-    token: apifyKey,
-    limit: String(Math.max(1, Math.min(run.limit_requested || 50, 200))),
-    fields: GMAPS_FIELDS.join(','),
-    clean: 'true',           // drops empty records and Apify's internal #-keys
-  })
-  const res = await fetchWithTimeout(
-    `https://api.apify.com/v2/actor-runs/${run.apify_run_id}/dataset/items?${params}`,
-  )
-  if (!res.ok) throw new Error('Could not read the results from the lead source.')
-  const items: Row[] = await res.json()
-
-  const mapped = items.map(item => ({
-    place_id:     (item.placeId as string) || '',
-    name:         (item.title as string) || '',
-    // scrapeContacts returns emails[] on the item; take the first business one.
-    email:        (Array.isArray(item.emails) ? (item.emails[0] as string) : '') || '',
-    phone:        (item.phone as string) || '',
-    website:      (item.website as string) || '',
-    address:      (item.address as string) || '',
-    rating:       (item.totalScore as number) ?? null,
-    review_count: (item.reviewsCount as number) ?? null,
+  return collected.slice(0, wanted).map(p => ({
+    place_id:     (p.id as string) || '',
+    name:         ((p.displayName as Row)?.text as string) || '',
+    // Places reports what Google holds about a business and never visits its
+    // website, so there is no email to take. Kept as '' because the dedup and
+    // refresh passes both read this field and must behave as they always did.
+    email:        '',
+    phone:        (p.nationalPhoneNumber as string) || '',
+    website:      (p.websiteUri as string) || '',
+    address:      (p.formattedAddress as string) || '',
+    rating:       (p.rating as number) ?? null,
+    review_count: (p.userRatingCount as number) ?? null,
     city:         run.city,
     industry:     run.industry,
     source:       'gmaps',
@@ -245,6 +280,13 @@ async function saveDiscovered(db: any, run: Row, apifyKey: string) {
     user_id:      run.user_id,
     scrape_run_id: run.id,
   })).filter(l => l.name)
+}
+
+// ---------------------------------------------------------------------------
+// Stage: saving — persist companies BEFORE any scoring happens
+// ---------------------------------------------------------------------------
+
+async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
 
   // --- Pass 1: within this run -------------------------------------------
   // One source paginating routinely returns the same business twice. Prefer the
@@ -436,7 +478,7 @@ async function saveDiscovered(db: any, run: Row, apifyKey: string) {
     source: 'scrape-worker', stage: 'saving',
     message: `Saved ${inserted} new, refreshed ${updated} held, ${failed} failed`,
     detail: {
-      returned: items.length, unique_in_run: withinRun.length,
+      returned: mapped.length, unique_in_run: withinRun.length,
       with_contact: withContact, enrich_contacts: run.enrich_contacts,
     },
     user_id: run.user_id, scrape_run_id: run.id,

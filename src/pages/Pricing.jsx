@@ -46,16 +46,6 @@ const PLANS = [
     cta: 'Start Pro',
     highlight: true,
   },
-  {
-    id: 'agency',
-    name: 'Agency',
-    price: 7999,
-    leads: -1,
-    daily: 1000,
-    features: ['Unlimited leads per month', 'Up to 1,000 leads per day', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Dedicated support', 'Saved searches', 'Custom integrations'],
-    cta: 'Contact us',
-    highlight: false,
-  },
 ]
 
 export default function Pricing() {
@@ -75,11 +65,6 @@ export default function Pricing() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { navigate('/login?redirect=pricing'); return }
     if (plan.id === 'free') { navigate('/leads'); return }
-    if (plan.id === 'agency') {
-      window.location.href = 'mailto:leadgen.sales@exommerce.online?subject=Agency Plan Enquiry'
-      return
-    }
-
     setLoading(plan.id)
     try {
       // Create Razorpay order
