@@ -8,9 +8,13 @@
 // per-run cap was cut 200 → 50 → 10 chasing the symptom.
 //
 // It now does the small, fast part only: validate, check quota, create the job
-// row, start the Apify run without waiting, and hand off to scrape-worker, which
-// advances the job in short slices that persist as they go. The browser gets a
-// run id in about two seconds and polls scrape_runs for progress.
+// row, and hand off to scrape-worker, which advances the job in short slices
+// that persist as they go. The browser gets a run id in about two seconds and
+// polls scrape_runs for progress.
+//
+// Discovery moved to Google Places in August 2026, replacing Apify. Places
+// answers in about a second, so there is no third-party run to start here at
+// all - the worker calls it directly during its discovering stage.
 //
 // See LEADGENAI_STABILITY_AUDIT.md for the full diagnosis.
 
@@ -25,7 +29,6 @@ import {
 // never leave 'queued'.
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined
 
-const GMAPS_ACTOR = 'nwua9Gu5YrADL7ZDj'
 
 // Start (or restart) the slice chain for a job. waitUntil keeps the runtime
 // alive past this handler's response; without it a fire-and-forget fetch is
@@ -118,13 +121,14 @@ Deno.serve(async (req) => {
       return json({ error: 'unsupported_source', message: 'Google Maps is the only available lead source.' }, 400)
     }
 
-    // Contact enrichment makes Apify visit every discovered business's website
-    // to harvest emails. It is the single biggest driver of run time, so it is a
-    // per-run choice recorded on the job rather than a hardcoded actor flag.
-    const enrichContacts = body.enrich_contacts !== false
+    // Contact enrichment is currently performed by no source. Places reports
+    // what Google holds about a business and never visits its website, so no
+    // lead arrives with an email. The request flag is still read so the field
+    // keeps meaning when a per-lead reveal step is added.
+    const enrichRequested = body.enrich_contacts !== false
 
-    const apifyKey = Deno.env.get('APIFY_API_KEY') || ''
-    if (!apifyKey) {
+    const placesKey = Deno.env.get('GOOGLE_PLACES_API_KEY') || ''
+    if (!placesKey) {
       return json({ error: 'not_configured', message: 'Lead discovery is not configured. Please contact support.' }, 500)
     }
 
@@ -176,6 +180,11 @@ Deno.serve(async (req) => {
       }, 402)
     }
 
+    // No source enriches contacts at present, whatever was asked for. Recorded
+    // on the job so a run's history says plainly that it could not have found
+    // an email, rather than looking like a run that simply found none.
+    const enrichContacts = false
+
     // Close out any job whose slice chain broke before starting a new one. It is
     // one indexed update, and it is the only sweep available — pg_cron is not
     // installed on this project.
@@ -207,59 +216,20 @@ Deno.serve(async (req) => {
       console.error('Could not create job row', runErr)
       return json({ error: 'Could not start the search. Please try again.' }, 500)
     }
-    scrapeRunId = runRow.id
+    // scrapeRunId stays mutable and nullable so the catch block can report a job
+    // that may or may not have been created. From here the id is known, so hold
+    // a narrowed copy rather than asserting non-null at each use.
+    const runId: string = runRow.id
+    scrapeRunId = runId
 
-    // --- Start Apify, without waiting for it --------------------------------
-    //
-    // The old code started the run and then polled it to completion in this same
-    // invocation. Starting it and recording its id is all that belongs here; the
-    // waiting is the worker's job, spread across as many slices as it takes.
-    const searchTerm = INDUSTRY_SEARCH_MAP[industry] || industry
-    const actorInput = {
-      // Keep the search term clean and pass location separately — embedding the
-      // city in the query makes Google Maps match literally and starves results.
-      searchStringsArray: [searchTerm],
-      locationQuery: `${city}, India`,
-      maxCrawledPlacesPerSearch: limit,
-      language: 'en',
-      scrapeContacts: enrichContacts,
-      skipClosedPlaces: true,
-      maxImages: 0,
-      maxReviews: 0,
-    }
-
-    const runRes = await fetchWithTimeout(
-      `https://api.apify.com/v2/acts/${GMAPS_ACTOR}/runs?token=${apifyKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(actorInput) },
-    )
-    if (!runRes.ok) {
-      const detail = (await runRes.text()).slice(0, 300)
-      await db.from('scrape_runs').update({
-        status: 'failed',
-        finished_at: new Date().toISOString(),
-        error_message: 'The lead source could not be reached. Please try again shortly.',
-      }).eq('id', scrapeRunId)
-      await logEvent(db, {
-        source: 'scrape-leads', stage: 'discovering',
-        message: `Apify run could not be started: HTTP ${runRes.status}`,
-        detail: { body: detail }, user_id: userId, scrape_run_id: scrapeRunId,
-      })
-      return json({ error: 'source_unavailable', message: 'The lead source could not be reached. Please try again shortly.', run_id: scrapeRunId }, 502)
-    }
-
-    const { data: started } = await runRes.json()
-
-    await db.from('scrape_runs').update({
-      apify_run_id: started.id,
-      status: 'running',
-      heartbeat_at: new Date().toISOString(),
-    }).eq('id', scrapeRunId)
-
+    // Discovery itself belongs to the worker: Places is a single fast call, so
+    // there is no third-party run to start here and nothing to poll. This
+    // function's job ends at creating the row and handing over.
     await logEvent(db, {
       source: 'scrape-leads', stage: 'job_start',
       message: `Job created: ${limit} leads, ${industry} in ${city}`,
-      detail: { apify_run_id: started.id, enrich_contacts: enrichContacts, sources: sourceList },
-      user_id: userId, scrape_run_id: scrapeRunId,
+      detail: { enrich_contacts: enrichContacts, sources: sourceList },
+      user_id: userId, scrape_run_id: runId,
     })
 
     // --- Hand off to the worker ---------------------------------------------
@@ -267,14 +237,19 @@ Deno.serve(async (req) => {
     // If the kick fails the job is not lost: its heartbeat goes stale, the
     // client's poll notices and asks for a resume, and a chain that never starts
     // at all is closed by the reaper on the next job.
-    kickWorker(supabaseUrl, scrapeRunId)
+    kickWorker(supabaseUrl, runId)
 
     return json({
       success: true,
-      run_id: scrapeRunId,
+      run_id: runId,
       status: 'running',
       stage: 'discovering',
       limit_requested: limit,
+      // Reported so the UI can explain a blank email column rather than letting
+      // it read as a bug. Always false today: no discovery source returns an
+      // email, so every lead arrives without one.
+      enrich_contacts: enrichContacts,
+      enrich_withheld: enrichRequested && !enrichContacts,
     })
 
   } catch (err) {
