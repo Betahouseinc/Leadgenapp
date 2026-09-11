@@ -8,7 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const PLANS: Record<string, { name: string; amount: number; leads_per_month: number }> = {
   starter: { name: 'Starter', amount: 99900,  leads_per_month: 500  }, // paise
-  pro:     { name: 'Pro',     amount: 299900, leads_per_month: 2000 },
+  pro:     { name: 'Pro',     amount: 1000000, leads_per_month: 2000 },
   agency:  { name: 'Agency',  amount: 799900, leads_per_month: -1   },
 }
 
