@@ -53,6 +53,8 @@ export default function Landing() {
         .lg-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
         .lg-navlinks { display: flex; gap: 28px; }
         .lg-tablewrap { overflow-x: auto; }
+        .lg-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+        #demo { scroll-margin-top: 72px; }
         @media (max-width: 900px) {
           .lg-hero, .lg-gen, .lg-dashgrid { grid-template-columns: minmax(0,1fr) !important; }
           .lg-steps, .lg-kpis, .lg-stages { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
@@ -94,7 +96,7 @@ export default function Landing() {
             </p>
             <div style={{ display: 'flex', gap: 12, margin: '28px 0', flexWrap: 'wrap' }}>
               <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, padding: '13px 20px', fontSize: 15 }}>Start finding leads</button>
-              <a href="#how" style={{ ...btnGhost, padding: '13px 20px', fontSize: 15 }}>See how it works</a>
+              <a href="#demo" onClick={scrollToDemo} style={{ ...btnGhost, padding: '13px 20px', fontSize: 15 }}>See how it works</a>
             </div>
             <div style={{ display: 'flex', gap: 20, fontSize: 12.5, color: T.muted, flexWrap: 'wrap' }}>
               {['No credit card', 'Real generation progress', 'Export anytime'].map(t => (
@@ -123,6 +125,34 @@ export default function Landing() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Demo video ---------- */}
+      <section id="demo" style={{ padding: '72px 0 0' }}>
+        <div className="lg-wrap">
+          <Head title="See LeadGenAI in 60 seconds" sub="From search to AI-scored leads to a drafted outreach email." />
+          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+            <video
+              src="/demo/leadgenai-demo.mp4"
+              poster="/demo/leadgenai-demo-poster.jpg"
+              controls
+              playsInline
+              preload="metadata"
+              muted={false}
+              aria-label="LeadGenAI product demo, 60 seconds"
+              aria-describedby="demo-desc"
+              style={{ display: 'block', boxSizing: 'border-box', width: '100%', aspectRatio: '16 / 9', background: T.ink, borderRadius: 16, border: `1px solid ${T.line}`, boxShadow: '0 18px 50px rgba(22,59,38,0.10)' }}
+            />
+            <p id="demo-desc" className="lg-sr">
+              A 60-second walkthrough of LeadGenAI using sample data. Step 1: a new
+              lead search for logistics companies in Bengaluru. Step 2: matching
+              businesses are discovered on a map. Step 3: AI scores every lead for
+              fit. Step 4: one click researches a top-scoring company and drafts a
+              personalised outreach email. It ends on the dashboard and a sign-up
+              prompt.
+            </p>
           </div>
         </div>
       </section>
@@ -303,6 +333,16 @@ function Head({ title, sub }) {
       <p style={{ color: T.muted, lineHeight: 1.6, margin: 0 }}>{sub}</p>
     </div>
   )
+}
+
+// Smooth-scroll to the demo; the href stays as a no-JS fallback.
+function scrollToDemo(e) {
+  const el = document.getElementById('demo')
+  if (!el) return
+  e.preventDefault()
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  history.replaceState(null, '', '#demo')
 }
 
 const link = { color: 'inherit', textDecoration: 'none' }
