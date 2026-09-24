@@ -34,19 +34,21 @@ const PLANS = [
     daily: 100,
     features: ['500 leads/month', 'Up to 100 leads per day', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Email support'],
     cta: 'Start Starter',
-    highlight: false,
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 10000,
-    leads: 2000,
-    daily: 300,
-    features: ['2,000 leads/month', 'Up to 300 leads per day', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Priority support', 'Saved searches'],
-    cta: 'Start Pro',
     highlight: true,
   },
+  {
+    // Quote-only: no self-serve checkout. The id stays 'pro' so existing Pro
+    // subscribers still see this card as their current plan.
+    id: 'pro',
+    name: 'Enterprise',
+    quote: true,
+    features: ['Custom monthly lead volume', 'Daily limits sized to your team', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Priority support', 'Saved searches'],
+    cta: 'Contact for an exclusive quote',
+    highlight: false,
+  },
 ]
+
+const QUOTE_EMAIL = 'hello@exommerce.online'
 
 export default function Pricing() {
   const navigate = useNavigate()
@@ -63,6 +65,19 @@ export default function Pricing() {
 
   const handleSelect = async (plan) => {
     const { data: { session } } = await supabase.auth.getSession()
+    if (plan.quote) {
+      const body = [
+        'Hi, I would like an exclusive quote for LeadGenAI Enterprise.',
+        '',
+        'Company:',
+        'Leads needed per month:',
+        'Anything else we should know:',
+        '',
+        session?.user?.email ? `LeadGenAI account: ${session.user.email}` : '',
+      ].join('\n')
+      window.location.href = `mailto:${QUOTE_EMAIL}?subject=${encodeURIComponent('LeadGenAI Enterprise quote')}&body=${encodeURIComponent(body)}`
+      return
+    }
     if (!session) { navigate('/login?redirect=pricing'); return }
     if (plan.id === 'free') { navigate('/leads'); return }
     setLoading(plan.id)
@@ -166,13 +181,13 @@ export default function Pricing() {
               <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 8 }}>{plan.name}</div>
               <div style={{ marginBottom: 16 }}>
                 <span style={{ fontSize: 32, fontWeight: 800, color: plan.highlight ? T.blue : T.ink }}>
-                  {plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
+                  {plan.quote ? 'Custom' : plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
                 </span>
                 {plan.price > 0 && <span style={{ fontSize: 13, color: T.muted }}>/mo</span>}
               </div>
 
               <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>
-                {plan.leads === -1 ? 'Unlimited leads' : `${plan.leads.toLocaleString()} leads/month`}
+                {plan.quote ? 'Pricing tailored to your volume' : plan.leads === -1 ? 'Unlimited leads' : `${plan.leads.toLocaleString()} leads/month`}
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', fontSize: 13, color: T.ink2 }}>
