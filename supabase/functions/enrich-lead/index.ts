@@ -2,7 +2,7 @@
 //
 // Google Places reports what Google holds about a business and never visits its
 // website, so every lead arrives without an email. Enriching all of them the way
-// the old Apify pipeline did is what made runs expensive — it paid to visit a
+// the old Apify pipeline did is what made runs expensive â€” it paid to visit a
 // site for every place found, and produced an email for about a quarter of them.
 //
 // So this runs per lead, when someone asks for it, and tries the cheap thing
@@ -17,6 +17,13 @@
 // Both paths are recorded in enrichment_source so a lead's history says where
 // its email came from, and so a lead that yielded nothing is not retried
 // forever.
+//
+// Separately, when HUNTER_API_KEY is set, it looks up the people at the business
+// â€” owners, founders, directors â€” with Hunter's domain search, and checks
+// deliverability of every address it is about to hand the user. That is the
+// difference between a business inbox and a named decision-maker. Hunter is
+// paid past its free tier (25 searches, 50 verifications a month), so it runs
+// once per lead and only for domains that are the business's own site.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, json, logEvent, fetchWithTimeout, MODELS } from '../_shared/pipeline.ts'
@@ -174,6 +181,103 @@ async function fromGroundedSearch(
   return ''
 }
 
+// --- Decision-makers: Hunter ------------------------------------------------
+
+const HUNTER = 'https://api.hunter.io/v2'
+
+// Verification calls per enrichment. Each costs a Hunter credit, and the free
+// tier has 50 a month, so this checks the addresses a user is most likely to
+// write to rather than every one returned.
+const MAX_VERIFICATIONS = Number(Deno.env.get('HUNTER_MAX_VERIFICATIONS') || 3)
+
+// Many local businesses list a social profile or a directory page as their
+// "website". A domain search there returns that platform's staff, not the
+// business's â€” and still spends a credit.
+const NOT_A_BUSINESS_DOMAIN = [
+  'facebook.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com',
+  'google.com', 'goo.gl', 'g.page', 'justdial.com', 'indiamart.com', 'sulekha.com',
+  'zomato.com', 'swiggy.com', 'practo.com', 'tradeindia.com', 'linktr.ee', 'wa.me',
+  'whatsapp.com', 'blogspot.com', 'wordpress.com', 'wixsite.com', 'business.site',
+  'godaddysites.com', 'square.site',
+]
+
+function isBusinessDomain(domain: string): boolean {
+  return Boolean(domain) && !NOT_A_BUSINESS_DOMAIN.some(d => domain === d || domain.endsWith(`.${d}`))
+}
+
+const IS_EMAIL = /^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/i
+
+type HunterEmail = {
+  value: string
+  first_name?: string | null
+  last_name?: string | null
+  position?: string | null
+  seniority?: string | null
+  department?: string | null
+  linkedin?: string | null
+  phone_number?: string | null
+  confidence?: number | null
+  verification?: { status?: string | null; date?: string | null } | null
+}
+
+// Returns null when Hunter could not be asked (bad key, out of quota, down), as
+// distinct from [] â€” asked, and nobody on file. Only the second is final.
+async function hunterDomainSearch(domain: string, key: string): Promise<HunterEmail[] | null> {
+  const params = new URLSearchParams({
+    domain,
+    type: 'personal',
+    seniority: 'senior,executive',
+    // The free plan rejects offset+limit above 10.
+    limit: '10',
+  })
+  try {
+    const res = await fetchWithTimeout(`${HUNTER}/domain-search?${params}`, {
+      headers: { 'X-API-KEY': key },
+    }, 15_000)
+    if (!res.ok) {
+      console.error('Hunter domain search failed', res.status, (await res.text()).slice(0, 200))
+      return null
+    }
+    const body = await res.json()
+    return (body?.data?.emails || []) as HunterEmail[]
+  } catch (e) {
+    console.error('Hunter domain search error', String(e))
+    return null
+  }
+}
+
+// valid | invalid | accept_all | webmail | disposable | unknown, or null if the
+// check itself could not run. A 202 means Hunter is still working on it; one
+// retry is allowed and counts as the same credit.
+async function hunterVerify(email: string, key: string): Promise<string | null> {
+  const url = `${HUNTER}/email-verifier?${new URLSearchParams({ email })}`
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, { headers: { 'X-API-KEY': key } }, 20_000)
+      if (res.status === 202) { await new Promise(r => setTimeout(r, 3_000)); continue }
+      if (!res.ok) {
+        console.error('Hunter verify failed', res.status, (await res.text()).slice(0, 200))
+        return null
+      }
+      const body = await res.json()
+      return body?.data?.status || null
+    } catch (e) {
+      console.error('Hunter verify error', String(e))
+      return null
+    }
+  }
+  return 'unknown'
+}
+
+// Executives first, then by Hunter's confidence â€” the order the user sees them
+// and the order verification credits are spent in.
+function rankContacts(emails: HunterEmail[]): HunterEmail[] {
+  const tier = (s?: string | null) => (s === 'executive' ? 2 : s === 'senior' ? 1 : 0)
+  return [...emails]
+    .filter(e => e.value && IS_EMAIL.test(e.value))
+    .sort((a, b) => tier(b.seniority) - tier(a.seniority) || (b.confidence ?? 0) - (a.confidence ?? 0))
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -194,22 +298,33 @@ Deno.serve(async (req) => {
     // lead belonging to someone else simply does not exist for this caller.
     const { data: lead, error: loadErr } = await db
       .from('leads')
-      .select('id, name, address, website, email, enriched_at, enrichment_source')
+      .select('id, name, address, website, email, enriched_at, enrichment_source, email_status, contacts_enriched_at')
       .eq('id', leadId).eq('user_id', user.id).single()
 
     if (loadErr || !lead) {
       return json({ error: 'not_found', message: 'That lead is not in your list.' }, 404)
     }
-    if (lead.email) {
+
+    const hunterKey = Deno.env.get('HUNTER_API_KEY') || ''
+    const siteDomain = domainOfUrl(String(lead.website || ''))
+    const wantsContacts = Boolean(hunterKey) && isBusinessDomain(siteDomain) && !lead.contacts_enriched_at
+
+    if (lead.email && !wantsContacts) {
       return json({ status: 'unchanged', message: 'This lead already has an email.', email: lead.email })
     }
 
+    let email = ''
+    let source = ''
+    let limited = false
+
     // --- Free path ----------------------------------------------------------
-    let email = lead.website ? await fromWebsite(String(lead.website)) : ''
-    let source = email ? 'website' : ''
+    if (!lead.email) {
+      email = lead.website ? await fromWebsite(String(lead.website)) : ''
+      source = email ? 'website' : ''
+    }
 
     // --- Paid path, rate limited -------------------------------------------
-    if (!email && geminiKey) {
+    if (!lead.email && !email && geminiKey) {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
       const { count } = await db
         .from('leads')
@@ -219,27 +334,87 @@ Deno.serve(async (req) => {
         .gte('enriched_at', since)
 
       if ((count ?? 0) >= GROUNDED_DAILY_LIMIT) {
-        // Not an error: the free path already ran and found nothing. Say which
-        // limit was hit so it does not read as the lookup silently failing.
-        await db.from('leads')
-          .update({ enriched_at: new Date().toISOString(), enrichment_source: 'none' })
-          .eq('id', lead.id)
-        return json({
-          status: 'limited',
-          message: `You have used all ${GROUNDED_DAILY_LIMIT} deep lookups for today. The website check found nothing for this lead.`,
-        }, 429)
+        // Not an error: the free path already ran and found nothing. Noted so
+        // the reply says which limit was hit, rather than reading as the lookup
+        // silently failing. Decision-makers are still looked up below.
+        limited = true
+      } else {
+        email = await fromGroundedSearch(lead, geminiKey)
+        source = email ? 'search' : ''
       }
+    }
 
-      email = await fromGroundedSearch(lead, geminiKey)
-      source = email ? 'search' : ''
+    // --- Decision-makers ------------------------------------------------------
+    let contactsFound = 0
+    let contactsSearched = false
+    let verificationsLeft = MAX_VERIFICATIONS
+
+    if (wantsContacts) {
+      const people = await hunterDomainSearch(siteDomain, hunterKey)
+      if (people) {
+        contactsSearched = true
+        const ranked = rankContacts(people)
+        const rows = []
+        for (const p of ranked) {
+          // Hunter's own verification is reused when it has one. A fresh check is
+          // only spent where it has none, and only on the top few.
+          let status = p.verification?.status || null
+          let verifiedAt = p.verification?.date ? new Date(p.verification.date).toISOString() : null
+          if (!status && verificationsLeft > 0) {
+            verificationsLeft--
+            status = await hunterVerify(p.value, hunterKey)
+            verifiedAt = status ? new Date().toISOString() : null
+          }
+          rows.push({
+            lead_id: lead.id,
+            user_id: user.id,
+            first_name: p.first_name || null,
+            last_name: p.last_name || null,
+            position: p.position || null,
+            seniority: p.seniority || null,
+            department: p.department || null,
+            email: p.value.toLowerCase(),
+            phone: p.phone_number || null,
+            linkedin_url: p.linkedin || null,
+            confidence: p.confidence ?? null,
+            email_status: status,
+            email_verified_at: verifiedAt,
+            source: 'hunter',
+          })
+        }
+        if (rows.length) {
+          // Plain insert, not upsert: the unique index is on lower(email), which
+          // PostgREST cannot name as a conflict target. The lead is only searched
+          // once (contacts_enriched_at), so a collision means a concurrent click.
+          const { error: contactsErr } = await db.from('lead_contacts').insert(rows)
+          if (contactsErr && contactsErr.code !== '23505') {
+            console.error('Could not save contacts', contactsErr)
+            contactsSearched = false  // leave it retryable
+          } else {
+            contactsFound = rows.length
+          }
+        }
+      }
+    }
+
+    // --- Deliverability of the business inbox --------------------------------
+    // A newly found address is checked before it is saved, so the user never
+    // sees an unverified email presented as a lead's contact.
+    let emailStatus: string | null = null
+    const inbox = email || (lead.email && !lead.email_status ? String(lead.email) : '')
+    if (hunterKey && inbox && verificationsLeft > 0) {
+      verificationsLeft--
+      emailStatus = await hunterVerify(inbox, hunterKey)
     }
 
     // A lead that yielded nothing is still marked as attempted, so clicking the
     // button again does not re-run the expensive path for the same empty result.
+    const now = new Date().toISOString()
     const { error: saveErr } = await db.from('leads').update({
       ...(email ? { email } : {}),
-      enriched_at: new Date().toISOString(),
-      enrichment_source: source || 'none',
+      ...(!lead.email ? { enriched_at: now, enrichment_source: source || 'none' } : {}),
+      ...(emailStatus ? { email_status: emailStatus, email_verified_at: now } : {}),
+      ...(contactsSearched ? { contacts_enriched_at: now } : {}),
     }).eq('id', lead.id)
 
     if (saveErr) {
@@ -251,17 +426,43 @@ Deno.serve(async (req) => {
       source: 'enrich-lead',
       stage: source || 'none',
       message: email ? `Found an email via ${source}` : 'No email found',
-      detail: { lead_id: lead.id, had_website: Boolean(lead.website) },
+      detail: {
+        lead_id: lead.id, had_website: Boolean(lead.website),
+        contacts_searched: contactsSearched, contacts_found: contactsFound,
+        verifications_used: MAX_VERIFICATIONS - verificationsLeft,
+      },
       user_id: user.id,
     })
 
+    const peopleNote = contactsFound
+      ? ` Found ${contactsFound} decision-maker${contactsFound === 1 ? '' : 's'}.`
+      : ''
+    const undeliverable = emailStatus === 'invalid' || emailStatus === 'disposable'
+      ? ' That address failed the deliverability check â€” do not send to it.'
+      : ''
+
+    // Contact details for the people are deliberately not in this reply: it
+    // goes to free-plan users too, and lead_contacts_view is what masks them.
+    if (limited && !contactsFound) {
+      return json({
+        status: 'limited',
+        message: `You have used all ${GROUNDED_DAILY_LIMIT} deep lookups for today. The website check found nothing for this lead.`,
+      }, 429)
+    }
+
     return json({
-      status: email ? 'enriched' : 'not_found',
+      status: email || contactsFound ? 'enriched' : lead.email ? 'unchanged' : 'not_found',
       email: email || null,
+      email_status: emailStatus,
       source: source || 'none',
+      contacts_found: contactsFound,
       message: email
-        ? 'Contact details updated.'
-        : 'No published email address found for this business.',
+        ? `Contact details updated.${undeliverable}${peopleNote}`
+        : contactsFound
+          ? peopleNote.trim()
+          : lead.email
+            ? 'No decision-makers on file for this business.'
+            : 'No published email address found for this business.',
     })
 
   } catch (err) {
