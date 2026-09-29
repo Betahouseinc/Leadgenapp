@@ -29,7 +29,7 @@ const PLANS = [
   {
     id: 'starter',
     name: 'Starter',
-    price: 999,
+    price: 2500,
     leads: 500,
     daily: 100,
     features: ['500 leads/month', 'Up to 100 leads per day', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Email support'],
