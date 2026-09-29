@@ -261,6 +261,8 @@ export default function Leads() {
     const { data } = await supabase.from('leads_view').select('*').in('id', ids)
     const byId = Object.fromEntries((data || []).map(r => [r.id, r]))
     setLeads(prev => prev.map(l => byId[l.id] ? byId[l.id] : l))
+    // "In pipeline" counts by status, so the cards move with it.
+    refreshStats()
   }
 
   const updateStatus = (ids, next) => applyStatus(ids, next)
@@ -858,7 +860,7 @@ export default function Leads() {
         <ScrapeModal
           quota={quota}
           onClose={() => setScrapeOpen(false)}
-          onDone={() => { fetchLeads(); refreshQuota() }}
+          onDone={() => { fetchLeads(); refreshStats(); refreshQuota() }}
         />
       )}
     </div>
