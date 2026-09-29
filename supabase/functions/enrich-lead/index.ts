@@ -199,6 +199,10 @@ const NOT_A_BUSINESS_DOMAIN = [
   'zomato.com', 'swiggy.com', 'practo.com', 'tradeindia.com', 'linktr.ee', 'wa.me',
   'whatsapp.com', 'blogspot.com', 'wordpress.com', 'wixsite.com', 'business.site',
   'godaddysites.com', 'square.site',
+  // International directories and review sites, for leads outside India.
+  'yelp.com', 'yellowpages.com', 'yell.com', 'tripadvisor.com', 'trustpilot.com',
+  'clutch.co', 'glassdoor.com', 'truelocal.com.au', 'yellowpages.com.au',
+  'bing.com', 'apple.com', 'nextdoor.com', 'thumbtack.com', 'houzz.com',
 ]
 
 function isBusinessDomain(domain: string): boolean {

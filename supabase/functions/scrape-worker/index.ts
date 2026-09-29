@@ -21,6 +21,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   corsHeaders, json, logEvent, fetchWithTimeout, sleep,
   dedupKey, normalisePhone, domainOf, scoreChunk,
+  normaliseCountry, countryName, DEFAULT_COUNTRY,
   SLICE_BUDGET_MS, MAX_ATTEMPTS, SCORING_CHUNK, INSERT_CHUNK,
   INTER_CHUNK_MS, SCORING_GIVE_UP_MS, SCORING_RETRY_GAP_MS,
   INDUSTRY_SEARCH_MAP, MAX_LEADS_PER_RUN,
@@ -43,6 +44,10 @@ const PLACES_FIELD_MASK = [
   'places.displayName',
   'places.formattedAddress',
   'places.nationalPhoneNumber',
+  // Same SKU as the national form. Stored in preference to it, because a lead
+  // list that spans countries is unusable — and a WhatsApp link unbuildable —
+  // without the country code.
+  'places.internationalPhoneNumber',
   'places.websiteUri',
   'places.rating',
   'places.userRatingCount',
@@ -205,6 +210,8 @@ Deno.serve(async (req) => {
 async function discoverPlaces(db: any, run: Row, placesKey: string): Promise<Row[]> {
   const searchTerm = INDUSTRY_SEARCH_MAP[run.industry] || run.industry
   const wanted = Math.max(1, Math.min(run.limit_requested || 50, MAX_LEADS_PER_RUN))
+  // Jobs created before international support have no country; all were India.
+  const country = normaliseCountry(run.country) || DEFAULT_COUNTRY
 
   const collected: Row[] = []
   let pageToken: string | undefined
@@ -218,10 +225,12 @@ async function discoverPlaces(db: any, run: Row, placesKey: string): Promise<Row
     const body: Record<string, unknown> = {
       // Location goes in the query rather than a bias box: a text query naming
       // the city is what Places is tuned for, and it needs no coordinates.
-      textQuery: `${searchTerm} in ${run.city}, India`,
+      // regionCode alone only biases; naming the country in the text is what
+      // stops "Melbourne" or "Hyderabad" resolving to the wrong one.
+      textQuery: `${searchTerm} in ${run.city}, ${countryName(country)}`,
       pageSize,
       languageCode: 'en',
-      regionCode: 'IN',
+      regionCode: country,
     }
     if (pageToken) body.pageToken = pageToken
 
@@ -268,12 +277,13 @@ async function discoverPlaces(db: any, run: Row, placesKey: string): Promise<Row
     // website, so there is no email to take. Kept as '' because the dedup and
     // refresh passes both read this field and must behave as they always did.
     email:        '',
-    phone:        (p.nationalPhoneNumber as string) || '',
+    phone:        (p.internationalPhoneNumber as string) || (p.nationalPhoneNumber as string) || '',
     website:      (p.websiteUri as string) || '',
     address:      (p.formattedAddress as string) || '',
     rating:       (p.rating as number) ?? null,
     review_count: (p.userRatingCount as number) ?? null,
     city:         run.city,
+    country,
     industry:     run.industry,
     source:       'gmaps',
     status:       'new',
@@ -419,6 +429,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
       place_id: l.place_id || null,
       name: l.name,
       city: l.city,
+      country: l.country,
       industry: l.industry,
       source: l.source,
       status: 'new',

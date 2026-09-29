@@ -18,10 +18,28 @@ const T = {
   errorL: '#FDEAEA',
 }
 
-const INDIAN_CITIES = [
-  'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
-  'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
-  'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
+// ISO 3166-1 alpha-2 codes; the backend passes the code to Google Places as the
+// search region. The city list is a shortcut, not a limit — "Custom city" takes
+// any place in the chosen country.
+const COUNTRIES = [
+  { code: 'IN', name: 'India', cities: [
+    'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
+    'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
+    'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
+  ] },
+  { code: 'US', name: 'United States', cities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'San Francisco', 'Austin', 'Seattle', 'Boston', 'Miami', 'Dallas'] },
+  { code: 'GB', name: 'United Kingdom', cities: ['London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Edinburgh', 'Bristol'] },
+  { code: 'AE', name: 'United Arab Emirates', cities: ['Dubai', 'Abu Dhabi', 'Sharjah'] },
+  { code: 'SG', name: 'Singapore', cities: ['Singapore'] },
+  { code: 'AU', name: 'Australia', cities: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'] },
+  { code: 'CA', name: 'Canada', cities: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'] },
+  { code: 'SA', name: 'Saudi Arabia', cities: ['Riyadh', 'Jeddah', 'Dammam'] },
+  { code: 'NZ', name: 'New Zealand', cities: ['Auckland', 'Wellington', 'Christchurch'] },
+  { code: 'MY', name: 'Malaysia', cities: ['Kuala Lumpur', 'Penang', 'Johor Bahru'] },
+  { code: 'ZA', name: 'South Africa', cities: ['Johannesburg', 'Cape Town', 'Durban'] },
+  { code: 'DE', name: 'Germany', cities: ['Berlin', 'Munich', 'Hamburg', 'Frankfurt'] },
+  { code: 'NL', name: 'Netherlands', cities: ['Amsterdam', 'Rotterdam', 'Utrecht'] },
+  { code: 'IE', name: 'Ireland', cities: ['Dublin', 'Cork'] },
 ]
 
 // Keep in step with MAX_LEADS_PER_RUN in supabase/functions/_shared/pipeline.ts.
@@ -51,8 +69,15 @@ const STALE_MS = 90_000
 export default function ScrapeModal({ onClose, onDone, quota }) {
   const [selectedCategory, setSelectedCategory] = useState('Traditional')
   const [industry, setIndustry] = useState('Real Estate')
+  const [country, setCountry] = useState('IN')
   const [city, setCity] = useState('Bengaluru')
   const [useCustomCity, setUseCustomCity] = useState(false)
+  const cities = COUNTRIES.find(c => c.code === country)?.cities || []
+
+  const handleCountryChange = (code) => {
+    setCountry(code)
+    setCity(COUNTRIES.find(c => c.code === code)?.cities[0] || '')
+  }
   const [customCity, setCustomCity] = useState('')
   const [limit, setLimit] = useState(10)
   const [error, setError] = useState('')
@@ -171,7 +196,7 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ industry, city: finalCity, sources: ['gmaps'], limit }),
+          body: JSON.stringify({ industry, city: finalCity, country, sources: ['gmaps'], limit }),
         }
       )
 
@@ -283,17 +308,24 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
             </label>
 
             <label style={{ display: 'block', marginBottom: 14 }}>
+              <div style={labelStyle}>Country</div>
+              <select value={country} onChange={e => handleCountryChange(e.target.value)} disabled={starting} style={inputStyle}>
+                {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+              </select>
+            </label>
+
+            <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>City</div>
               {!useCustomCity ? (
                 <select value={city} onChange={e => setCity(e.target.value)} disabled={starting} style={inputStyle}>
-                  {INDIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {cities.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               ) : (
                 <input
                   type="text"
                   value={customCity}
                   onChange={e => setCustomCity(e.target.value)}
-                  placeholder="Enter city name"
+                  placeholder={`Any city in ${COUNTRIES.find(c => c.code === country)?.name || 'this country'}`}
                   disabled={starting}
                   style={inputStyle}
                 />

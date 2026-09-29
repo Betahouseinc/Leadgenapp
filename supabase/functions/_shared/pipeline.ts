@@ -171,7 +171,36 @@ export function dedupKey(name: unknown, city: unknown) {
 export function normalisePhone(v: unknown) {
   const digits = String(v ?? '').replace(/\D/g, '')
   // Compare on the last 10 digits so +91-80-1234 5678 and 08012345678 match.
+  // Phones are now stored in international form, which keeps Indian numbers
+  // matching their older national-form rows. Outside India the two forms can
+  // differ in the trunk digit, so a few pre-change foreign rows may not dedup by
+  // phone — place_id still catches them.
   return digits.length > 10 ? digits.slice(-10) : digits
+}
+
+// --------------------------------------------------------------------------
+// Country
+//
+// A search is a city within a country, identified by its ISO 3166-1 alpha-2
+// code. The country goes to Places twice: named in the query text, and as
+// regionCode, which biases ambiguous names (Cambridge, Hyderabad, Melbourne) to
+// the right place. Every search before this change was India, hence the default.
+// --------------------------------------------------------------------------
+
+export const DEFAULT_COUNTRY = 'IN'
+
+// Returns the code uppercased, or null if it is not two letters.
+export function normaliseCountry(v: unknown): string | null {
+  const s = String(v ?? DEFAULT_COUNTRY).trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(s) ? s : null
+}
+
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code
+  } catch {
+    return code
+  }
 }
 
 // The registrable host, lowercased, without www. Used as an identity of last
