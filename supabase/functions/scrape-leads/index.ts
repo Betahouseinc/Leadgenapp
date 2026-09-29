@@ -21,7 +21,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   corsHeaders, json, logEvent, fetchWithTimeout,
-  INDUSTRY_SEARCH_MAP, MAX_LEADS_PER_RUN,
+  INDUSTRY_SEARCH_MAP, MAX_LEADS_PER_RUN, normaliseCountry,
 } from '../_shared/pipeline.ts'
 
 // Supabase's background-task API. Without it a fire-and-forget fetch is
@@ -114,6 +114,13 @@ Deno.serve(async (req) => {
       return json({ error: 'invalid_request', message: 'Choose an industry and a city.' }, 400)
     }
 
+    // Older clients and the nightly job's history send no country; every search
+    // before international support was India.
+    const country = normaliseCountry(body.country)
+    if (!country) {
+      return json({ error: 'invalid_request', message: 'Choose a valid country.' }, 400)
+    }
+
     // Google Maps is the discovery source. Rejecting an unknown source beats
     // accepting it and returning an empty run the caller cannot explain.
     const sourceList: string[] = Array.isArray(sources) && sources.length ? sources : ['gmaps']
@@ -200,7 +207,7 @@ Deno.serve(async (req) => {
       .from('scrape_runs')
       .insert({
         user_id: userId,
-        industry, city,
+        industry, city, country,
         sources: sourceList,
         limit_requested: limit,
         status: 'queued',
@@ -227,7 +234,7 @@ Deno.serve(async (req) => {
     // function's job ends at creating the row and handing over.
     await logEvent(db, {
       source: 'scrape-leads', stage: 'job_start',
-      message: `Job created: ${limit} leads, ${industry} in ${city}`,
+      message: `Job created: ${limit} leads, ${industry} in ${city}, ${country}`,
       detail: { enrich_contacts: enrichContacts, sources: sourceList },
       user_id: userId, scrape_run_id: runId,
     })

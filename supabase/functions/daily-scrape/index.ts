@@ -50,11 +50,13 @@ const RUN_BUDGET_MS = Number(Deno.env.get('DAILY_RUN_BUDGET_MS') || 100_000)
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-type Search = { user_id: string; industry: string; city: string; last_run_at: string; last_limit: number }
-type Result = { user_id: string; industry: string; city: string; status: 'ok' | 'quota' | 'failed'; saved?: number }
+type Search = { user_id: string; industry: string; city: string; country?: string; last_run_at: string; last_limit: number }
+type Result = { user_id: string; industry: string; city: string; country?: string; status: 'ok' | 'quota' | 'failed'; saved?: number }
 
-const keyOf = (s: { user_id: string; industry: string; city: string }) =>
-  `${s.user_id}|${s.industry.toLowerCase()}|${s.city.toLowerCase()}`
+// Country is part of the identity — Melbourne AU and Melbourne US are different
+// searches. Results recorded before international support carry none: India.
+const keyOf = (s: { user_id: string; industry: string; city: string; country?: string }) =>
+  `${s.user_id}|${s.industry.toLowerCase()}|${s.city.toLowerCase()}|${(s.country || 'IN').toUpperCase()}`
 
 const respond = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -174,6 +176,7 @@ Deno.serve(async (req) => {
             user_id: s.user_id,
             industry: s.industry,
             city: s.city,
+            country: s.country || 'IN',
             sources: ['gmaps'],
             // Reuse the size the user last asked for, bounded so an old 200-lead
             // request does not silently become a nightly 200-lead request.
@@ -193,11 +196,11 @@ Deno.serve(async (req) => {
           await log('scrape', `Scheduled search failed for ${s.industry}/${s.city}: ${payload?.message || payload?.error}`,
             { http_status: res.status, daily_run_id: run.id }, s.user_id)
         }
-        result = { user_id: s.user_id, industry: s.industry, city: s.city, status, saved: payload?.saved ?? 0 }
+        result = { user_id: s.user_id, industry: s.industry, city: s.city, country: s.country, status, saved: payload?.saved ?? 0 }
       } catch (e) {
         await log('scrape', `Scheduled search threw for ${s.industry}/${s.city}: ${(e as Error).message}`,
           { daily_run_id: run.id }, s.user_id)
-        result = { user_id: s.user_id, industry: s.industry, city: s.city, status: 'failed' }
+        result = { user_id: s.user_id, industry: s.industry, city: s.city, country: s.country, status: 'failed' }
       }
 
       results.push(result)

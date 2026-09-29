@@ -162,16 +162,53 @@ export function normaliseIndustry(v: string, fallback: string): string {
 // Identity
 // --------------------------------------------------------------------------
 
-// Mirrors the generated dedup_key column on leads.
-export function dedupKey(name: unknown, city: unknown) {
+// Mirrors the generated dedup_key column on leads — keep the two in step (see
+// 20260930_country_aware_dedup.sql). Country is part of the identity: Starbucks
+// in Birmingham GB and Starbucks in Birmingham US are different leads. A lead
+// with no country predates international search and was India.
+export function dedupKey(name: unknown, city: unknown, country: unknown) {
   const squash = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
-  return `${squash(name)}|${squash(city)}`
+  return `${squash(name)}|${squash(city)}|${squash(country || DEFAULT_COUNTRY)}`
 }
 
+// The last 10 digits, so +91-80-1234 5678 and 08012345678 match. Phones are now
+// stored in international form, which keeps Indian numbers matching their older
+// national-form rows. Because the country code is cut off, two countries can
+// produce the same key (+44 20 7946 0958 and +1 207 946 0958), so a phone match
+// is only valid between leads of the same country — see inCountry.
 export function normalisePhone(v: unknown) {
   const digits = String(v ?? '').replace(/\D/g, '')
-  // Compare on the last 10 digits so +91-80-1234 5678 and 08012345678 match.
   return digits.length > 10 ? digits.slice(-10) : digits
+}
+
+// Scopes a phone key (or any other cross-lead match key) to a country.
+export function inCountry(country: unknown, key: string): string {
+  return `${String(country || DEFAULT_COUNTRY).toUpperCase()}|${key}`
+}
+
+// --------------------------------------------------------------------------
+// Country
+//
+// A search is a city within a country, identified by its ISO 3166-1 alpha-2
+// code. The country goes to Places twice: named in the query text, and as
+// regionCode, which biases ambiguous names (Cambridge, Hyderabad, Melbourne) to
+// the right place. Every search before this change was India, hence the default.
+// --------------------------------------------------------------------------
+
+export const DEFAULT_COUNTRY = 'IN'
+
+// Returns the code uppercased, or null if it is not two letters.
+export function normaliseCountry(v: unknown): string | null {
+  const s = String(v ?? DEFAULT_COUNTRY).trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(s) ? s : null
+}
+
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code
+  } catch {
+    return code
+  }
 }
 
 // The registrable host, lowercased, without www. Used as an identity of last
