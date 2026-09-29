@@ -21,7 +21,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   corsHeaders, json, logEvent, fetchWithTimeout, sleep,
   dedupKey, normalisePhone, domainOf, scoreChunk,
-  normaliseCountry, countryName, DEFAULT_COUNTRY,
+  normaliseCountry, countryName, DEFAULT_COUNTRY, inCountry,
   SLICE_BUDGET_MS, MAX_ATTEMPTS, SCORING_CHUNK, INSERT_CHUNK,
   INTER_CHUNK_MS, SCORING_GIVE_UP_MS, SCORING_RETRY_GAP_MS,
   INDUSTRY_SEARCH_MAP, MAX_LEADS_PER_RUN,
@@ -303,7 +303,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
   // provider's own id; fall back to name+city only when it is absent.
   const seen = new Set<string>()
   const withinRun = mapped.filter(l => {
-    const key = l.place_id ? `p:${l.place_id}` : `n:${dedupKey(l.name, l.city)}`
+    const key = l.place_id ? `p:${l.place_id}` : `n:${dedupKey(l.name, l.city, l.country)}`
     if (seen.has(key)) return false
     seen.add(key)
     return true
@@ -316,14 +316,14 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
     vals.length ? `${col}.in.(${[...new Set(vals)].map(v => JSON.stringify(v)).join(',')})` : null
 
   const placeIds = withinRun.map(l => l.place_id).filter(Boolean)
-  const keys = withinRun.map(l => dedupKey(l.name, l.city))
+  const keys = withinRun.map(l => dedupKey(l.name, l.city, l.country))
   const phones = withinRun.map(l => normalisePhone(l.phone)).filter(p => p.length >= 10)
   const emails = withinRun.map(l => l.email.toLowerCase().trim()).filter(Boolean)
 
   let held: Row[] = []
   const { data: existing, error: existErr } = await db
     .from('leads')
-    .select('id, name, city, place_id, dedup_key, phone_key, email, phone, website, address, rating, review_count')
+    .select('id, name, city, country, place_id, dedup_key, phone_key, email, phone, website, address, rating, review_count')
     .eq('user_id', run.user_id)
     .or([
       inList('place_id', placeIds),
@@ -350,15 +350,20 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
   const byPhone = new Map<string, Row>()
   const byEmail = new Map<string, Row>()
   const byDomain = new Map<string, Row>()
+  // Phone and website are matched only within a country. A truncated phone key
+  // can collide across country codes, and a chain's branches in two countries
+  // share one website (starbucks.com) — either would merge unrelated businesses
+  // and overwrite the held one with the other's details. place_id and email
+  // identify a business on their own; dedup_key already carries the country.
   for (const r of held) {
     if (r.place_id) byPlace.set(String(r.place_id), r)
     if (r.dedup_key) byKey.set(String(r.dedup_key), r)
     const p = String(r.phone_key ?? '')
-    if (p.length >= 10) byPhone.set(p, r)
+    if (p.length >= 10) byPhone.set(inCountry(r.country, p), r)
     const e = String(r.email ?? '').toLowerCase().trim()
     if (e) byEmail.set(e, r)
     const d = domainOf(r.website)
-    if (d) byDomain.set(d, r)
+    if (d) byDomain.set(inCountry(r.country, d), r)
   }
 
   const fresh: Row[] = []
@@ -369,10 +374,10 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
     const domain = domainOf(l.website)
     const hit =
       (l.place_id ? byPlace.get(l.place_id) : undefined) ||
-      byKey.get(dedupKey(l.name, l.city)) ||
-      (phone.length >= 10 ? byPhone.get(phone) : undefined) ||
+      byKey.get(dedupKey(l.name, l.city, l.country)) ||
+      (phone.length >= 10 ? byPhone.get(inCountry(l.country, phone)) : undefined) ||
       (email ? byEmail.get(email) : undefined) ||
-      (domain ? byDomain.get(domain) : undefined)
+      (domain ? byDomain.get(inCountry(l.country, domain)) : undefined)
     if (hit) dupes.push({ lead: l, held: hit })
     else fresh.push(l)
   }

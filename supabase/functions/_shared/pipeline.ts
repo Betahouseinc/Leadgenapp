@@ -162,20 +162,28 @@ export function normaliseIndustry(v: string, fallback: string): string {
 // Identity
 // --------------------------------------------------------------------------
 
-// Mirrors the generated dedup_key column on leads.
-export function dedupKey(name: unknown, city: unknown) {
+// Mirrors the generated dedup_key column on leads — keep the two in step (see
+// 20260930_country_aware_dedup.sql). Country is part of the identity: Starbucks
+// in Birmingham GB and Starbucks in Birmingham US are different leads. A lead
+// with no country predates international search and was India.
+export function dedupKey(name: unknown, city: unknown, country: unknown) {
   const squash = (v: unknown) => String(v ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '')
-  return `${squash(name)}|${squash(city)}`
+  return `${squash(name)}|${squash(city)}|${squash(country || DEFAULT_COUNTRY)}`
 }
 
+// The last 10 digits, so +91-80-1234 5678 and 08012345678 match. Phones are now
+// stored in international form, which keeps Indian numbers matching their older
+// national-form rows. Because the country code is cut off, two countries can
+// produce the same key (+44 20 7946 0958 and +1 207 946 0958), so a phone match
+// is only valid between leads of the same country — see inCountry.
 export function normalisePhone(v: unknown) {
   const digits = String(v ?? '').replace(/\D/g, '')
-  // Compare on the last 10 digits so +91-80-1234 5678 and 08012345678 match.
-  // Phones are now stored in international form, which keeps Indian numbers
-  // matching their older national-form rows. Outside India the two forms can
-  // differ in the trunk digit, so a few pre-change foreign rows may not dedup by
-  // phone — place_id still catches them.
   return digits.length > 10 ? digits.slice(-10) : digits
+}
+
+// Scopes a phone key (or any other cross-lead match key) to a country.
+export function inCountry(country: unknown, key: string): string {
+  return `${String(country || DEFAULT_COUNTRY).toUpperCase()}|${key}`
 }
 
 // --------------------------------------------------------------------------
