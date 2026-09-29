@@ -26,7 +26,7 @@
 // once per lead and only for domains that are the business's own site.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders, json, logEvent, fetchWithTimeout, MODELS } from '../_shared/pipeline.ts'
+import { corsHeaders, json, logEvent, fetchWithTimeout, MODELS, canSeeContacts, maskEmail } from '../_shared/pipeline.ts'
 
 // Grounded lookups per user per rolling 24h. The free Gemini allowance is 5,000
 // prompts a month across the whole project, so one enthusiastic user must not be
@@ -309,8 +309,14 @@ Deno.serve(async (req) => {
     const siteDomain = domainOfUrl(String(lead.website || ''))
     const wantsContacts = Boolean(hunterKey) && isBusinessDomain(siteDomain) && !lead.contacts_enriched_at
 
+    // Free plans get the address masked, exactly as leads_view shows it. This
+    // function runs as the service role, so without this it returned the full
+    // address to anyone who clicked the button.
+    const showContacts = await canSeeContacts(db, user.id)
+    const shown = (v: unknown) => (showContacts ? (v ? String(v) : null) : maskEmail(v))
+
     if (lead.email && !wantsContacts) {
-      return json({ status: 'unchanged', message: 'This lead already has an email.', email: lead.email })
+      return json({ status: 'unchanged', message: 'This lead already has an email.', email: shown(lead.email) })
     }
 
     let email = ''
@@ -452,7 +458,7 @@ Deno.serve(async (req) => {
 
     return json({
       status: email || contactsFound ? 'enriched' : lead.email ? 'unchanged' : 'not_found',
-      email: email || null,
+      email: shown(email),
       email_status: emailStatus,
       source: source || 'none',
       contacts_found: contactsFound,

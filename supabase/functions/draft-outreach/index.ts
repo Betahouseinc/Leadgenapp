@@ -15,7 +15,7 @@
 // is worse than a short one.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders, json, logEvent, fetchWithTimeout, MODELS } from '../_shared/pipeline.ts'
+import { corsHeaders, json, logEvent, fetchWithTimeout, MODELS, canSeeContacts, maskEmail, maskPhone } from '../_shared/pipeline.ts'
 
 type Lead = Record<string, unknown>
 
@@ -138,7 +138,13 @@ Deno.serve(async (req) => {
 
     if (leadErr || !lead) return json({ error: 'not_found', message: 'Lead not found.' }, 404)
 
-    const facts = leadFacts(lead)
+    // The brief is shown to the user and can quote the facts back verbatim, so a
+    // free plan's facts carry the same masked contacts leads_view shows them.
+    const facts = leadFacts(
+      (await canSeeContacts(db, user.id))
+        ? lead
+        : { ...lead, email: maskEmail(lead.email), phone: maskPhone(lead.phone) },
+    )
     let prompt: string
 
     if (kind === 'research') {

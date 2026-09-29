@@ -189,6 +189,35 @@ export function domainOf(website: unknown): string {
 }
 
 // --------------------------------------------------------------------------
+// Contact masking
+//
+// The dashboard reads through leads_view, which masks email and phone for
+// free-plan users. Edge functions run as the service role and bypass that, so
+// anything they send back to a user must be masked here or it becomes a way
+// around the paywall. These mirror public.can_see_contacts(), mask_email() and
+// mask_phone() in 20260813_roles_and_masking.sql — keep them in step.
+// --------------------------------------------------------------------------
+
+export async function canSeeContacts(db: any, userId: string): Promise<boolean> {
+  const { data } = await db.from('profiles').select('role, plan_id').eq('id', userId).maybeSingle()
+  if (!data) return false
+  return data.role === 'admin' || (data.plan_id || 'free') !== 'free'
+}
+
+export function maskEmail(v: unknown): string | null {
+  const s = String(v ?? '')
+  if (!s) return null
+  const at = s.indexOf('@')
+  return at < 0 ? '•••' : `${s[0]}•••@${s.slice(at + 1)}`
+}
+
+export function maskPhone(v: unknown): string | null {
+  const s = String(v ?? '')
+  if (!s) return null
+  return `••••••${s.replace(/\D/g, '').slice(-2)}`
+}
+
+// --------------------------------------------------------------------------
 // Structured logging
 //
 // Best-effort by design: monitoring must never be the reason a scrape fails, so
