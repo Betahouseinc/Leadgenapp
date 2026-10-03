@@ -10,8 +10,11 @@ import { useLocation } from 'react-router-dom'
 // "Page changes based on browser history events" switched OFF for this data
 // stream, or every route change is counted twice.
 
+// The home page keeps the full title from index.html: it is what search results
+// and browser tabs show for the site. Keep the two in step.
+const HOME_TITLE = 'LeadgenAI — Find local businesses to sell to, in 41 countries'
+
 const TITLES = {
-  '/': 'Landing',
   '/login': 'Log in',
   '/signup': 'Sign up',
   '/dashboard': 'Dashboard',
@@ -39,7 +42,7 @@ export default function RouteAnalytics() {
 
   useEffect(() => {
     const name = TITLES[pathname]
-    document.title = name ? `${name} — LeadgenAI` : 'LeadgenAI — AI-Powered Lead Generation'
+    document.title = name ? `${name} — LeadgenAI` : HOME_TITLE
 
     // StrictMode remounts effects in dev; never send the same page twice in a row.
     if (lastSent.current === page) return
