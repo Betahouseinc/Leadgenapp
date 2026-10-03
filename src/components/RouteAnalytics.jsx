@@ -12,7 +12,7 @@ import { useLocation } from 'react-router-dom'
 
 // The home page keeps the full title from index.html: it is what search results
 // and browser tabs show for the site. Keep the two in step.
-const HOME_TITLE = 'LeadgenAI — Find local businesses to sell to, in 41 countries'
+const HOME_TITLE = 'LeadgenAI — Qualified local business leads in 41 countries'
 
 const TITLES = {
   '/login': 'Log in',

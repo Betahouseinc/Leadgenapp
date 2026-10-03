@@ -25,32 +25,33 @@ const T = {
 
 // Cities span the markets the product is marketed in. The last row has no
 // website on purpose: for an agency, that gap is the lead.
+// `why` mirrors the one-line summary the AI writes for every lead.
 const SAMPLE = [
-  { what: 'Dental clinic',      city: 'Austin, US',    site: true,  phone: true, rating: '4.8★ · 212 reviews', score: 94 },
-  { what: 'Real estate agency', city: 'Dubai, AE',     site: true,  phone: true, rating: '4.6★ · 87 reviews',  score: 90 },
-  { what: 'Software company',   city: 'Bengaluru, IN', site: true,  phone: true, rating: '4.2★ · 31 reviews',  score: 82 },
-  { what: 'Family restaurant',  city: 'Sydney, AU',    site: false, phone: true, rating: '4.4★ · 9 reviews',   score: 46 },
+  { what: 'Dental clinic',      city: 'Austin, US',    site: true,  phone: true, rating: '4.8★ · 212 reviews', score: 94, why: 'Established family practice, easy to reach by phone and web' },
+  { what: 'Real estate agency', city: 'Dubai, AE',     site: true,  phone: true, rating: '4.6★ · 87 reviews',  score: 90, why: 'Active residential agency with strong recent reviews' },
+  { what: 'Software company',   city: 'Bengaluru, IN', site: true,  phone: true, rating: '4.2★ · 31 reviews',  score: 82, why: 'Small IT services firm with a working website' },
+  { what: 'Family restaurant',  city: 'Sydney, AU',    site: false, phone: true, rating: '4.4★ · 9 reviews',   score: 46, why: 'Well rated but no website and few reviews' },
 ]
 
-const REASONS = [
+// What "qualified" means here — the checks the AI score actually makes. Keep in
+// step with buildScoringPrompt in supabase/functions/_shared/pipeline.ts.
+const CHECKS = [
   {
-    title: 'See who has no website',
-    body: 'Every lead shows its website, phone, rating and review count — so the businesses that need help stand out.',
+    title: 'Right business',
+    body: 'AI reads each listing and confirms what the business does, so your list stays on target.',
   },
   {
-    title: 'Know who is easy to reach',
-    body: 'An AI score says how complete and reachable each listing is. Start at the top of the list.',
+    title: 'Reachable',
+    body: 'Website, phone and address are checked. Listings you can’t contact sink to the bottom.',
   },
   {
-    title: 'Get the first email drafted',
-    body: 'AI writes a short opener from what the listing shows. You edit it and send it yourself.',
+    title: 'Established',
+    body: 'Rating and review count show which businesses are active and trusted locally.',
   },
-]
-
-const PLANS = [
-  { name: 'Free',       price: '₹0',     note: '10 leads a month' },
-  { name: 'Starter',    price: '₹999',   note: '500 leads a month', per: '/mo', main: true },
-  { name: 'Enterprise', price: 'Custom', note: 'Volume for teams' },
+  {
+    title: 'Ranked and explained',
+    body: 'Every lead gets a 0–100 score and a one-line reason. Start at the top.',
+  },
 ]
 
 export default function Landing() {
@@ -72,12 +73,13 @@ export default function Landing() {
         #root { width: 100% !important; max-width: none !important; text-align: left !important; border-inline: none !important; }
         .lp-wrap { max-width: 1040px; margin: auto; padding: 0 24px; }
         .lp-search { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
-        .lp-three { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+        .lp-four { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+        @media (max-width: 940px) { .lp-four { grid-template-columns: repeat(2, minmax(0,1fr)); } }
         .lp-row { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.6fr) 56px; gap: 12px; align-items: center; }
         .lp-input:focus { outline: 2px solid ${T.green}; outline-offset: -1px; }
         .lp-show-sm { display: none; }
         @media (max-width: 760px) {
-          .lp-search, .lp-three { grid-template-columns: minmax(0,1fr) !important; }
+          .lp-search, .lp-four { grid-template-columns: minmax(0,1fr) !important; }
           .lp-row { grid-template-columns: minmax(0,1fr) 48px !important; }
           .lp-hide-sm { display: none !important; }
           .lp-show-sm { display: block !important; }
@@ -101,11 +103,12 @@ export default function Landing() {
       <section style={{ background: '#fff', padding: '72px 0 56px', borderBottom: `1px solid ${T.line}` }}>
         <div className="lp-wrap" style={{ maxWidth: 760, textAlign: 'center' }}>
           <h1 style={{ fontSize: 'clamp(34px, 6vw, 54px)', lineHeight: 1.06, letterSpacing: '-1.5px', margin: '0 0 16px', fontWeight: 800, color: T.ink }}>
-            Find local businesses <span style={{ color: T.green }}>to sell to</span>
+            Qualified local leads,<br /><span style={{ color: T.green }}>ready to contact</span>
           </h1>
-          <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, margin: '0 auto 30px', maxWidth: 560 }}>
-            Pick an industry and a city in any of 41 countries. Get a list of
-            businesses you can reach, with the first email drafted.
+          <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, margin: '0 auto 30px', maxWidth: 580 }}>
+            Pick an industry and a city in any of 41 countries. AI checks every
+            business, scores it, and tells you why — so you start with the ones
+            worth calling.
           </p>
 
           <form onSubmit={start} className="lp-search" style={{ textAlign: 'left', background: T.bg, border: `1px solid ${T.line}`, borderRadius: 14, padding: 8 }}>
@@ -121,7 +124,7 @@ export default function Landing() {
           </form>
 
           <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, color: T.muted, marginTop: 16 }}>
-            {['10 free leads, no card', '41 countries', 'Export to CSV or Excel'].map(t => (
+            {['Every lead AI-scored', '41 countries', '10 free leads, no card'].map(t => (
               <span key={t}><b style={{ color: T.green, marginRight: 6 }}>✓</b>{t}</span>
             ))}
           </div>
@@ -146,11 +149,30 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------- Sample list ---------- */}
+      {/* ---------- How leads are qualified ---------- */}
       <section style={{ padding: '56px 0 0' }}>
-        <div className="lp-wrap" style={{ maxWidth: 860 }}>
+        <div className="lp-wrap">
+          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 6 }}>How every lead is qualified</h2>
+          <p style={{ textAlign: 'center', color: T.muted, fontSize: 15, margin: '0 0 22px' }}>
+            Four checks on every business, before it reaches your list.
+          </p>
+          <div className="lp-four">
+            {CHECKS.map((c, i) => (
+              <div key={c.title} style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, padding: 20 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.soft, color: T.greenD, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 13, marginBottom: 12 }}>✓</div>
+                <h3 style={{ margin: '0 0 6px', fontSize: 15.5, color: T.ink }}>{i + 1}. {c.title}</h3>
+                <p style={{ margin: 0, color: T.muted, fontSize: 13.5, lineHeight: 1.55 }}>{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Sample list ---------- */}
+      <section style={{ padding: '56px 0 64px' }}>
+        <div className="lp-wrap" style={{ maxWidth: 900 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
-            <h2 style={h2}>What you get back</h2>
+            <h2 style={h2}>Your list, ranked and explained</h2>
             <span style={{ ...chip, background: T.soft, color: T.greenD }}>SAMPLE</span>
           </div>
           <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
@@ -165,6 +187,7 @@ export default function Landing() {
                 <span style={{ minWidth: 0 }}>
                   <b>{s.what}</b>
                   <small className="lp-show-sm" style={{ color: T.muted, marginTop: 2 }}>{s.city}{s.site ? '' : ' · no website'}</small>
+                  <small style={{ display: 'block', color: T.ink2, marginTop: 3, fontSize: 12, lineHeight: 1.4 }}>“{s.why}”</small>
                 </span>
                 <span className="lp-hide-sm" style={{ color: T.ink2 }}>{s.city}</span>
                 <span className="lp-hide-sm" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -181,42 +204,9 @@ export default function Landing() {
             ))}
           </div>
           <p style={{ fontSize: 12.5, color: T.muted, margin: '10px 2px 0', lineHeight: 1.55 }}>
-            Up to 50 businesses per search, from public business listings. The score measures how
-            complete and reachable a listing is — not whether they want to buy.
-          </p>
-        </div>
-      </section>
-
-      {/* ---------- Three reasons ---------- */}
-      <section style={{ padding: '56px 0' }}>
-        <div className="lp-wrap lp-three">
-          {REASONS.map((r, i) => (
-            <div key={r.title} style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, padding: 22 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.soft, color: T.greenD, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 13, marginBottom: 14 }}>{i + 1}</div>
-              <h3 style={{ margin: '0 0 8px', fontSize: 16, color: T.ink }}>{r.title}</h3>
-              <p style={{ margin: 0, color: T.muted, fontSize: 14, lineHeight: 1.55 }}>{r.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------- Pricing teaser ---------- */}
-      <section style={{ padding: '0 0 64px' }}>
-        <div className="lp-wrap" style={{ maxWidth: 860 }}>
-          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 18 }}>Start free. Pay when it works for you.</h2>
-          <div className="lp-three">
-            {PLANS.map(p => (
-              <div key={p.name} style={{ background: '#fff', border: p.main ? `2px solid ${T.green}` : `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: T.ink2 }}>{p.name}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, margin: '6px 0 2px', color: p.main ? T.green : T.ink }}>
-                  {p.price}{p.per && <span style={{ fontSize: 13, fontWeight: 500, color: T.muted }}>{p.per}</span>}
-                </div>
-                <div style={{ fontSize: 13, color: T.muted }}>{p.note}</div>
-              </div>
-            ))}
-          </div>
-          <p style={{ textAlign: 'center', fontSize: 13, color: T.muted, margin: '14px 0 0' }}>
-            Outside India? We can invoice you. <Link to="/pricing" style={{ color: T.greenD, fontWeight: 600, textDecoration: 'none' }}>See full pricing →</Link>
+            Up to 50 businesses per search, from public business listings. Qualified means a
+            lead passed the four checks; whether they’re ready to buy is what your first email
+            finds out — and AI drafts that for you.
           </p>
         </div>
       </section>
@@ -237,7 +227,7 @@ export default function Landing() {
       {/* ---------- Footer ---------- */}
       <footer style={{ padding: '26px 0', background: '#fff', borderTop: `1px solid ${T.line}`, color: '#7A827E', fontSize: 12.5 }}>
         <div className="lp-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-          <span>LeadGenAI · Local business leads in 41 countries · Exommerce.online</span>
+          <span>LeadGenAI · Qualified local business leads in 41 countries · Exommerce.online</span>
           <span style={{ display: 'flex', gap: 18 }}>
             <Link to="/pricing" style={link}>Pricing</Link>
             <Link to="/legal/privacy" style={link}>Privacy</Link>
