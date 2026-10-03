@@ -21,26 +21,64 @@ const T = {
 // ISO 3166-1 alpha-2 codes; the backend passes the code to Google Places as the
 // search region. The city list is a shortcut, not a limit — "Custom city" takes
 // any place in the chosen country.
-const COUNTRIES = [
-  { code: 'IN', name: 'India', cities: [
-    'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
-    'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
-    'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
+//
+// Grouped by sales region for the dropdown; countries are alphabetical within a
+// region. Any valid code works end to end — the backend has no country list.
+const REGIONS = [
+  { name: 'APAC', countries: [
+    { code: 'AU', name: 'Australia', cities: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Canberra'] },
+    { code: 'BD', name: 'Bangladesh', cities: ['Dhaka', 'Chittagong'] },
+    { code: 'HK', name: 'Hong Kong', cities: ['Hong Kong'] },
+    { code: 'IN', name: 'India', cities: [
+      'Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune',
+      'Chennai', 'Kolkata', 'Ahmedabad', 'Jaipur', 'Surat',
+      'Lucknow', 'Noida', 'Gurgaon', 'Kochi', 'Chandigarh',
+    ] },
+    { code: 'ID', name: 'Indonesia', cities: ['Jakarta', 'Surabaya', 'Bandung', 'Denpasar'] },
+    { code: 'JP', name: 'Japan', cities: ['Tokyo', 'Osaka', 'Yokohama', 'Nagoya', 'Fukuoka'] },
+    { code: 'MY', name: 'Malaysia', cities: ['Kuala Lumpur', 'Penang', 'Johor Bahru'] },
+    { code: 'NP', name: 'Nepal', cities: ['Kathmandu', 'Pokhara'] },
+    { code: 'NZ', name: 'New Zealand', cities: ['Auckland', 'Wellington', 'Christchurch'] },
+    { code: 'PK', name: 'Pakistan', cities: ['Karachi', 'Lahore', 'Islamabad'] },
+    { code: 'PH', name: 'Philippines', cities: ['Manila', 'Cebu City', 'Davao City'] },
+    { code: 'SG', name: 'Singapore', cities: ['Singapore'] },
+    { code: 'KR', name: 'South Korea', cities: ['Seoul', 'Busan', 'Incheon'] },
+    { code: 'LK', name: 'Sri Lanka', cities: ['Colombo', 'Kandy'] },
+    { code: 'TW', name: 'Taiwan', cities: ['Taipei', 'Kaohsiung'] },
+    { code: 'TH', name: 'Thailand', cities: ['Bangkok', 'Chiang Mai', 'Phuket'] },
+    { code: 'VN', name: 'Vietnam', cities: ['Ho Chi Minh City', 'Hanoi', 'Da Nang'] },
   ] },
-  { code: 'US', name: 'United States', cities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'San Francisco', 'Austin', 'Seattle', 'Boston', 'Miami', 'Dallas'] },
-  { code: 'GB', name: 'United Kingdom', cities: ['London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Edinburgh', 'Bristol'] },
-  { code: 'AE', name: 'United Arab Emirates', cities: ['Dubai', 'Abu Dhabi', 'Sharjah'] },
-  { code: 'SG', name: 'Singapore', cities: ['Singapore'] },
-  { code: 'AU', name: 'Australia', cities: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'] },
-  { code: 'CA', name: 'Canada', cities: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'] },
-  { code: 'SA', name: 'Saudi Arabia', cities: ['Riyadh', 'Jeddah', 'Dammam'] },
-  { code: 'NZ', name: 'New Zealand', cities: ['Auckland', 'Wellington', 'Christchurch'] },
-  { code: 'MY', name: 'Malaysia', cities: ['Kuala Lumpur', 'Penang', 'Johor Bahru'] },
-  { code: 'ZA', name: 'South Africa', cities: ['Johannesburg', 'Cape Town', 'Durban'] },
-  { code: 'DE', name: 'Germany', cities: ['Berlin', 'Munich', 'Hamburg', 'Frankfurt'] },
-  { code: 'NL', name: 'Netherlands', cities: ['Amsterdam', 'Rotterdam', 'Utrecht'] },
-  { code: 'IE', name: 'Ireland', cities: ['Dublin', 'Cork'] },
+  { name: 'EMEA', countries: [
+    { code: 'BH', name: 'Bahrain', cities: ['Manama'] },
+    { code: 'EG', name: 'Egypt', cities: ['Cairo', 'Alexandria'] },
+    { code: 'FR', name: 'France', cities: ['Paris', 'Lyon', 'Marseille'] },
+    { code: 'DE', name: 'Germany', cities: ['Berlin', 'Munich', 'Hamburg', 'Frankfurt'] },
+    { code: 'IE', name: 'Ireland', cities: ['Dublin', 'Cork'] },
+    { code: 'IT', name: 'Italy', cities: ['Milan', 'Rome'] },
+    { code: 'KE', name: 'Kenya', cities: ['Nairobi', 'Mombasa'] },
+    { code: 'KW', name: 'Kuwait', cities: ['Kuwait City'] },
+    { code: 'NL', name: 'Netherlands', cities: ['Amsterdam', 'Rotterdam', 'Utrecht'] },
+    { code: 'NG', name: 'Nigeria', cities: ['Lagos', 'Abuja'] },
+    { code: 'OM', name: 'Oman', cities: ['Muscat'] },
+    { code: 'PL', name: 'Poland', cities: ['Warsaw', 'Krakow'] },
+    { code: 'QA', name: 'Qatar', cities: ['Doha'] },
+    { code: 'SA', name: 'Saudi Arabia', cities: ['Riyadh', 'Jeddah', 'Dammam'] },
+    { code: 'ZA', name: 'South Africa', cities: ['Johannesburg', 'Cape Town', 'Durban'] },
+    { code: 'ES', name: 'Spain', cities: ['Madrid', 'Barcelona'] },
+    { code: 'SE', name: 'Sweden', cities: ['Stockholm', 'Gothenburg'] },
+    { code: 'CH', name: 'Switzerland', cities: ['Zurich', 'Geneva'] },
+    { code: 'AE', name: 'United Arab Emirates', cities: ['Dubai', 'Abu Dhabi', 'Sharjah'] },
+    { code: 'GB', name: 'United Kingdom', cities: ['London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Edinburgh', 'Bristol'] },
+  ] },
+  { name: 'Americas', countries: [
+    { code: 'BR', name: 'Brazil', cities: ['São Paulo', 'Rio de Janeiro'] },
+    { code: 'CA', name: 'Canada', cities: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'] },
+    { code: 'MX', name: 'Mexico', cities: ['Mexico City', 'Guadalajara', 'Monterrey'] },
+    { code: 'US', name: 'United States', cities: ['New York', 'Los Angeles', 'Chicago', 'Houston', 'San Francisco', 'Austin', 'Seattle', 'Boston', 'Miami', 'Dallas'] },
+  ] },
 ]
+
+const COUNTRIES = REGIONS.flatMap(r => r.countries)
 
 // Keep in step with MAX_LEADS_PER_RUN in supabase/functions/_shared/pipeline.ts.
 // This is the tested safe capacity, not an aspiration — see the acceptance
@@ -310,7 +348,11 @@ export default function ScrapeModal({ onClose, onDone, quota }) {
             <label style={{ display: 'block', marginBottom: 14 }}>
               <div style={labelStyle}>Country</div>
               <select value={country} onChange={e => handleCountryChange(e.target.value)} disabled={starting} style={inputStyle}>
-                {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                {REGIONS.map(r => (
+                  <optgroup key={r.name} label={r.name}>
+                    {r.countries.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </label>
 
