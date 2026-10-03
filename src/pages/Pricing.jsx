@@ -62,7 +62,9 @@ const PLANS = [
 
 export default function Pricing() {
   const navigate = useNavigate()
-  const [currentPlan, setCurrentPlan] = useState('free')
+  // Unknown until the profile loads. Defaulting to 'free' told every logged-out
+  // visitor the Free plan was theirs and disabled its button.
+  const [currentPlan, setCurrentPlan] = useState(null)
   const [loading, setLoading] = useState(null)
 
   useEffect(() => {
