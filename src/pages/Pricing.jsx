@@ -221,7 +221,9 @@ export default function Pricing() {
 
         <div style={{ textAlign: 'center', marginTop: 40, fontSize: 13, color: T.muted, lineHeight: 1.9 }}>
           All plans include AI-powered lead scoring, and CSV &amp; Excel export.<br />
-          Prices are in Indian Rupees (₹) and billed in advance. Monthly lead allowances reset
+          Prices are in Indian Rupees (₹) and billed in advance. Outside India and can’t pay in ₹?
+          Email <a href="mailto:leadgen.billing@exommerce.online?subject=LeadGenAI%20payment%20from%20outside%20India" style={{ color: T.blue }}>leadgen.billing@exommerce.online</a> and we’ll send an invoice.<br />
+          Monthly lead allowances reset
           at the start of each calendar month and do not carry over.<br />
           Each plan also has a daily ceiling, which resets at midnight IST. It exists to keep
           usage predictable and protect service quality for everyone.<br />

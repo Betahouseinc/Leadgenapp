@@ -19,20 +19,23 @@ const T = {
 }
 
 const STEPS = [
-  { n: 1, title: 'Define',   body: 'Tell LeadGenAI what industry, roles and locations you want to reach.' },
-  { n: 2, title: 'Filter',   body: 'Set your target profile, how many leads you need and what data matters.' },
-  { n: 3, title: 'Generate', body: 'Watch discovery, contact enrichment and AI scoring happen in real time.' },
-  { n: 4, title: 'Act',      body: 'Review, export, draft outreach with AI or send leads onward.' },
+  { n: 1, title: 'Choose',   body: 'Pick an industry, a country and a city — any of 41 countries.' },
+  { n: 2, title: 'Size it',  body: 'Ask for up to 50 businesses per search. Run it again for more.' },
+  { n: 3, title: 'Generate', body: 'Watch businesses get found, saved and scored in real time.' },
+  { n: 4, title: 'Act',      body: 'Export the list, or let AI draft the first email. You review and send.' },
 ]
 
 // Illustrative rows for the hero window. Deliberately generic names — inventing
 // company names and work email addresses on a marketing page reads as a
 // customer list, and these are not customers.
+//
+// Cities span the markets the product is marketed in. The last row has no
+// website on purpose: for an agency, that gap is the lead.
 const SAMPLE = [
-  { what: 'Software company',   industry: 'IT Software',    city: 'Pune',    contact: 'Website · phone · email', score: 98 },
-  { what: 'Real estate agency', industry: 'Real Estate',    city: 'Delhi',   contact: 'Website · phone · email', score: 96 },
-  { what: 'Manufacturing firm', industry: 'Manufacturing',  city: 'Chennai', contact: 'Website · phone',         score: 88 },
-  { what: 'Diagnostics clinic', industry: 'Healthcare',     city: 'Mumbai',  contact: 'Website · phone · email', score: 81 },
+  { what: 'Dental clinic',      industry: 'Healthcare',  city: 'Austin, US',     contact: 'Website · phone · 4.8★', score: 94 },
+  { what: 'Real estate agency', industry: 'Real Estate', city: 'Dubai, AE',      contact: 'Website · phone · 4.6★', score: 90 },
+  { what: 'Software company',   industry: 'IT Software', city: 'Bengaluru, IN',  contact: 'Website · phone',        score: 82 },
+  { what: 'Family restaurant',  industry: 'Restaurants', city: 'Sydney, AU',     contact: 'Phone only · no website', score: 46 },
 ]
 
 export default function Landing() {
@@ -86,20 +89,21 @@ export default function Landing() {
       <section style={{ background: '#fff', padding: '78px 0 66px' }}>
         <div className="lg-wrap lg-hero">
           <div>
-            <span style={eyebrow}>AI-POWERED LEAD GENERATION</span>
+            <span style={eyebrow}>LOCAL BUSINESS LEADS · 41 COUNTRIES</span>
             <h1 style={{ fontSize: 'clamp(38px, 5.5vw, 56px)', lineHeight: 1.04, letterSpacing: '-2px', margin: '20px 0 18px', fontWeight: 800, color: T.ink }}>
-              Find qualified leads<br /><span style={{ color: T.green }}>with AI</span>
+              Find local businesses<br /><span style={{ color: T.green }}>to sell to</span>
             </h1>
             <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, maxWidth: 540, margin: 0 }}>
-              Discover relevant companies, enrich their contact details, score every
-              opportunity with AI and export a sales-ready list — from one workflow.
+              Search by industry and city across APAC, EMEA and the Americas. See
+              which businesses are easy to reach — or have no website at all — and
+              let AI draft the first email. You review and send.
             </p>
             <div style={{ display: 'flex', gap: 12, margin: '28px 0', flexWrap: 'wrap' }}>
               <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, padding: '13px 20px', fontSize: 15 }}>Start finding leads</button>
               <a href="#demo" onClick={scrollToDemo} style={{ ...btnGhost, padding: '13px 20px', fontSize: 15 }}>See how it works</a>
             </div>
             <div style={{ display: 'flex', gap: 20, fontSize: 12.5, color: T.muted, flexWrap: 'wrap' }}>
-              {['No credit card', 'Real generation progress', 'Export anytime'].map(t => (
+              {['10 free leads, no card', '41 countries', 'Export to CSV or Excel'].map(t => (
                 <span key={t}><b style={{ color: T.green, marginRight: 6 }}>✓</b>{t}</span>
               ))}
             </div>
@@ -200,7 +204,7 @@ export default function Landing() {
               <div className="lg-dashgrid">
                 <div style={panel}>
                   <h3 style={panelH}>Recent searches</h3>
-                  {[['IT Software — Bengaluru', '50 leads'], ['Real Estate — Delhi', '25 leads'], ['Healthcare — Mumbai', '50 leads']].map(([a, b], i) => (
+                  {[['Healthcare — Austin, US', '50 leads'], ['Real Estate — Dubai, AE', '25 leads'], ['Restaurants — Sydney, AU', '50 leads']].map(([a, b], i) => (
                     <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`, fontSize: 12 }}>
                       <b>{a}</b><span style={{ color: T.muted }}>{b}</span>
                     </div>
@@ -230,7 +234,7 @@ export default function Landing() {
           <div className="lg-gen">
             <div style={panel}>
               <h3 style={{ ...panelH, marginBottom: 4 }}>Define your search</h3>
-              {[['What are you looking for?', 'IT Services Companies'], ['Location', 'Bengaluru, India'], ['Lead count', '50 leads']].map(([l, v]) => (
+              {[['Industry', 'Digital Marketing'], ['Country and city', 'Toronto, Canada'], ['Lead count', '50 leads']].map(([l, v]) => (
                 <div key={l}>
                   <div style={{ fontSize: 12, fontWeight: 700, margin: '16px 0 7px' }}>{l}</div>
                   <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 13, background: '#fff', color: T.ink2, fontSize: 13 }}>{v}</div>
@@ -247,7 +251,7 @@ export default function Landing() {
                 <div style={{ width: '90%', height: '100%', background: T.green }} />
               </div>
               <div className="lg-stages" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10, marginTop: 22 }}>
-                {[['✓', 'Companies', 'saved'], ['✓', 'Contacts', 'enriched'], ['◉', 'AI scoring', 'in progress'], ['○', 'Finishing', 'pending']].map(([i, a, b]) => (
+                {[['✓', 'Businesses', 'found'], ['✓', 'Companies', 'saved'], ['◉', 'AI scoring', 'in progress'], ['○', 'Finishing', 'pending']].map(([i, a, b]) => (
                   <div key={a} style={{ fontSize: 11.5, color: T.muted }}>
                     <b style={{ display: 'block', color: T.greenD, marginBottom: 4 }}>{i}</b>{a}<br />{b}
                   </div>
@@ -301,10 +305,10 @@ export default function Landing() {
       {/* ---------- CTA ---------- */}
       <section style={{ background: T.green, padding: '68px 24px', textAlign: 'center' }}>
         <h2 style={{ fontSize: 'clamp(24px,4vw,32px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', letterSpacing: '-.5px' }}>
-          Ready to fill your pipeline?
+          Try it on a city you sell to
         </h2>
         <p style={{ fontSize: 16, color: 'rgba(255,255,255,.85)', marginBottom: 30 }}>
-          Create your free account and run your first AI-scored lead search.
+          Create a free account and run your first search in any of 41 countries. 10 leads free, no card.
         </p>
         <button onClick={() => navigate('/signup')} style={{ background: '#fff', color: T.green, border: 'none', borderRadius: 10, padding: '14px 26px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
           Get started free →
@@ -314,7 +318,7 @@ export default function Landing() {
       {/* ---------- Footer ---------- */}
       <footer style={{ padding: '32px 0', background: '#fff', borderTop: `1px solid ${T.line}`, color: '#7A827E', fontSize: 12.5 }}>
         <div className="lg-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-          <span>LeadGenAI · AI-powered lead generation · Exommerce.online</span>
+          <span>LeadGenAI · Local business leads in 41 countries · Exommerce.online</span>
           <span style={{ display: 'flex', gap: 18 }}>
             <Link to="/pricing" style={link}>Pricing</Link>
             <Link to="/legal/privacy" style={link}>Privacy</Link>
