@@ -1,15 +1,20 @@
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 
-// Built from leadgenai_ui_preview.html, section for section.
+// Deliberately short: one idea per section, nothing a visitor has to study.
+// An earlier, longer version read as "enterprise SaaS" for a product sold to
+// small agencies and founders.
 //
-// The mock windows are labelled "Sample" wherever they show lead rows or
-// counts. They illustrate the interface, and a visitor should not have to guess
-// whether the companies in them are real customers — they are not.
+// The sample list is labelled "Sample" and uses generic names. Invented company
+// names on a marketing page read as a customer list, and these are not
+// customers.
 
 const T = {
   green: '#109840',
   greenD: '#0E7D40',
   soft: '#EAF8EF',
+  amber: '#9B5D08',
+  amberL: '#FFF4DF',
   ink: '#151817',
   ink2: '#3F4945',
   muted: '#66706A',
@@ -18,28 +23,46 @@ const T = {
   card: '#FFFFFF',
 }
 
-const STEPS = [
-  { n: 1, title: 'Choose',   body: 'Pick an industry, a country and a city — any of 41 countries.' },
-  { n: 2, title: 'Size it',  body: 'Ask for up to 50 businesses per search. Run it again for more.' },
-  { n: 3, title: 'Generate', body: 'Watch businesses get found, saved and scored in real time.' },
-  { n: 4, title: 'Act',      body: 'Export the list, or let AI draft the first email. You review and send.' },
-]
-
-// Illustrative rows for the hero window. Deliberately generic names — inventing
-// company names and work email addresses on a marketing page reads as a
-// customer list, and these are not customers.
-//
 // Cities span the markets the product is marketed in. The last row has no
 // website on purpose: for an agency, that gap is the lead.
 const SAMPLE = [
-  { what: 'Dental clinic',      industry: 'Healthcare',  city: 'Austin, US',     contact: 'Website · phone · 4.8★', score: 94 },
-  { what: 'Real estate agency', industry: 'Real Estate', city: 'Dubai, AE',      contact: 'Website · phone · 4.6★', score: 90 },
-  { what: 'Software company',   industry: 'IT Software', city: 'Bengaluru, IN',  contact: 'Website · phone',        score: 82 },
-  { what: 'Family restaurant',  industry: 'Restaurants', city: 'Sydney, AU',     contact: 'Phone only · no website', score: 46 },
+  { what: 'Dental clinic',      city: 'Austin, US',    site: true,  phone: true, rating: '4.8★ · 212 reviews', score: 94 },
+  { what: 'Real estate agency', city: 'Dubai, AE',     site: true,  phone: true, rating: '4.6★ · 87 reviews',  score: 90 },
+  { what: 'Software company',   city: 'Bengaluru, IN', site: true,  phone: true, rating: '4.2★ · 31 reviews',  score: 82 },
+  { what: 'Family restaurant',  city: 'Sydney, AU',    site: false, phone: true, rating: '4.4★ · 9 reviews',   score: 46 },
+]
+
+const REASONS = [
+  {
+    title: 'See who has no website',
+    body: 'Every lead shows its website, phone, rating and review count — so the businesses that need help stand out.',
+  },
+  {
+    title: 'Know who is easy to reach',
+    body: 'An AI score says how complete and reachable each listing is. Start at the top of the list.',
+  },
+  {
+    title: 'Get the first email drafted',
+    body: 'AI writes a short opener from what the listing shows. You edit it and send it yourself.',
+  },
+]
+
+const PLANS = [
+  { name: 'Free',       price: '₹0',     note: '10 leads a month' },
+  { name: 'Starter',    price: '₹999',   note: '500 leads a month', per: '/mo', main: true },
+  { name: 'Enterprise', price: 'Custom', note: 'Volume for teams' },
 ]
 
 export default function Landing() {
   const navigate = useNavigate()
+  const [what, setWhat] = useState('')
+  const [where, setWhere] = useState('')
+  const [showDemo, setShowDemo] = useState(false)
+
+  const start = (e) => {
+    e.preventDefault()
+    navigate('/signup')
+  }
 
   return (
     <div style={{ background: T.bg, color: T.ink, fontFamily: 'system-ui, -apple-system, Segoe UI, sans-serif', textAlign: 'left' }}>
@@ -47,277 +70,173 @@ export default function Landing() {
         /* index.css centres every line via #root { text-align:center } and caps
            it at 1126px. A marketing page sets its own measure. */
         #root { width: 100% !important; max-width: none !important; text-align: left !important; border-inline: none !important; }
-        .lg-wrap { max-width: 1180px; margin: auto; padding: 0 28px; }
-        .lg-hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 60px; align-items: center; }
-        .lg-steps { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 16px; }
-        .lg-gen { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-        .lg-dash { display: grid; grid-template-columns: 210px minmax(0,1fr); }
-        .lg-dashgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .lg-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
-        .lg-navlinks { display: flex; gap: 28px; }
-        .lg-tablewrap { overflow-x: auto; }
-        .lg-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-        #demo { scroll-margin-top: 72px; }
-        @media (max-width: 900px) {
-          .lg-hero, .lg-gen, .lg-dashgrid { grid-template-columns: minmax(0,1fr) !important; }
-          .lg-steps, .lg-kpis, .lg-stages { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
-          .lg-dash { grid-template-columns: minmax(0,1fr) !important; }
-          .lg-side { display: none !important; }
-          .lg-navlinks { display: none !important; }
-          .lg-wrap { padding: 0 18px; }
+        .lp-wrap { max-width: 1040px; margin: auto; padding: 0 24px; }
+        .lp-search { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
+        .lp-three { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+        .lp-row { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.6fr) 56px; gap: 12px; align-items: center; }
+        .lp-input:focus { outline: 2px solid ${T.green}; outline-offset: -1px; }
+        .lp-show-sm { display: none; }
+        @media (max-width: 760px) {
+          .lp-search, .lp-three { grid-template-columns: minmax(0,1fr) !important; }
+          .lp-row { grid-template-columns: minmax(0,1fr) 48px !important; }
+          .lp-hide-sm { display: none !important; }
+          .lp-show-sm { display: block !important; }
+          .lp-wrap { padding: 0 16px; }
         }
       `}</style>
 
       {/* ---------- Nav ---------- */}
-      <header style={{ height: 72, background: '#fff', borderBottom: `1px solid ${T.line}`, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div className="lg-wrap" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontWeight: 800, fontSize: 20 }}>Lead<span style={{ color: T.green }}>Gen</span>AI</div>
-          <nav className="lg-navlinks" style={{ color: T.ink2, fontSize: 14 }}>
-            <a href="#how" style={link}>How it works</a>
-            <a href="#product" style={link}>Product</a>
-            <a href="#reliable" style={link}>Reliability</a>
+      <header style={{ background: '#fff', borderBottom: `1px solid ${T.line}` }}>
+        <div className="lp-wrap" style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontWeight: 800, fontSize: 19 }}>Lead<span style={{ color: T.green }}>Gen</span>AI</div>
+          <div style={{ display: 'flex', gap: 18, alignItems: 'center', fontSize: 14 }}>
             <Link to="/pricing" style={link}>Pricing</Link>
-          </nav>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <Link to="/login" style={{ ...link, fontSize: 14 }}>Sign in</Link>
-            <button onClick={() => navigate('/signup')} style={btnPrimary}>Get started</button>
+            <Link to="/login" style={link}>Sign in</Link>
+            <button onClick={() => navigate('/signup')} style={btnPrimary}>Start free</button>
           </div>
         </div>
       </header>
 
       {/* ---------- Hero ---------- */}
-      <section style={{ background: '#fff', padding: '78px 0 66px' }}>
-        <div className="lg-wrap lg-hero">
-          <div>
-            <span style={eyebrow}>LOCAL BUSINESS LEADS · 41 COUNTRIES</span>
-            <h1 style={{ fontSize: 'clamp(38px, 5.5vw, 56px)', lineHeight: 1.04, letterSpacing: '-2px', margin: '20px 0 18px', fontWeight: 800, color: T.ink }}>
-              Find local businesses<br /><span style={{ color: T.green }}>to sell to</span>
-            </h1>
-            <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, maxWidth: 540, margin: 0 }}>
-              Search by industry and city across APAC, EMEA and the Americas. See
-              which businesses are easy to reach — or have no website at all — and
-              let AI draft the first email. You review and send.
-            </p>
-            <div style={{ display: 'flex', gap: 12, margin: '28px 0', flexWrap: 'wrap' }}>
-              <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, padding: '13px 20px', fontSize: 15 }}>Start finding leads</button>
-              <a href="#demo" onClick={scrollToDemo} style={{ ...btnGhost, padding: '13px 20px', fontSize: 15 }}>See how it works</a>
-            </div>
-            <div style={{ display: 'flex', gap: 20, fontSize: 12.5, color: T.muted, flexWrap: 'wrap' }}>
-              {['10 free leads, no card', '41 countries', 'Export to CSV or Excel'].map(t => (
-                <span key={t}><b style={{ color: T.green, marginRight: 6 }}>✓</b>{t}</span>
-              ))}
-            </div>
+      <section style={{ background: '#fff', padding: '72px 0 56px', borderBottom: `1px solid ${T.line}` }}>
+        <div className="lp-wrap" style={{ maxWidth: 760, textAlign: 'center' }}>
+          <h1 style={{ fontSize: 'clamp(34px, 6vw, 54px)', lineHeight: 1.06, letterSpacing: '-1.5px', margin: '0 0 16px', fontWeight: 800, color: T.ink }}>
+            Find local businesses <span style={{ color: T.green }}>to sell to</span>
+          </h1>
+          <p style={{ fontSize: 18, lineHeight: 1.6, color: T.muted, margin: '0 auto 30px', maxWidth: 560 }}>
+            Pick an industry and a city in any of 41 countries. Get a list of
+            businesses you can reach, with the first email drafted.
+          </p>
+
+          <form onSubmit={start} className="lp-search" style={{ textAlign: 'left', background: T.bg, border: `1px solid ${T.line}`, borderRadius: 14, padding: 8 }}>
+            <label style={{ display: 'block' }}>
+              <span style={sr}>What are you looking for?</span>
+              <input className="lp-input" value={what} onChange={e => setWhat(e.target.value)} placeholder="Dental clinics" style={input} />
+            </label>
+            <label style={{ display: 'block' }}>
+              <span style={sr}>Where?</span>
+              <input className="lp-input" value={where} onChange={e => setWhere(e.target.value)} placeholder="Austin, United States" style={input} />
+            </label>
+            <button type="submit" style={{ ...btnPrimary, padding: '0 22px', minHeight: 46, fontSize: 15 }}>Find leads →</button>
+          </form>
+
+          <div style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, color: T.muted, marginTop: 16 }}>
+            {['10 free leads, no card', '41 countries', 'Export to CSV or Excel'].map(t => (
+              <span key={t}><b style={{ color: T.green, marginRight: 6 }}>✓</b>{t}</span>
+            ))}
+          </div>
+          <div style={{ fontSize: 12.5, color: T.muted, marginTop: 10 }}>
+            You’ll create a free account first.{' '}
+            <button type="button" onClick={() => setShowDemo(v => !v)} style={{ background: 'none', border: 'none', padding: 0, color: T.greenD, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}>
+              {showDemo ? 'Hide the demo' : 'Or watch a 60-second demo ▸'}
+            </button>
           </div>
 
-          {/* Product window */}
-          <div style={{ background: T.bg, border: `1px solid ${T.line}`, borderRadius: 18, padding: 18, boxShadow: '0 18px 50px rgba(22,59,38,0.07)' }}>
-            <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 12, padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div style={{ fontWeight: 800, fontSize: 13 }}>Lead<span style={{ color: T.green }}>Gen</span>AI</div>
-                <span style={{ ...chip, background: T.soft, color: T.greenD }}>SAMPLE RESULTS</span>
-              </div>
-              {SAMPLE.map((s, i) => (
-                <div key={s.what} style={{
-                  display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) auto', gap: 12,
-                  padding: '13px 0', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`, fontSize: 12,
-                }}>
-                  <div style={{ minWidth: 0 }}>
-                    <b style={{ color: T.ink }}>{s.what} · {s.city}</b>
-                    <small style={{ display: 'block', color: '#8A938E', marginTop: 3 }}>{s.contact}</small>
-                  </div>
-                  <span style={{ ...chip, background: T.soft, color: T.greenD, alignSelf: 'center' }}>{s.score}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- Demo video ---------- */}
-      <section id="demo" style={{ padding: '72px 0 0' }}>
-        <div className="lg-wrap">
-          <Head title="See LeadGenAI in 60 seconds" sub="From search to AI-scored leads to a drafted outreach email." />
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {showDemo && (
             <video
               src="/demo/leadgenai-demo.mp4"
               poster="/demo/leadgenai-demo-poster.jpg"
               controls
+              autoPlay
               playsInline
-              preload="metadata"
-              muted={false}
               aria-label="LeadGenAI product demo, 60 seconds"
-              aria-describedby="demo-desc"
-              style={{ display: 'block', boxSizing: 'border-box', width: '100%', aspectRatio: '16 / 9', background: T.ink, borderRadius: 16, border: `1px solid ${T.line}`, boxShadow: '0 18px 50px rgba(22,59,38,0.10)' }}
+              style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', background: T.ink, borderRadius: 14, marginTop: 22, border: `1px solid ${T.line}` }}
             />
-            <p id="demo-desc" className="lg-sr">
-              A 60-second walkthrough of LeadGenAI using sample data. Step 1: a new
-              lead search for logistics companies in Bengaluru. Step 2: matching
-              businesses are discovered on a map. Step 3: AI scores every lead for
-              fit. Step 4: one click researches a top-scoring company and drafts a
-              personalised outreach email. It ends on the dashboard and a sign-up
-              prompt.
-            </p>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* ---------- How it works ---------- */}
-      <section id="how" style={{ padding: '72px 0' }}>
-        <div className="lg-wrap">
-          <Head title="One workflow. No guesswork." sub="Stay on the job instead of navigating a complicated interface." />
-          <div className="lg-steps">
-            {STEPS.map(s => (
-              <div key={s.n} style={panel}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: T.soft, color: T.greenD, display: 'grid', placeItems: 'center', fontWeight: 800, marginBottom: 18 }}>{s.n}</div>
-                <h3 style={{ margin: '0 0 8px', fontSize: 16, color: T.ink }}>{s.title}</h3>
-                <p style={{ margin: 0, color: T.muted, fontSize: 13, lineHeight: 1.55 }}>{s.body}</p>
+      {/* ---------- Sample list ---------- */}
+      <section style={{ padding: '56px 0 0' }}>
+        <div className="lp-wrap" style={{ maxWidth: 860 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+            <h2 style={h2}>What you get back</h2>
+            <span style={{ ...chip, background: T.soft, color: T.greenD }}>SAMPLE</span>
+          </div>
+          <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
+            <div className="lp-row" style={{ padding: '12px 18px', fontSize: 11, color: T.muted, textTransform: 'uppercase', letterSpacing: '.05em', borderBottom: `1px solid ${T.line}` }}>
+              <span>Business</span>
+              <span className="lp-hide-sm">City</span>
+              <span className="lp-hide-sm">Listing</span>
+              <span style={{ textAlign: 'right' }}>Score</span>
+            </div>
+            {SAMPLE.map((s, i) => (
+              <div key={s.what} className="lp-row" style={{ padding: '14px 18px', fontSize: 13.5, borderTop: i ? `1px solid ${T.line}` : 'none' }}>
+                <span style={{ minWidth: 0 }}>
+                  <b>{s.what}</b>
+                  <small className="lp-show-sm" style={{ color: T.muted, marginTop: 2 }}>{s.city}{s.site ? '' : ' · no website'}</small>
+                </span>
+                <span className="lp-hide-sm" style={{ color: T.ink2 }}>{s.city}</span>
+                <span className="lp-hide-sm" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {s.site
+                    ? <span style={{ ...chip, background: T.soft, color: T.greenD }}>Website</span>
+                    : <span style={{ ...chip, background: T.amberL, color: T.amber }}>No website</span>}
+                  {s.phone && <span style={{ ...chip, background: T.bg, color: T.ink2 }}>Phone</span>}
+                  <span style={{ fontSize: 12, color: T.muted }}>{s.rating}</span>
+                </span>
+                <span style={{ textAlign: 'right' }}>
+                  <span style={{ ...chip, background: s.score >= 80 ? T.soft : T.bg, color: s.score >= 80 ? T.greenD : T.ink2 }}>{s.score}</span>
+                </span>
               </div>
             ))}
           </div>
+          <p style={{ fontSize: 12.5, color: T.muted, margin: '10px 2px 0', lineHeight: 1.55 }}>
+            Up to 50 businesses per search, from public business listings. The score measures how
+            complete and reachable a listing is — not whether they want to buy.
+          </p>
         </div>
       </section>
 
-      {/* ---------- Product / dashboard ---------- */}
-      <section id="product" style={{ padding: '0 0 72px' }}>
-        <div className="lg-wrap">
-          <Head title="A dashboard that answers “what next?”" sub="Four useful numbers, your recent searches and clear actions." />
-          <div className="lg-dash" style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 16px 45px rgba(22,59,38,0.06)' }}>
-            <aside className="lg-side" style={{ background: '#17201C', color: '#DFE8E2', padding: 20 }}>
-              <div style={{ fontWeight: 800, marginBottom: 26, fontSize: 14 }}>Lead<span style={{ color: '#53D788' }}>Gen</span>AI</div>
-              {['Dashboard', 'Find Leads', 'Leads', 'AI Scoring', 'Outreach', 'Integrations'].map((s, i) => (
-                <div key={s} style={{
-                  padding: '11px 12px', borderRadius: 8, margin: '3px 0', fontSize: 13,
-                  background: i === 0 ? T.green : 'transparent', color: i === 0 ? '#fff' : '#AEB9B2',
-                }}>{s}</div>
-              ))}
-            </aside>
-            <div style={{ padding: 24, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: T.muted, marginBottom: 12, letterSpacing: '.4px' }}>SAMPLE DASHBOARD</div>
-              <div className="lg-kpis" style={{ marginBottom: 16 }}>
-                {[['Total leads', '1,240'], ['New today', '87'], ['High score', '312'], ['Avg. score', '74']].map(([l, v]) => (
-                  <div key={l} style={{ border: `1px solid ${T.line}`, borderRadius: 11, padding: 16, minWidth: 0 }}>
-                    <small style={{ color: T.muted, fontSize: 11 }}>{l}</small>
-                    <strong style={{ display: 'block', fontSize: 22, marginTop: 7 }}>{v}</strong>
-                  </div>
-                ))}
-              </div>
-              <div className="lg-dashgrid">
-                <div style={panel}>
-                  <h3 style={panelH}>Recent searches</h3>
-                  {[['Healthcare — Austin, US', '50 leads'], ['Real Estate — Dubai, AE', '25 leads'], ['Restaurants — Sydney, AU', '50 leads']].map(([a, b], i) => (
-                    <div key={a} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`, fontSize: 12 }}>
-                      <b>{a}</b><span style={{ color: T.muted }}>{b}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={panel}>
-                  <h3 style={panelH}>Leads by score</h3>
-                  <div style={{ fontSize: 13, lineHeight: 2.1 }}>
-                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>80–100</span> 312 leads</div>
-                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>50–79</span> 616 leads</div>
-                    <div><span style={{ ...chip, background: T.soft, color: T.greenD }}>0–49</span> 312 leads</div>
-                  </div>
-                </div>
-              </div>
+      {/* ---------- Three reasons ---------- */}
+      <section style={{ padding: '56px 0' }}>
+        <div className="lp-wrap lp-three">
+          {REASONS.map((r, i) => (
+            <div key={r.title} style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, padding: 22 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.soft, color: T.greenD, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 13, marginBottom: 14 }}>{i + 1}</div>
+              <h3 style={{ margin: '0 0 8px', fontSize: 16, color: T.ink }}>{r.title}</h3>
+              <p style={{ margin: 0, color: T.muted, fontSize: 14, lineHeight: 1.55 }}>{r.body}</p>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* ---------- Reliability ---------- */}
-      <section id="reliable" style={{ padding: '0 0 72px' }}>
-        <div className="lg-wrap">
-          <Head
-            title="Generation should feel reliable."
-            sub="Even when a provider slows down or fails, you keep the leads that already completed — and you can resume."
-          />
-          <div className="lg-gen">
-            <div style={panel}>
-              <h3 style={{ ...panelH, marginBottom: 4 }}>Define your search</h3>
-              {[['Industry', 'Digital Marketing'], ['Country and city', 'Toronto, Canada'], ['Lead count', '50 leads']].map(([l, v]) => (
-                <div key={l}>
-                  <div style={{ fontSize: 12, fontWeight: 700, margin: '16px 0 7px' }}>{l}</div>
-                  <div style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: 13, background: '#fff', color: T.ink2, fontSize: 13 }}>{v}</div>
+      {/* ---------- Pricing teaser ---------- */}
+      <section style={{ padding: '0 0 64px' }}>
+        <div className="lp-wrap" style={{ maxWidth: 860 }}>
+          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 18 }}>Start free. Pay when it works for you.</h2>
+          <div className="lp-three">
+            {PLANS.map(p => (
+              <div key={p.name} style={{ background: '#fff', border: p.main ? `2px solid ${T.green}` : `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px', textAlign: 'center' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.ink2 }}>{p.name}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, margin: '6px 0 2px', color: p.main ? T.green : T.ink }}>
+                  {p.price}{p.per && <span style={{ fontSize: 13, fontWeight: 500, color: T.muted }}>{p.per}</span>}
                 </div>
-              ))}
-              <button onClick={() => navigate('/signup')} style={{ ...btnPrimary, marginTop: 22, padding: '12px 18px' }}>Start generation →</button>
-            </div>
-
-            <div style={panel}>
-              <h3 style={{ ...panelH, marginBottom: 4 }}>Generating your leads…</h3>
-              <div style={{ fontSize: 44, fontWeight: 800, margin: '18px 0 5px', color: T.ink }}>45/50</div>
-              <div style={{ color: T.muted, fontSize: 13, marginBottom: 12 }}>90% scored</div>
-              <div style={{ height: 9, background: '#E9EEEB', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ width: '90%', height: '100%', background: T.green }} />
+                <div style={{ fontSize: 13, color: T.muted }}>{p.note}</div>
               </div>
-              <div className="lg-stages" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 10, marginTop: 22 }}>
-                {[['✓', 'Businesses', 'found'], ['✓', 'Companies', 'saved'], ['◉', 'AI scoring', 'in progress'], ['○', 'Finishing', 'pending']].map(([i, a, b]) => (
-                  <div key={a} style={{ fontSize: 11.5, color: T.muted }}>
-                    <b style={{ display: 'block', color: T.greenD, marginBottom: 4 }}>{i}</b>{a}<br />{b}
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 22, padding: 12, background: '#F3FAF5', borderRadius: 9, fontSize: 12.5, color: '#4F5A54', lineHeight: 1.55 }}>
-                You can close this page. Your job keeps running and your results are
-                saved as they arrive.
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      {/* ---------- Results ---------- */}
-      <section style={{ padding: '0 0 72px' }}>
-        <div className="lg-wrap">
-          <Head title="Results built for action" sub="Every lead easy to scan, qualify and act on." />
-          <div style={{ background: '#fff', border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <b style={{ fontSize: 14 }}>50 leads found <span style={{ color: T.muted, fontWeight: 400 }}>· sample</span></b>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <span style={btnGhost}>Export</span>
-                <span style={btnPrimary}>Draft outreach</span>
-              </div>
-            </div>
-            <div className="lg-tablewrap">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 620 }}>
-                <thead>
-                  <tr>{['Company', 'Industry', 'Contact', 'City', 'Score'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '14px 16px', borderTop: `1px solid ${T.line}`, color: '#727B76', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</th>
-                  ))}</tr>
-                </thead>
-                <tbody>
-                  {SAMPLE.map(s => (
-                    <tr key={s.what}>
-                      <td style={td}><b>{s.what}</b></td>
-                      <td style={td}>{s.industry}</td>
-                      <td style={td}>{s.contact}</td>
-                      <td style={td}>{s.city}</td>
-                      <td style={td}><span style={{ ...chip, background: T.soft, color: T.greenD }}>{s.score}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <p style={{ textAlign: 'center', fontSize: 13, color: T.muted, margin: '14px 0 0' }}>
+            Outside India? We can invoice you. <Link to="/pricing" style={{ color: T.greenD, fontWeight: 600, textDecoration: 'none' }}>See full pricing →</Link>
+          </p>
         </div>
       </section>
 
       {/* ---------- CTA ---------- */}
-      <section style={{ background: T.green, padding: '68px 24px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: 'clamp(24px,4vw,32px)', fontWeight: 800, color: '#fff', margin: '0 0 14px', letterSpacing: '-.5px' }}>
+      <section style={{ background: T.green, padding: '56px 24px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 'clamp(24px,4vw,30px)', fontWeight: 800, color: '#fff', margin: '0 0 10px', letterSpacing: '-.5px' }}>
           Try it on a city you sell to
         </h2>
-        <p style={{ fontSize: 16, color: 'rgba(255,255,255,.85)', marginBottom: 30 }}>
-          Create a free account and run your first search in any of 41 countries. 10 leads free, no card.
+        <p style={{ fontSize: 15.5, color: 'rgba(255,255,255,.88)', margin: '0 0 24px' }}>
+          10 leads free, no card.
         </p>
-        <button onClick={() => navigate('/signup')} style={{ background: '#fff', color: T.green, border: 'none', borderRadius: 10, padding: '14px 26px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-          Get started free →
+        <button onClick={() => navigate('/signup')} style={{ background: '#fff', color: T.greenD, border: 'none', borderRadius: 10, padding: '13px 24px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
+          Start free →
         </button>
       </section>
 
       {/* ---------- Footer ---------- */}
-      <footer style={{ padding: '32px 0', background: '#fff', borderTop: `1px solid ${T.line}`, color: '#7A827E', fontSize: 12.5 }}>
-        <div className="lg-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+      <footer style={{ padding: '26px 0', background: '#fff', borderTop: `1px solid ${T.line}`, color: '#7A827E', fontSize: 12.5 }}>
+        <div className="lp-wrap" style={{ display: 'flex', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
           <span>LeadGenAI · Local business leads in 41 countries · Exommerce.online</span>
           <span style={{ display: 'flex', gap: 18 }}>
             <Link to="/pricing" style={link}>Pricing</Link>
@@ -330,30 +249,9 @@ export default function Landing() {
   )
 }
 
-function Head({ title, sub }) {
-  return (
-    <div style={{ textAlign: 'center', maxWidth: 650, margin: '0 auto 34px' }}>
-      <h2 style={{ fontSize: 'clamp(24px,3.4vw,34px)', letterSpacing: '-1px', margin: '0 0 10px', color: T.ink, fontWeight: 800 }}>{title}</h2>
-      <p style={{ color: T.muted, lineHeight: 1.6, margin: 0 }}>{sub}</p>
-    </div>
-  )
-}
-
-// Smooth-scroll to the demo; the href stays as a no-JS fallback.
-function scrollToDemo(e) {
-  const el = document.getElementById('demo')
-  if (!el) return
-  e.preventDefault()
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
-  history.replaceState(null, '', '#demo')
-}
-
 const link = { color: 'inherit', textDecoration: 'none' }
-const panel = { background: T.card, border: `1px solid ${T.line}`, borderRadius: 14, padding: 22, minWidth: 0 }
-const panelH = { fontSize: 14, margin: '0 0 16px', color: T.ink }
-const td = { textAlign: 'left', padding: '14px 16px', borderTop: `1px solid ${T.line}`, color: T.ink2 }
-const chip = { display: 'inline-block', borderRadius: 99, padding: '4px 8px', fontSize: 10.5, fontWeight: 800, whiteSpace: 'nowrap' }
-const eyebrow = { display: 'inline-flex', background: T.soft, color: T.greenD, padding: '7px 11px', borderRadius: 99, fontSize: 12, fontWeight: 700 }
-const btnPrimary = { background: T.green, border: `1px solid ${T.green}`, color: '#fff', padding: '10px 16px', borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }
-const btnGhost = { border: `1px solid ${T.line}`, background: '#fff', color: T.ink2, padding: '10px 16px', borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }
+const h2 = { fontSize: 'clamp(20px,3vw,24px)', letterSpacing: '-.5px', margin: 0, fontWeight: 800, color: T.ink }
+const chip = { display: 'inline-block', borderRadius: 99, padding: '3px 8px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }
+const input = { width: '100%', boxSizing: 'border-box', minHeight: 46, padding: '0 14px', border: `1px solid ${T.line}`, borderRadius: 10, fontSize: 15, background: '#fff', color: T.ink }
+const sr = { position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap', border: 0 }
+const btnPrimary = { background: T.green, border: `1px solid ${T.green}`, color: '#fff', padding: '9px 16px', borderRadius: 9, fontWeight: 700, fontSize: 14, cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }
