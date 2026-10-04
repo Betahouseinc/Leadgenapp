@@ -33,6 +33,29 @@ const SAMPLE = [
   { what: 'Family restaurant',  city: 'Sydney, AU',    site: false, phone: true, rating: '4.4★ · 9 reviews',   score: 46, why: 'Well rated but no website and few reviews' },
 ]
 
+// Stills cut from the demo video (public/demo), cropped to the app window. They
+// show the demo's sample data, which the frames themselves label as such.
+const STEPS = [
+  {
+    img: '/landing/step-discover.jpg',
+    alt: 'LeadGenAI finding logistics companies on a map, with a list of companies found filling up alongside',
+    title: 'Real businesses, found on the map',
+    body: 'Pick an industry, a country and a city. LeadGenAI pulls up to 50 businesses from public listings and saves each one as it arrives.',
+  },
+  {
+    img: '/landing/step-score.jpg',
+    alt: 'A list of leads, each with an AI score from 38 to 96, beside a chart of how the scores are spread',
+    title: 'Every lead scored and ranked',
+    body: 'Each business gets a 0–100 score and a one-line reason. The ones worth calling first sit at the top.',
+  },
+  {
+    img: '/landing/step-draft.jpg',
+    alt: 'A lead with an AI research summary and a drafted outreach email beside it',
+    title: 'Research and a first email, in one click',
+    body: 'AI summarises what is public about the business and drafts a short opener. You edit it and send it yourself.',
+  },
+]
+
 // What "qualified" means here — the checks the AI score actually makes. Keep in
 // step with buildScoringPrompt in supabase/functions/_shared/pipeline.ts.
 const CHECKS = [
@@ -58,7 +81,6 @@ export default function Landing() {
   const navigate = useNavigate()
   const [what, setWhat] = useState('')
   const [where, setWhere] = useState('')
-  const [showDemo, setShowDemo] = useState(false)
 
   const start = (e) => {
     e.preventDefault()
@@ -78,6 +100,13 @@ export default function Landing() {
         .lp-row { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.6fr) 56px; gap: 12px; align-items: center; }
         .lp-input:focus { outline: 2px solid ${T.green}; outline-offset: -1px; }
         .lp-show-sm { display: none; }
+        .lp-step { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 40px; align-items: center; margin-bottom: 48px; }
+        .lp-step-flip { grid-template-columns: minmax(0,1fr) minmax(0,1.5fr); }
+        .lp-step-flip > img { order: 2; }
+        @media (max-width: 860px) {
+          .lp-step, .lp-step-flip { grid-template-columns: minmax(0,1fr); gap: 18px; margin-bottom: 40px; }
+          .lp-step-flip > img { order: 0; }
+        }
         @media (max-width: 760px) {
           .lp-search, .lp-four { grid-template-columns: minmax(0,1fr) !important; }
           .lp-row { grid-template-columns: minmax(0,1fr) 48px !important; }
@@ -100,7 +129,7 @@ export default function Landing() {
       </header>
 
       {/* ---------- Hero ---------- */}
-      <section style={{ background: '#fff', padding: '72px 0 56px', borderBottom: `1px solid ${T.line}` }}>
+      <section style={{ background: '#fff', padding: '72px 0 32px' }}>
         <div className="lp-wrap" style={{ maxWidth: 760, textAlign: 'center' }}>
           <h1 style={{ fontSize: 'clamp(34px, 6vw, 54px)', lineHeight: 1.06, letterSpacing: '-1.5px', margin: '0 0 16px', fontWeight: 800, color: T.ink }}>
             Qualified local leads,<br /><span style={{ color: T.green }}>ready to contact</span>
@@ -130,22 +159,29 @@ export default function Landing() {
           </div>
           <div style={{ fontSize: 12.5, color: T.muted, marginTop: 10 }}>
             You’ll create a free account first.{' '}
-            <button type="button" onClick={() => setShowDemo(v => !v)} style={{ background: 'none', border: 'none', padding: 0, color: T.greenD, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}>
-              {showDemo ? 'Hide the demo' : 'Or watch a 60-second demo ▸'}
-            </button>
+            <a href="#demo" onClick={scrollToDemo} style={{ color: T.greenD, fontWeight: 600, textDecoration: 'none' }}>
+              Or watch the 60-second demo ↓
+            </a>
           </div>
+        </div>
+      </section>
 
-          {showDemo && (
-            <video
-              src="/demo/leadgenai-demo.mp4"
-              poster="/demo/leadgenai-demo-poster.jpg"
-              controls
-              autoPlay
-              playsInline
-              aria-label="LeadGenAI product demo, 60 seconds"
-              style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', background: T.ink, borderRadius: 14, marginTop: 22, border: `1px solid ${T.line}` }}
-            />
-          )}
+      {/* ---------- Demo video ---------- */}
+      <section id="demo" style={{ background: '#fff', padding: '8px 0 64px', scrollMarginTop: 16, borderBottom: `1px solid ${T.line}` }}>
+        <div className="lp-wrap" style={{ maxWidth: 960 }}>
+          <video
+            src="/demo/leadgenai-demo.mp4"
+            poster="/demo/leadgenai-demo-poster.jpg"
+            controls
+            playsInline
+            preload="metadata"
+            aria-label="LeadGenAI product demo, 60 seconds"
+            aria-describedby="demo-desc"
+            style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', background: T.ink, borderRadius: 16, border: `1px solid ${T.line}`, boxShadow: '0 18px 50px rgba(22,59,38,0.10)' }}
+          />
+          <p id="demo-desc" style={{ textAlign: 'center', fontSize: 13, color: T.muted, margin: '12px 0 0' }}>
+            60 seconds: a search, the businesses found, AI scoring, and a drafted first email. Sample data.
+          </p>
         </div>
       </section>
 
@@ -165,6 +201,34 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ---------- From search to first email (stills) ---------- */}
+      <section style={{ padding: '64px 0 0' }}>
+        <div className="lp-wrap">
+          <h2 style={{ ...h2, textAlign: 'center', marginBottom: 6 }}>From search to first email</h2>
+          <p style={{ textAlign: 'center', color: T.muted, fontSize: 15, margin: '0 0 30px' }}>
+            Screens from the demo, with sample data.
+          </p>
+          {STEPS.map((s, i) => (
+            <div key={s.img} className={`lp-step${i % 2 ? ' lp-step-flip' : ''}`}>
+              <img
+                src={s.img}
+                alt={s.alt}
+                width="1400"
+                height="714"
+                loading="lazy"
+                decoding="async"
+                style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 14, border: `1px solid ${T.line}`, boxShadow: '0 14px 40px rgba(22,59,38,0.08)', background: '#fff' }}
+              />
+              <div>
+                <div style={{ ...chip, background: T.soft, color: T.greenD, marginBottom: 12 }}>STEP {i + 1}</div>
+                <h3 style={{ margin: '0 0 10px', fontSize: 21, letterSpacing: '-.3px', color: T.ink }}>{s.title}</h3>
+                <p style={{ margin: 0, color: T.muted, fontSize: 15, lineHeight: 1.6 }}>{s.body}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -237,6 +301,16 @@ export default function Landing() {
       </footer>
     </div>
   )
+}
+
+// Smooth-scroll to the demo; the href stays as a no-JS fallback.
+function scrollToDemo(e) {
+  const el = document.getElementById('demo')
+  if (!el) return
+  e.preventDefault()
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  history.replaceState(null, '', '#demo')
 }
 
 const link = { color: 'inherit', textDecoration: 'none' }
