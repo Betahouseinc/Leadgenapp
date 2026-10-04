@@ -27,13 +27,21 @@ const PLANS = [
     highlight: false,
   },
   {
+    // Priced on request: no amount is shown on the site, so the self-serve
+    // Razorpay checkout is not offered from this card — a buyer should never
+    // pay an amount they did not see. create-order still knows the plan, so
+    // checkout can come back by removing `quote` and restoring a price.
     id: 'starter',
     name: 'Starter',
-    price: 999,
+    quote: true,
+    priceLabel: 'Contact us',
     leads: 500,
     daily: 100,
     features: ['500 leads/month', 'Up to 100 leads per day', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Email support'],
-    cta: 'Start Starter',
+    cta: 'Ask for pricing',
+    email: 'leadgen.billing@exommerce.online',
+    subject: 'LeadGenAI Starter pricing',
+    intro: 'Hi, I would like pricing for the LeadGenAI Starter plan (500 leads/month).',
     highlight: true,
   },
   {
@@ -42,17 +50,21 @@ const PLANS = [
     id: 'pro',
     name: 'Enterprise',
     quote: true,
+    priceLabel: 'Custom',
     features: ['Custom monthly lead volume', 'Daily limits sized to your team', 'Public business directory search', 'AI scoring + summary', 'CSV & Excel export', 'Priority support', 'Saved searches'],
     cta: 'Contact for an exclusive quote',
+    email: 'hello@exommerce.online',
+    subject: 'LeadGenAI Enterprise quote',
+    intro: 'Hi, I would like an exclusive quote for LeadGenAI Enterprise.',
     highlight: false,
   },
 ]
 
-const QUOTE_EMAIL = 'hello@exommerce.online'
-
 export default function Pricing() {
   const navigate = useNavigate()
-  const [currentPlan, setCurrentPlan] = useState('free')
+  // Unknown until the profile loads. Defaulting to 'free' told every logged-out
+  // visitor the Free plan was theirs and disabled its button.
+  const [currentPlan, setCurrentPlan] = useState(null)
   const [loading, setLoading] = useState(null)
 
   useEffect(() => {
@@ -67,15 +79,16 @@ export default function Pricing() {
     const { data: { session } } = await supabase.auth.getSession()
     if (plan.quote) {
       const body = [
-        'Hi, I would like an exclusive quote for LeadGenAI Enterprise.',
+        plan.intro,
         '',
         'Company:',
+        'Country:',
         'Leads needed per month:',
         'Anything else we should know:',
         '',
         session?.user?.email ? `LeadGenAI account: ${session.user.email}` : '',
       ].join('\n')
-      window.location.href = `mailto:${QUOTE_EMAIL}?subject=${encodeURIComponent('LeadGenAI Enterprise quote')}&body=${encodeURIComponent(body)}`
+      window.location.href = `mailto:${plan.email}?subject=${encodeURIComponent(plan.subject)}&body=${encodeURIComponent(body)}`
       return
     }
     if (!session) { navigate('/login?redirect=pricing'); return }
@@ -146,7 +159,7 @@ export default function Pricing() {
             style={{ fontSize: 22, fontWeight: 800, color: T.blue, marginBottom: 12, cursor: 'pointer' }}
           >LeadgenAI</div>
           <h1 style={{ fontSize: 32, fontWeight: 800, color: T.ink, margin: '0 0 12px' }}>
-            Simple, transparent pricing
+            Simple plans
           </h1>
           <p style={{ fontSize: 16, color: T.ink2, margin: 0 }}>
             Start free. Upgrade when you need more leads.
@@ -181,13 +194,13 @@ export default function Pricing() {
               <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 8 }}>{plan.name}</div>
               <div style={{ marginBottom: 16 }}>
                 <span style={{ fontSize: 32, fontWeight: 800, color: plan.highlight ? T.blue : T.ink }}>
-                  {plan.quote ? 'Custom' : plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`}
+                  {plan.priceLabel || (plan.price === 0 ? 'Free' : `₹${plan.price.toLocaleString()}`)}
                 </span>
                 {plan.price > 0 && <span style={{ fontSize: 13, color: T.muted }}>/mo</span>}
               </div>
 
               <div style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>
-                {plan.quote ? 'Pricing tailored to your volume' : plan.leads === -1 ? 'Unlimited leads' : `${plan.leads.toLocaleString()} leads/month`}
+                {!plan.leads ? 'Pricing tailored to your volume' : plan.leads === -1 ? 'Unlimited leads' : `${plan.leads.toLocaleString()} leads/month`}
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', fontSize: 13, color: T.ink2 }}>
@@ -221,7 +234,8 @@ export default function Pricing() {
 
         <div style={{ textAlign: 'center', marginTop: 40, fontSize: 13, color: T.muted, lineHeight: 1.9 }}>
           All plans include AI-powered lead scoring, and CSV &amp; Excel export.<br />
-          Prices are in Indian Rupees (₹) and billed in advance. Monthly lead allowances reset
+          Paid plans are priced on request and billed in advance, wherever you are — we’ll send an invoice.<br />
+          Monthly lead allowances reset
           at the start of each calendar month and do not carry over.<br />
           Each plan also has a daily ceiling, which resets at midnight IST. It exists to keep
           usage predictable and protect service quality for everyone.<br />
