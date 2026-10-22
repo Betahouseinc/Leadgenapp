@@ -129,6 +129,8 @@ export default function Leads() {
   const [noteMsg, setNoteMsg] = useState(null)
   const [error, setError] = useState(null)
   const [exporting, setExporting] = useState(null)
+  const [enrichingIds, setEnrichingIds] = useState(new Set())
+  const [enrichNotes, setEnrichNotes] = useState({})
 
   // Usage is read from the same RPC the edge function enforces with, so the
   // meter can never disagree with what the backend actually allows.
@@ -323,6 +325,45 @@ export default function Leads() {
       setExporting(null)
     }
   }
+
+  // Lets a row find its own email without opening the drawer first.
+  const findEmailForLead = useCallback(async (lead) => {
+    setEnrichingIds(prev => new Set(prev).add(lead.id))
+    setEnrichNotes(prev => {
+      if (!(lead.id in prev)) return prev
+      const next = { ...prev }
+      delete next[lead.id]
+      return next
+    })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enrich-lead`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({ lead_id: lead.id }),
+        },
+      )
+      const body = await res.json().catch(() => null)
+      if (body?.email) {
+        setLeads(prev => prev.map(l => (l.id === lead.id ? { ...l, email: body.email } : l)))
+      } else {
+        setEnrichNotes(prev => ({ ...prev, [lead.id]: body?.message || 'No email found.' }))
+      }
+    } catch {
+      setEnrichNotes(prev => ({ ...prev, [lead.id]: 'Could not check this lead right now.' }))
+    } finally {
+      setEnrichingIds(prev => {
+        const next = new Set(prev)
+        next.delete(lead.id)
+        return next
+      })
+    }
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -661,9 +702,41 @@ export default function Leads() {
                       <div style={{ fontWeight: 600, color: T.ink }}>{lead.name || '—'}</div>
                       <div style={{ color: T.muted, fontSize: 11 }}>{lead.company || ''}</div>
                     </Td>
-                    <Td>
-                      <div style={{ color: T.ink }}>{lead.email || '—'}</div>
-                      <div style={{ color: T.muted, fontSize: 11 }}>{lead.phone || ''}</div>
+                    <Td onClick={e => e.stopPropagation()}>
+                      {lead.email ? (
+                        <>
+                          <div style={{ color: T.ink }}>{lead.email}</div>
+                          <div style={{ color: T.muted, fontSize: 11 }}>{lead.phone || ''}</div>
+                        </>
+                      ) : (
+                        <div>
+                          <button
+                            onClick={() => findEmailForLead(lead)}
+                            disabled={enrichingIds.has(lead.id)}
+                            style={{
+                              background: enrichingIds.has(lead.id) ? T.bg : T.blueL,
+                              border: `0.5px solid ${T.border}`,
+                              borderRadius: 6,
+                              padding: '3px 10px',
+                              fontSize: 11.5,
+                              fontWeight: 600,
+                              color: enrichingIds.has(lead.id) ? T.muted : T.blue,
+                              cursor: enrichingIds.has(lead.id) ? 'default' : 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {enrichingIds.has(lead.id) ? 'Looking…' : 'Find email'}
+                          </button>
+                          {lead.phone && (
+                            <div style={{ color: T.muted, fontSize: 11, marginTop: 2 }}>{lead.phone}</div>
+                          )}
+                          {enrichNotes[lead.id] && (
+                            <div style={{ color: T.muted, fontSize: 10.5, marginTop: 2, maxWidth: 170, lineHeight: 1.4 }}>
+                              {enrichNotes[lead.id]}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </Td>
                     <Td>{lead.industry || '—'}</Td>
                     <Td>{sourceBadge(lead.source)}</Td>
