@@ -1,4 +1,4 @@
--- 2026-09-30 â€” Close three ways around plan limits
+-- 2026-09-30 — Close three ways around plan limits
 --
 -- Found while fixing enrich-lead, which returned unmasked emails to free plans.
 -- Each of these let a signed-in user reach, through the public REST API, data or
@@ -12,7 +12,7 @@
 -- 1. leads: contact columns only through leads_view
 --
 -- "Users see own leads" lets a user select their own rows straight from the
--- table, which skips leads_view and its masking â€” a free plan could read every
+-- table, which skips leads_view and its masking — a free plan could read every
 -- email and phone with one API call. The policy stays (updates to status and
 -- notes need it); what changes is which columns the role may select.
 --
@@ -21,7 +21,7 @@
 -- original record and can carry the same contact details.
 --
 -- A column added to leads later is NOT readable by users until it is added to
--- this grant â€” safe by default.
+-- this grant — safe by default.
 -- ---------------------------------------------------------------------------
 
 revoke select on public.leads from anon, authenticated;

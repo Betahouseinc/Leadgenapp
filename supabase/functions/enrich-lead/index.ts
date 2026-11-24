@@ -2,7 +2,7 @@
 //
 // Google Places reports what Google holds about a business and never visits its
 // website, so every lead arrives without an email. Enriching all of them the way
-// the old Apify pipeline did is what made runs expensive â€” it paid to visit a
+// the old Apify pipeline did is what made runs expensive — it paid to visit a
 // site for every place found, and produced an email for about a quarter of them.
 //
 // So this runs per lead, when someone asks for it, and tries the cheap thing
@@ -19,7 +19,7 @@
 // forever.
 //
 // Separately, when HUNTER_API_KEY is set, it looks up the people at the business
-// â€” owners, founders, directors â€” with Hunter's domain search, and checks
+// — owners, founders, directors — with Hunter's domain search, and checks
 // deliverability of every address it is about to hand the user. That is the
 // difference between a business inbox and a named decision-maker. Hunter is
 // paid past its free tier (25 searches, 50 verifications a month), so it runs
@@ -192,7 +192,7 @@ const MAX_VERIFICATIONS = Number(Deno.env.get('HUNTER_MAX_VERIFICATIONS') || 3)
 
 // Many local businesses list a social profile or a directory page as their
 // "website". A domain search there returns that platform's staff, not the
-// business's â€” and still spends a credit.
+// business's — and still spends a credit.
 const NOT_A_BUSINESS_DOMAIN = [
   'facebook.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com', 'youtube.com',
   'google.com', 'goo.gl', 'g.page', 'justdial.com', 'indiamart.com', 'sulekha.com',
@@ -225,7 +225,7 @@ type HunterEmail = {
 }
 
 // Returns null when Hunter could not be asked (bad key, out of quota, down), as
-// distinct from [] â€” asked, and nobody on file. Only the second is final.
+// distinct from [] — asked, and nobody on file. Only the second is final.
 async function hunterDomainSearch(domain: string, key: string): Promise<HunterEmail[] | null> {
   const params = new URLSearchParams({
     domain,
@@ -273,7 +273,7 @@ async function hunterVerify(email: string, key: string): Promise<string | null> 
   return 'unknown'
 }
 
-// Executives first, then by Hunter's confidence â€” the order the user sees them
+// Executives first, then by Hunter's confidence — the order the user sees them
 // and the order verification credits are spent in.
 function rankContacts(emails: HunterEmail[]): HunterEmail[] {
   const tier = (s?: string | null) => (s === 'executive' ? 2 : s === 'senior' ? 1 : 0)
@@ -448,7 +448,7 @@ Deno.serve(async (req) => {
       ? ` Found ${contactsFound} decision-maker${contactsFound === 1 ? '' : 's'}.`
       : ''
     const undeliverable = emailStatus === 'invalid' || emailStatus === 'disposable'
-      ? ' That address failed the deliverability check â€” do not send to it.'
+      ? ' That address failed the deliverability check — do not send to it.'
       : ''
 
     // Contact details for the people are deliberately not in this reply: it
