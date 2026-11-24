@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { scoreBand } from '../constants/score'
 
 const T = {
   surface: '#FFFFFF',
@@ -12,12 +13,6 @@ const T = {
   blueL: '#EFF8F1',
   teal: '#1A8A72',
   tealL: '#E0F5F0',
-}
-
-function ScoreColor(score) {
-  if (score >= 75) return '#2E7D32'
-  if (score >= 50) return '#109840'
-  return '#C44B4B'
 }
 
 function SourceBadge({ source }) {
@@ -176,10 +171,12 @@ export default function LeadDrawer({ lead, onClose, onEnriched }) {
             <div style={{
               fontSize: 48,
               fontWeight: 800,
-              color: ScoreColor(lead.score || 0),
+              color: scoreBand(lead.score).color,
               lineHeight: 1,
             }}>{lead.score ?? '—'}</div>
-            <div style={{ fontSize: 13, color: T.muted }}>Lead score</div>
+            <div style={{ fontSize: 13, color: T.muted }}>
+              {lead.score == null ? 'Not scored yet' : `Lead score · ${scoreBand(lead.score).label}`}
+            </div>
           </div>
 
           <Row label="City" value={lead.city} />
