@@ -6,6 +6,20 @@
 
 ---
 
+> **Status update — 2026-11-24.** This report is a snapshot from August. Since then:
+>
+> | Item | Status |
+> |---|---|
+> | Commits `f8ef690`, `0189488`, `36c5062` missing from GitHub | ✅ All on `main` — the warning below no longer applies |
+> | §7.3 / §9.2 Scheduled runs inert | ✅ Fixed in PR #3 — pg_cron schedule, Vault config, `recent_searches` (`20260926`, `20260929` migrations) |
+> | §7.4 / §9.4 No decision-maker data | ✅ `enrich-lead` looks up decision-makers via Hunter (active once `HUNTER_API_KEY` is set) |
+> | §7.7 / §9.5 Broken `apify-webhook` | ✅ Deleted. Discovery now uses Google Places; nothing reads `APIFY_API_KEY` any more |
+> | §9.6 Scratch directories in the repo | ✅ `Downloads/Rentok` (and a stray `digital-clock.html`) removed from git |
+> | §7.2 / §9.1 Paid Gemini key | ⏳ Account action, not code |
+> | §7.5 / §9.3 100-lead capacity | ⏳ Untested — still do not advertise above 50 |
+> | §9.7 Microsoft Graph | ⏳ Needs an Entra app registration and admin consent |
+> | §7.8 Test-account leads | ⏳ Delete with the SQL in §7.8 if not already done |
+
 ## ✅ PRODUCTION IS LIVE AND VERIFIED — but GitHub is behind
 
 **Frontend and backend are both deployed and verified end to end.** A 10-lead
