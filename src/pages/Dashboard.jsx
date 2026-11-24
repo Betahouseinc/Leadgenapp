@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { scoreBand, HIGH_SCORE } from '../constants/score'
+import { scoreBand, HIGH_SCORE, MEDIUM_SCORE } from '../constants/score'
 import ScrapeModal from '../components/ScrapeModal'
 
 // Everything on this page is read from the database. Where the product does not
@@ -119,9 +119,11 @@ export default function Dashboard() {
 
     const scores = (allRes.data || []).map(r => r.score)
     setBands({
-      high: scores.filter(s => s != null && s >= 80).length,
-      mid: scores.filter(s => s != null && s >= 50 && s < 80).length,
-      low: scores.filter(s => s != null && s < 50).length,
+      // Same bands as every other score in the app, so this chart agrees with
+      // the "High AI score (70+)" card above it.
+      high: scores.filter(s => s != null && s >= HIGH_SCORE).length,
+      mid: scores.filter(s => s != null && s >= MEDIUM_SCORE && s < HIGH_SCORE).length,
+      low: scores.filter(s => s != null && s < MEDIUM_SCORE).length,
       unscored: scores.filter(s => s == null).length,
     })
     setLoading(false)
@@ -379,9 +381,9 @@ export default function Dashboard() {
                       </div>
                       <div style={{ fontSize: 11, color: T.muted, marginTop: 4 }}>average score</div>
                     </div>
-                    <BandRow label="80–100" count={bands.high} total={totalScored} color="#0E7D40" />
-                    <BandRow label="50–79" count={bands.mid} total={totalScored} color="#7BCF16" />
-                    <BandRow label="0–49" count={bands.low} total={totalScored} color="#D98A16" />
+                    <BandRow label={`${HIGH_SCORE}–100`} count={bands.high} total={totalScored} color="#0E7D40" />
+                    <BandRow label={`${MEDIUM_SCORE}–${HIGH_SCORE - 1}`} count={bands.mid} total={totalScored} color="#7BCF16" />
+                    <BandRow label={`0–${MEDIUM_SCORE - 1}`} count={bands.low} total={totalScored} color="#D98A16" />
                     {bands.unscored > 0 && (
                       <div style={{ fontSize: 11, color: T.muted, marginTop: 10, lineHeight: 1.5 }}>
                         {bands.unscored} lead{bands.unscored === 1 ? '' : 's'} saved but not scored —

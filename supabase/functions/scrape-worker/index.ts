@@ -323,7 +323,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
   let held: Row[] = []
   const { data: existing, error: existErr } = await db
     .from('leads')
-    .select('id, name, city, country, place_id, dedup_key, phone_key, email, phone, website, address, rating, review_count')
+    .select('id, name, city, country, place_id, dedup_key, phone_key, email, phone, website, address, rating, review_count, score, scrape_run_id')
     .eq('user_id', run.user_id)
     .or([
       inList('place_id', placeIds),
@@ -386,8 +386,12 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
   // Only fields straight off the scrape, and only where the scrape actually has
   // a value: a run that returns no phone must not blank the phone on file.
   // score and summary are left alone — re-scoring a lead nobody is billed for
-  // spends Gemini quota for nothing.
+  // spends Gemini quota for nothing. The exception is a held lead that was
+  // never scored: it is handed to this run, so the scoring stage (which only
+  // looks at this run's rows) picks it up. Without that, a lead that missed
+  // scoring once stayed "Unscored" forever, though the UI says a re-run fixes it.
   let updated = 0
+  let requeued = 0
   if (dupes.length > 0) {
     const pick = (f: unknown, h: unknown) => {
       const v = typeof f === 'string' ? f.trim() : f
@@ -407,6 +411,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
       address: pick(lead.address, h.address),
       rating: pick(lead.rating, h.rating),
       review_count: pick(lead.review_count, h.review_count),
+      scrape_run_id: h.score == null ? run.id : (h.scrape_run_id ?? null),
       last_scraped_at: new Date().toISOString(),
     }))
     const { error: refreshErr } = await db.from('leads').upsert(refresh, { onConflict: 'id' })
@@ -419,6 +424,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
       })
     } else {
       updated = refresh.length
+      requeued = dupes.filter(d => d.held.score == null).length
     }
   }
 
@@ -494,6 +500,7 @@ async function saveDiscovered(db: any, run: Row, mapped: Row[]) {
     source: 'scrape-worker', stage: 'saving',
     message: `Saved ${inserted} new, refreshed ${updated} held, ${failed} failed`,
     detail: {
+      requeued_for_scoring: requeued,
       returned: mapped.length, unique_in_run: withinRun.length,
       with_contact: withContact, enrich_contacts: run.enrich_contacts,
     },
@@ -510,7 +517,7 @@ async function scoreSome(
 ): Promise<'more' | 'none_left' | 'exhausted_budget'> {
   const { data: pending, error } = await db
     .from('leads')
-    .select('id, name, website, phone, address, rating, review_count')
+    .select('id, name, website, phone, address, rating, review_count, created_at')
     .eq('scrape_run_id', run.id)
     .is('score', null)
     .limit(SCORING_CHUNK)
@@ -562,12 +569,18 @@ async function scoreSome(
   }
 
   // Persist this chunk before asking for the next one.
+  //
+  // scored_count is progress against leads_saved, which counts only the leads
+  // this run created. Held leads re-queued for scoring (see the saving stage)
+  // are scored here too but left out of the count, so progress never passes
+  // 100%. They were created before the run was.
+  const runStart = new Date(run.created_at).getTime()
   let written = 0
   for (const l of scored) {
     const { error: upErr } = await db.from('leads')
       .update({ score: l.score, summary: l.summary, industry: l.industry })
       .eq('id', l.id)
-    if (!upErr) written++
+    if (!upErr && !(new Date(l.created_at as string).getTime() < runStart)) written++
   }
 
   await db.from('scrape_runs').update({
